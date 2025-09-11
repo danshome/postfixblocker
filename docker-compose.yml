@@ -7,9 +7,10 @@ services:
       POSTGRES_PASSWORD: blocker
       POSTGRES_DB: blocker
     ports:
-      - "5432:5432"
+      - "5433:5432"
   mailhog:
     image: mailhog/mailhog
+    platform: linux/amd64
     ports:
       - "8025:8025"
   postfix:
@@ -18,7 +19,7 @@ services:
       dockerfile: docker/postfix/Dockerfile
     ports:
       - "1025:25"
-      - "5000:5000"
+      - "5001:5000"
     depends_on:
       - db
       - mailhog

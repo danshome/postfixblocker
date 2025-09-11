@@ -11,7 +11,7 @@ from sqlalchemy import create_engine
 from app import blocker
 
 DB_URL = os.environ.get(
-    "BLOCKER_DB_URL", "postgresql://blocker:blocker@localhost:5432/blocker")
+    "BLOCKER_DB_URL", "postgresql://blocker:blocker@localhost:5433/blocker")
 
 
 def send_mail(recipient: str, msg: str = "hello") -> None:
