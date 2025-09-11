@@ -25,8 +25,11 @@ The service uses SQLAlchemy and can connect to PostgreSQL or DB2
 docker compose up --build
 ```
 
-The API is available on [http://localhost:5000](http://localhost:5000) and
+The API is available on [http://localhost:5001](http://localhost:5001) and
 MailHog's UI on [http://localhost:8025](http://localhost:8025).
+
+PostgreSQL listens on port `5433` on the host to avoid conflicts with any
+local installations.
 
 ## Testing
 
