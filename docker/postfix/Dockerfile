@@ -6,7 +6,7 @@ RUN apt-get update && \
 
 # Postfix setup
 RUN postconf -e 'maillog_file = /dev/stdout'
-COPY postfix/main.cf /etc/postfix/main.cf
+COPY docker/postfix/main.cf /etc/postfix/main.cf
 
 # Python deps
 COPY requirements.txt /tmp/requirements.txt

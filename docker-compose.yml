@@ -13,7 +13,9 @@ services:
     ports:
       - "8025:8025"
   postfix:
-    build: ./docker/postfix
+    build:
+      context: .
+      dockerfile: docker/postfix/Dockerfile
     ports:
       - "1025:25"
       - "5000:5000"
