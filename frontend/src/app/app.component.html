@@ -1,0 +1,13 @@
+<h1>Postfix Blocker</h1>
+<input [(ngModel)]="newPattern" placeholder="email or regex">
+<label>
+  <input type="checkbox" [(ngModel)]="isRegex"> Regex
+</label>
+<button (click)="add()">Add</button>
+
+<ul>
+  <li *ngFor="let e of entries">
+    {{e.pattern}} <span *ngIf="e.is_regex">(regex)</span>
+    <button (click)="remove(e.id)">Delete</button>
+  </li>
+</ul>
