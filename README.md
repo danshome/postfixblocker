@@ -39,8 +39,16 @@ Run unit tests:
 pytest
 ```
 
-## End-to-end test
+## End-to-end demo
 
-An experimental script `tests/e2e_demo.py` was intended to demonstrate
-blocking behaviour by sending emails through Postfix and verifying delivery via
-MailHog. The script currently hangs and is not functional.
+The `tests/e2e_demo.py` script demonstrates blocking behaviour by sending
+emails through Postfix and verifying delivery via MailHog.  Ensure the
+`docker compose` environment is running and then execute:
+
+```bash
+python tests/e2e_demo.py
+```
+
+The script populates the database with a couple of blocked addresses, sends
+three messages, and prints which recipients were actually delivered to
+MailHog.
