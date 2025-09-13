@@ -41,5 +41,6 @@ pytest
 
 ## End-to-end test
 
-A script `tests/end_to_end_test.py` demonstrates blocking behaviour by sending
-emails through Postfix and verifying delivery via MailHog.
+An experimental script `tests/e2e_demo.py` was intended to demonstrate
+blocking behaviour by sending emails through Postfix and verifying delivery via
+MailHog. The script currently hangs and is not functional.
