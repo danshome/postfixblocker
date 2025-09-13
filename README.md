@@ -5,6 +5,8 @@ list of email recipients for Postfix. Blocked addresses are stored in a
 database and automatically applied to Postfix, preventing delivery to those
 recipients.
 
+AGENTS.md contains development instructions for AI agents. 
+
 The service uses SQLAlchemy and can connect to PostgreSQL or DB2
 (install the optional `ibm-db-sa` package for DB2 support).
 
@@ -51,7 +53,7 @@ Prerequisites:
 Run from the repository root so the `app` package can be imported:
 
 ```bash
-python tests/e2e_demo.py
+python tests/e2e_test.py
 ```
 
 Configuration via environment variables (optional):
@@ -62,7 +64,7 @@ Configuration via environment variables (optional):
 Running inside the Postfix container (useful on some hosts):
 
 ```bash
-docker compose cp tests/e2e_demo.py postfix:/opt/app/e2e_run.py
+docker compose cp tests/e2e_test.py postfix:/opt/app/e2e_run.py
 docker compose exec postfix env \
   BLOCKER_DB_URL=postgresql://blocker:blocker@db:5432/blocker \
   SMTP_HOST=127.0.0.1 SMTP_PORT=25 \
@@ -75,10 +77,10 @@ Mass traffic demo
 
 ```bash
 # From host
-python tests/e2e_demo.py --mass --total 300
+python tests/e2e_test.py --mass --total 300
 
 # Inside the postfix container (recommended if host DB port is blocked)
-docker compose cp tests/e2e_demo.py postfix:/opt/app/e2e_run.py
+docker compose cp tests/e2e_test.py postfix:/opt/app/e2e_run.py
 docker compose exec postfix env \
   BLOCKER_DB_URL=postgresql://blocker:blocker@db:5432/blocker \
   SMTP_HOST=127.0.0.1 SMTP_PORT=25 \
