@@ -42,12 +42,17 @@ pytest
 ## End-to-end demo
 
 The `tests/e2e_demo.py` script demonstrates blocking behaviour by sending
-emails through Postfix and verifying delivery via MailHog.  Ensure the
-`docker compose` environment is running and then execute:
+emails through Postfix and verifying delivery via MailHog. Start the
+`docker compose` environment and run the demo from the repository root so
+the `app` package can be imported:
 
 ```bash
 python tests/e2e_demo.py
 ```
+
+If you prefer to launch the script from another directory, set
+`PYTHONPATH=/path/to/postfixblocker` to avoid `ModuleNotFoundError` for the
+`app` module.
 
 The script populates the database with a couple of blocked addresses, sends
 three messages, and prints which recipients were actually delivered to

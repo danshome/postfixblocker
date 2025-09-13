@@ -9,18 +9,22 @@ import os
 import sys
 import time
 import smtplib
+from pathlib import Path
 from urllib.request import urlopen
 from urllib.error import URLError
 
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
 
-# Ensure repository root is on the import path so `app` can be imported when
-# running the script directly.
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, ROOT)
-
-from app import blocker
+# Import blocker from the project root.  When executed directly Python may not
+# include the repository on ``sys.path`` so attempt the import and, if it
+# fails, prepend the root directory and try again.
+try:  # pragma: no cover - simple import shim
+    from app import blocker
+except ModuleNotFoundError:  # pragma: no cover - exercised only in demo
+    ROOT = Path(__file__).resolve().parent.parent
+    sys.path.insert(0, str(ROOT))
+    from app import blocker
 
 DB_URL = os.environ.get(
     "BLOCKER_DB_URL", "postgresql://blocker:blocker@localhost:5433/blocker")
