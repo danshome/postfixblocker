@@ -1,11 +1,13 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends postfix supervisor && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends postfix postfix-pcre supervisor rsyslog && \
+    rm -rf /var/lib/apt/lists/* &&  \
+    # Use syslog for logging (rsyslog) and disable smtpd chroot in containers
+    postconf -X maillog_file && \
+    postconf -F 'smtp/inet/chroot=n'
 
 # Postfix setup
-RUN postconf -e 'maillog_file = /dev/stdout'
 COPY docker/postfix/main.cf /etc/postfix/main.cf
 
 # Python deps

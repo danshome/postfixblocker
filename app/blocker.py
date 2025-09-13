@@ -1,14 +1,35 @@
 import os
 import time
 import logging
-from typing import List
+from typing import List, Optional
 from dataclasses import dataclass
 
-from sqlalchemy import (Column, Integer, String, Boolean, DateTime,
-                        MetaData, Table, create_engine, select, func)
-from sqlalchemy.engine import Engine
-from sqlalchemy.exc import OperationalError
-from sqlalchemy.sql import text
+# NOTE: Make SQLAlchemy an optional dependency at import time so unit tests that
+# only exercise file-writing logic don't require the package to be installed.
+try:  # Lazy/optional SQLAlchemy imports
+    from sqlalchemy import (
+        Column,
+        Integer,
+        String,
+        Boolean,
+        DateTime,
+        MetaData,
+        Table,
+        create_engine,
+        select,
+        func,
+    )
+    from sqlalchemy.engine import Engine
+    from sqlalchemy.exc import OperationalError
+    from sqlalchemy.sql import text
+    _SA_AVAILABLE = True
+except Exception:  # pragma: no cover - exercised when SQLAlchemy is missing
+    Column = Integer = String = Boolean = DateTime = None  # type: ignore
+    MetaData = Table = create_engine = select = func = None  # type: ignore
+    Engine = object  # type: ignore
+    OperationalError = Exception  # Fallback for broad except
+    text = None  # type: ignore
+    _SA_AVAILABLE = False
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s [%(levelname)s] %(message)s")
@@ -17,16 +38,30 @@ DB_URL = os.environ.get("BLOCKER_DB_URL", "postgresql://blocker:blocker@db:5432/
 CHECK_INTERVAL = float(os.environ.get("BLOCKER_INTERVAL", "5"))
 POSTFIX_DIR = os.environ.get("POSTFIX_DIR", "/etc/postfix")
 
-metadata = MetaData()
+# Lazily construct metadata/table only if SQLAlchemy is present to avoid
+# import-time failures when tests don't need DB access.
+_metadata = None  # type: Optional[MetaData]
+_blocked_table = None  # type: Optional[Table]
 
-blocked_table = Table(
-    "blocked_addresses",
-    metadata,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("pattern", String(255), nullable=False, unique=True),
-    Column("is_regex", Boolean, nullable=False, default=False),
-    Column("updated_at", DateTime, server_default=func.now(), onupdate=func.now()),
-)
+def _ensure_sa_schema_loaded() -> None:
+    global _metadata, _blocked_table
+    if not _SA_AVAILABLE:
+        raise RuntimeError("SQLAlchemy is not installed; DB features are unavailable.")
+    if _metadata is None or _blocked_table is None:
+        _metadata = MetaData()
+        _blocked_table = Table(
+            "blocked_addresses",
+            _metadata,
+            Column("id", Integer, primary_key=True, autoincrement=True),
+            Column("pattern", String(255), nullable=False, unique=True),
+            Column("is_regex", Boolean, nullable=False, default=False),
+            Column(
+                "updated_at",
+                DateTime,
+                server_default=func.now(),
+                onupdate=func.now(),
+            ),
+        )
 
 @dataclass
 class BlockEntry:
@@ -34,21 +69,38 @@ class BlockEntry:
     is_regex: bool
 
 
-def get_engine() -> Engine:
-    return create_engine(DB_URL)
+def get_engine() -> Engine:  # type: ignore[override]
+    if not _SA_AVAILABLE:
+        raise RuntimeError("SQLAlchemy is not installed; cannot create engine.")
+    return create_engine(DB_URL)  # type: ignore[misc]
 
 
-def init_db(engine: Engine) -> None:
-    """Create table and indexes if they do not exist."""
-    metadata.create_all(engine)
-    # Simple index on pattern for faster lookups
-    with engine.connect() as conn:
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_blocked_pattern ON blocked_addresses(pattern)").execution_options(autocommit=True))
+def init_db(engine: Engine) -> None:  # type: ignore[override]
+    """Create table and indexes if they do not exist.
+
+    Uses explicit transaction (engine.begin) for SQLAlchemy 2.x compatibility
+    instead of autocommit execution options which are deprecated/removed.
+    """
+    _ensure_sa_schema_loaded()
+    # Create tables
+    assert _metadata is not None
+    _metadata.create_all(engine)
+    # Create index in a transaction-safe way
+    with engine.begin() as conn:  # type: ignore[attr-defined]
+        conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS idx_blocked_pattern ON blocked_addresses(pattern)"
+            )
+        )
 
 
-def fetch_entries(engine: Engine) -> List[BlockEntry]:
-    with engine.connect() as conn:
-        rows = conn.execute(select(blocked_table.c.pattern, blocked_table.c.is_regex)).fetchall()
+def fetch_entries(engine: Engine) -> List[BlockEntry]:  # type: ignore[override]
+    _ensure_sa_schema_loaded()
+    assert _blocked_table is not None
+    with engine.connect() as conn:  # type: ignore[attr-defined]
+        rows = conn.execute(
+            select(_blocked_table.c.pattern, _blocked_table.c.is_regex)
+        ).fetchall()
         return [BlockEntry(pattern=row[0], is_regex=row[1]) for row in rows]
 
 
@@ -65,10 +117,11 @@ def write_map_files(entries: List[BlockEntry]) -> None:
     literal_path = os.path.join(POSTFIX_DIR, "blocked_recipients")
     regex_path = os.path.join(POSTFIX_DIR, "blocked_recipients.pcre")
 
+    # Ensure deterministic trailing newline only when there is content.
     with open(literal_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(literal_lines) + "\n")
+        f.write("\n".join(literal_lines) + ("\n" if literal_lines else ""))
     with open(regex_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(regex_lines) + "\n")
+        f.write("\n".join(regex_lines) + ("\n" if regex_lines else ""))
 
     logging.info("Wrote %s and %s", literal_path, regex_path)
 
@@ -78,9 +131,11 @@ def reload_postfix() -> None:
     literal_path = os.path.join(POSTFIX_DIR, "blocked_recipients")
     try:
         logging.info("Running postmap")
-        os.system(f"postmap {literal_path}")
+        rc1 = os.system(f"postmap {literal_path}")
         logging.info("Reloading postfix")
-        os.system("postfix reload")
+        rc2 = os.system("postfix reload")
+        if rc1 != 0 or rc2 != 0:
+            logging.error("Postfix commands failed: postmap=%s reload=%s", rc1, rc2)
     except Exception as exc:
         logging.error("Failed to reload postfix: %s", exc)
 

@@ -5,11 +5,9 @@ Postfix block list.
 
 ## Development instructions
 
+- Before any changes, start Docker services.
 - Run unit tests with `pytest` from the repository root.
+- Run E2E Tests using tests/e2e_demo.py
 - Follow standard PEP8 style for Python code.
-- The README previously referenced `tests/end_to_end_test.py`, but that file
-  does not exist.
-- `tests/e2e_demo.py` provides a simple end-to-end demonstration. It requires
-  the docker-compose environment and will timeout quickly if services are
-  unavailable.
-- Update documentation and this file if new tests are added.
+- After making any changes always re-run the unit tests and E2E tests.
+- Always update documentation if necessary. 

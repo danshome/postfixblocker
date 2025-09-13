@@ -4,6 +4,10 @@ inet_interfaces = all
 relayhost = [mailhog]:1025
 smtp_tls_security_level = none
 
-smtpd_recipient_restrictions = check_recipient_access hash:/etc/postfix/blocked_recipients, check_recipient_access pcre:/etc/postfix/blocked_recipients.pcre, permit
+smtpd_banner = $myhostname ESMTP Postfix
+compatibility_level = 3.6
 
-maillog_file = /dev/stdout
+mynetworks = 0.0.0.0/0
+smtpd_relay_restrictions = permit_mynetworks, reject_unauth_destination
+
+smtpd_recipient_restrictions = check_recipient_access hash:/etc/postfix/blocked_recipients, check_recipient_access pcre:/etc/postfix/blocked_recipients.pcre, permit
