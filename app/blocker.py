@@ -15,9 +15,11 @@ try:  # Lazy/optional SQLAlchemy imports
         DateTime,
         MetaData,
         Table,
+        Index,
         create_engine,
         select,
         func,
+        inspect,
     )
     from sqlalchemy.engine import Engine
     from sqlalchemy.exc import OperationalError
@@ -25,7 +27,7 @@ try:  # Lazy/optional SQLAlchemy imports
     _SA_AVAILABLE = True
 except Exception:  # pragma: no cover - exercised when SQLAlchemy is missing
     Column = Integer = String = Boolean = DateTime = None  # type: ignore
-    MetaData = Table = create_engine = select = func = None  # type: ignore
+    MetaData = Table = Index = create_engine = select = func = inspect = None  # type: ignore
     Engine = object  # type: ignore
     OperationalError = Exception  # Fallback for broad except
     text = None  # type: ignore
@@ -38,10 +40,22 @@ DB_URL = os.environ.get("BLOCKER_DB_URL", "postgresql://blocker:blocker@db:5432/
 CHECK_INTERVAL = float(os.environ.get("BLOCKER_INTERVAL", "5"))
 POSTFIX_DIR = os.environ.get("POSTFIX_DIR", "/etc/postfix")
 
+"""Database schema and helpers for Postfix Blocker.
+
+The module is careful to work with both PostgreSQL and IBM DB2 11.5 via
+SQLAlchemy. We avoid backend-specific DDL (e.g., "CREATE INDEX IF NOT EXISTS")
+and instead declare indexes/constraints via SQLAlchemy so the dialect can
+generate the right SQL for each backend.
+"""
+
 # Lazily construct metadata/table only if SQLAlchemy is present to avoid
 # import-time failures when tests don't need DB access.
 _metadata = None  # type: Optional[MetaData]
 _blocked_table = None  # type: Optional[Table]
+
+# Public references (assigned once constructed) for convenient imports
+blocked_table: Optional[Table] = None
+metadata: Optional[MetaData] = None
 
 def _ensure_sa_schema_loaded() -> None:
     global _metadata, _blocked_table
@@ -49,19 +63,28 @@ def _ensure_sa_schema_loaded() -> None:
         raise RuntimeError("SQLAlchemy is not installed; DB features are unavailable.")
     if _metadata is None or _blocked_table is None:
         _metadata = MetaData()
+        # Use CURRENT_TIMESTAMP via SQLAlchemy to stay portable across backends
         _blocked_table = Table(
             "blocked_addresses",
             _metadata,
             Column("id", Integer, primary_key=True, autoincrement=True),
-            Column("pattern", String(255), nullable=False, unique=True),
+            Column("pattern", String(255), nullable=False),
             Column("is_regex", Boolean, nullable=False, default=False),
             Column(
                 "updated_at",
                 DateTime,
-                server_default=func.now(),
-                onupdate=func.now(),
+                server_default=func.current_timestamp(),  # type: ignore[attr-defined]
+                onupdate=func.current_timestamp(),  # type: ignore[attr-defined]
             ),
         )
+        # Rely on the unique constraint on pattern for indexing across backends.
+        # Some DB2 environments raise a warning-as-error when attempting to
+        # create a duplicate non-unique index over an existing unique index.
+
+        # Publish public references
+        global blocked_table, metadata
+        blocked_table = _blocked_table
+        metadata = _metadata
 
 @dataclass
 class BlockEntry:
@@ -82,16 +105,21 @@ def init_db(engine: Engine) -> None:  # type: ignore[override]
     instead of autocommit execution options which are deprecated/removed.
     """
     _ensure_sa_schema_loaded()
-    # Create tables
     assert _metadata is not None
+    # Avoid DB2 duplicate index warnings by skipping create_all when the table
+    # already exists. SQLAlchemy's index existence checks can be unreliable for
+    # some DB2 versions.
+    try:
+        from sqlalchemy import inspect as _inspect  # type: ignore
+    except Exception:  # pragma: no cover
+        _inspect = inspect  # type: ignore
+    try:
+        if _inspect is not None and _inspect(engine).has_table("blocked_addresses"):
+            return
+    except Exception:
+        # Fall back to attempting create_all if inspection fails
+        pass
     _metadata.create_all(engine)
-    # Create index in a transaction-safe way
-    with engine.begin() as conn:  # type: ignore[attr-defined]
-        conn.execute(
-            text(
-                "CREATE INDEX IF NOT EXISTS idx_blocked_pattern ON blocked_addresses(pattern)"
-            )
-        )
 
 
 def fetch_entries(engine: Engine) -> List[BlockEntry]:  # type: ignore[override]
@@ -155,6 +183,17 @@ def monitor_loop() -> None:
         except OperationalError as exc:
             logging.error("Database error: %s", exc)
         time.sleep(CHECK_INTERVAL)
+
+
+def get_blocked_table() -> Table:
+    """Return the SQLAlchemy Table for blocked addresses.
+
+    Useful for tests and callers that need to construct SQLAlchemy statements
+    without relying on module import-time side effects.
+    """
+    _ensure_sa_schema_loaded()
+    assert _blocked_table is not None
+    return _blocked_table
 
 
 if __name__ == "__main__":

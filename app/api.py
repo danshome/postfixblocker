@@ -3,7 +3,7 @@ from flask import Flask, jsonify, request, abort
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from blocker import blocked_table, get_engine, init_db
+from blocker import get_blocked_table, get_engine, init_db
 
 app = Flask(__name__)
 engine = get_engine()
@@ -17,7 +17,7 @@ def row_to_dict(row):
 @app.route("/addresses", methods=["GET"])
 def list_addresses():
     with engine.connect() as conn:
-        rows = conn.execute(select(blocked_table)).fetchall()
+        rows = conn.execute(select(get_blocked_table())).fetchall()
     return jsonify([row_to_dict(r) for r in rows])
 
 
@@ -30,7 +30,7 @@ def add_address():
         abort(400, "pattern is required")
     with engine.connect() as conn:
         try:
-            conn.execute(blocked_table.insert().values(pattern=pattern, is_regex=is_regex))
+            conn.execute(get_blocked_table().insert().values(pattern=pattern, is_regex=is_regex))
             conn.commit()
         except IntegrityError:
             abort(409, "pattern already exists")
@@ -40,7 +40,8 @@ def add_address():
 @app.route("/addresses/<int:entry_id>", methods=["DELETE"])
 def delete_address(entry_id):
     with engine.connect() as conn:
-        conn.execute(blocked_table.delete().where(blocked_table.c.id == entry_id))
+        bt = get_blocked_table()
+        conn.execute(bt.delete().where(bt.c.id == entry_id))
         conn.commit()
     return {"status": "deleted"}
 

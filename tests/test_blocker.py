@@ -1,6 +1,10 @@
 import os
 import tempfile
+import pytest
 from app import blocker
+
+
+@pytest.mark.unit
 
 
 def test_write_map_files():

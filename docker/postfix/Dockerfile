@@ -11,8 +11,16 @@ RUN apt-get update && \
 COPY docker/postfix/main.cf /etc/postfix/main.cf
 
 # Python deps
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+# Install base requirements first (portable across architectures)
+COPY requirements-base.txt /tmp/requirements-base.txt
+RUN pip install --no-cache-dir -r /tmp/requirements-base.txt
+
+# Optionally install DB2 client libraries (ibm-db/ibm-db-sa). These packages
+# do not provide wheels for all architectures; make this conditional so the
+# Postgres-only image can build on arm64 (e.g., Apple Silicon) without errors.
+ARG ENABLE_DB2=0
+COPY requirements-db2.txt /tmp/requirements-db2.txt
+RUN if [ "$ENABLE_DB2" = "1" ]; then pip install --no-cache-dir -r /tmp/requirements-db2.txt; fi
 
 COPY app /opt/app
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf

@@ -25,9 +25,16 @@ from pathlib import Path
 from urllib.request import urlopen
 from urllib.error import URLError
 
-from sqlalchemy import create_engine
-from sqlalchemy.exc import OperationalError
-import requests
+try:  # pragma: no cover - optional for local runs
+    from sqlalchemy import create_engine
+    from sqlalchemy.exc import OperationalError
+except Exception:  # pragma: no cover - keep import-safe for pytest collection
+    create_engine = None  # type: ignore
+    OperationalError = Exception  # type: ignore
+try:  # pragma: no cover - optional dependency for demo helpers
+    import requests
+except Exception:  # pragma: no cover
+    requests = None  # type: ignore
 
 # Import blocker with flexible fallbacks.
 # 1) Try package import (when running from repo root)
@@ -85,13 +92,87 @@ def mailhog_messages():
 
 def mailhog_clear():
     url = f"http://{MAILHOG_HOST}:{MAILHOG_PORT}/api/v1/messages"
+    if requests:
+        try:
+            requests.delete(url, timeout=TIMEOUT)
+            return
+        except Exception as exc:
+            print("Could not clear MailHog messages via requests:", exc)
+    # Fallback to urllib with explicit DELETE method
     try:
-        requests.delete(url, timeout=TIMEOUT)
+        from urllib.request import Request
+        req = Request(url, method="DELETE")
+        with urlopen(req, timeout=TIMEOUT):
+            pass
     except Exception as exc:
-        print("Could not clear MailHog messages:", exc)
+        print("Could not clear MailHog messages via urllib:", exc)
+
+
+def _dbg(msg: str):
+    if os.environ.get("E2E_DEBUG") == "1":
+        print(msg)
+
+
+def run_e2e_scenario(db_url: str, smtp_host: str, smtp_port: int, mh_host: str, mh_port: int):
+    """Run a minimal e2e scenario and return delivered recipients.
+
+    Assumes a Postfix + blocker service is running and configured to use the
+    same backend as db_url.
+    """
+    global DB_URL, SMTP_HOST, SMTP_PORT, MAILHOG_HOST, MAILHOG_PORT
+    DB_URL = db_url
+    SMTP_HOST = smtp_host
+    SMTP_PORT = smtp_port
+    MAILHOG_HOST = mh_host
+    MAILHOG_PORT = mh_port
+
+    if create_engine is None:
+        return []
+    try:
+        engine = create_engine(DB_URL)
+        _dbg("engine created")
+    except Exception as exc:
+        _dbg(f"engine creation failed: {exc}")
+        return []
+    try:
+        blocker.init_db(engine)
+        _dbg("init_db ok")
+    except Exception as exc:
+        _dbg(f"init_db failed: {exc}")
+        return []
+
+    # Reset DB and MailHog
+    try:
+        with engine.connect() as conn:
+            conn.execute(blocker.get_blocked_table().delete())
+            conn.execute(blocker.get_blocked_table().insert(), [
+                {"pattern": "blocked1@example.com", "is_regex": False},
+                {"pattern": ".*@blocked.com", "is_regex": True},
+            ])
+            conn.commit()
+            _dbg("db reset and seed ok")
+    except Exception as exc:
+        _dbg(f"db reset failed: {exc}")
+        return []
+
+    # Allow blocker to detect and reload
+    time.sleep(6)
+    mailhog_clear()
+
+    for rcpt in ["blocked1@example.com", "allowed@example.com", "user@blocked.com"]:
+        try:
+            send_mail(rcpt)
+        except Exception:
+            pass
+
+    time.sleep(2)
+    return mailhog_messages()
 
 
 def mailhog_counts():
+    if not requests:
+        print("'requests' not installed; cannot fetch MailHog counts.")
+        return {}
     url = f"http://{MAILHOG_HOST}:{MAILHOG_PORT}/api/v2/messages?limit=10000"
     try:
         resp = requests.get(url, timeout=TIMEOUT)
@@ -109,8 +190,15 @@ def mailhog_counts():
 
 
 def main():
+    if create_engine is None:
+        print("SQLAlchemy not installed; skipping e2e demo.")
+        return
     try:
-        engine = create_engine(DB_URL, connect_args={"connect_timeout": TIMEOUT})
+        engine = create_engine(DB_URL)
+    except Exception as exc:
+        print("Could not create engine:", exc)
+        return
+    try:
         blocker.init_db(engine)
     except OperationalError as exc:
         print("Could not connect to database:", exc)
@@ -193,6 +281,9 @@ def generate_addresses(total: int):
 
 
 def mass_demo(total: int = 200):
+    if create_engine is None:
+        print("SQLAlchemy not installed; skipping e2e mass demo.")
+        return
     print(f"Starting mass demo with {total} messages...")
     try:
         engine = create_engine(DB_URL, connect_args={"connect_timeout": TIMEOUT})

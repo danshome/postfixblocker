@@ -5,7 +5,7 @@ and SQLAlchemy + the appropriate driver are installed.
 
 Set one or both of the following to enable:
 - TEST_PG_URL  (e.g. postgresql://blocker:blocker@localhost:5433/blocker)
-- TEST_DB2_URL (e.g. db2+ibm_db_sa://db2inst1:password@localhost:50000/BLOCKER)
+- TEST_DB2_URL (e.g. ibm_db_sa://db2inst1:password@localhost:50000/BLOCKER or db2+ibm_db://db2inst1:password@localhost:50000/BLOCKER)
 """
 import os
 import pytest
@@ -18,6 +18,18 @@ except Exception:  # pragma: no cover - SQLAlchemy not installed
     OperationalError = Exception  # type: ignore
 
 from app import blocker
+from tests.utils_wait import wait_for_db_url
+
+
+def _default_urls():
+    return {
+        "pg": os.environ.get(
+            "TEST_PG_URL", "postgresql://blocker:blocker@localhost:5433/blocker"
+        ),
+        "db2": os.environ.get(
+            "TEST_DB2_URL", "ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER"
+        ),
+    }
 
 
 def _smoke_db(url: str) -> None:
@@ -40,18 +52,14 @@ def _smoke_db(url: str) -> None:
     assert pats == [(".*@unit.test", True), ("unit1@example.com", False)]
 
 
+@pytest.mark.backend
 @pytest.mark.skipif(create_engine is None, reason="SQLAlchemy not installed")
-def test_postgres_backend_optional():
-    url = os.environ.get("TEST_PG_URL")
-    if not url:
-        pytest.skip("TEST_PG_URL not set")
+@pytest.mark.parametrize("backend", ["pg", "db2"])
+def test_backends_smoke(backend: str):
+    urls = _default_urls()
+    url = urls[backend]
+    # Try quick connectivity; skip if unavailable to avoid hard failures when
+    # docker services are not running in the environment.
+    if not wait_for_db_url(url):
+        pytest.skip(f"{backend} backend not available at {url}")
     _smoke_db(url)
-
-
-@pytest.mark.skipif(create_engine is None, reason="SQLAlchemy not installed")
-def test_db2_backend_optional():
-    url = os.environ.get("TEST_DB2_URL")
-    if not url:
-        pytest.skip("TEST_DB2_URL not set")
-    _smoke_db(url)
-
