@@ -88,6 +88,61 @@ Markers to scope runs:
 - Backend (requires Docker DBs): `pytest -m backend`
 - E2E (requires full stack): `pytest -m e2e`
 
+### Frontend testing
+
+Angular UI unit tests (Jest):
+
+```
+cd frontend
+npm install
+npm test
+```
+
+Angular UI e2e tests (Playwright):
+
+Prerequisites:
+- Backend stack running: `docker compose up --build`
+
+Run with Playwright starting the dev server and proxying API calls to the Flask API:
+
+```
+cd frontend
+npm run e2e
+```
+
+Notes:
+- The dev server proxies `/addresses` to `http://localhost:5001` using `frontend/proxy.conf.json`.
+- To target the DB2-backed API on port `5002`, change `target` in `proxy.conf.json` accordingly.
+
+### Frontend DevContainers
+
+Two DevContainer options are provided:
+
+- Root UI DevContainer (auto-starts UI)
+  - Open the repository root in VS Code → Reopen in Container.
+  - Container auto-installs `frontend` deps and starts `ng serve` with proxy to the host API.
+  - A status check waits for `http://localhost:4200` before marking the container ready.
+  - Visit `http://localhost:4200`.
+  - Image: `mcr.microsoft.com/playwright:v1.48.0-jammy` (Node + browsers).
+
+- Frontend-only DevContainer
+  - Open only the `frontend/` folder in VS Code → Reopen in Container.
+  - Manually start the dev server: `npm run start:devc`.
+
+Inside either container:
+
+```
+# Unit tests (Jest)
+cd frontend && npm test
+
+# E2E tests (Playwright)
+cd frontend && npm run e2e
+```
+
+Notes:
+- Both devcontainers forward `4200`.
+- The dev server proxies `/addresses` to the host API (default `http://localhost:5001`). Ensure `docker compose up` is running.
+
 ## End-to-end demo
 
 The `tests/e2e_test.py` script demonstrates blocking behaviour by sending

@@ -36,3 +36,27 @@
 - Backend: Adjust app/blocker.py to avoid duplicate index creation and DB2 warnings; simplify schema.
 - Docker: Rebuild postfix images to include latest app code; confirmed DB2 stack works end-to-end.
 - Local runs: Execute tests from host against exposed ports; no tests copied into DB containers.
+
+## 2025-09-14 09:00 UTC
+
+- DevContainer: Add `.devcontainer/devcontainer.json` using a universal image with Python + Node, forwarded ports, and VS Code extension recommendations. Installs Python base deps and frontend npm packages on create.
+- Frontend unit tests: Add Jest setup (`jest.config.js`, `setup-jest.ts`, `tsconfig.spec.json`) and unit tests for `AppComponent` using `HttpClientTestingModule`.
+- Frontend e2e: Add Playwright config and e2e test covering add/list/delete. Start Angular dev server automatically and proxy API calls via `frontend/proxy.conf.json`.
+- Docs: Update README with Jest/Playwright instructions.
+
+## 2025-09-14 09:20 UTC
+
+- Frontend DevContainer: Add `frontend/.devcontainer/devcontainer.json` using Playwright image for Node + browsers.
+- Networking: Add `--add-host=host.docker.internal:host-gateway` to reach host services from container.
+- Proxy: Add `frontend/proxy.devcontainer.json` to forward API calls to `http://host.docker.internal:5001`.
+- Scripts: Add `start:devc` in `frontend/package.json` to run dev server with the DevContainer proxy.
+- Docs: README section describing how to use the frontend DevContainer.
+
+## 2025-09-14 09:35 UTC
+
+- Root DevContainer (UI-only): Replace root `.devcontainer/devcontainer.json` with a Playwright-based Node environment that auto-starts the Angular dev server on container start and forwards port 4200. Adds host gateway mapping for proxying API calls to the host.
+- Docs: Update README to document both the root UI DevContainer (auto-start) and the frontend-only DevContainer.
+
+## 2025-09-14 09:45 UTC
+
+- DevContainer status check: Add `.devcontainer/scripts/wait-for-port.sh` and update root DevContainer to wait for `http://localhost:4200` before marking the container ready.
