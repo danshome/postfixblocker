@@ -12,7 +12,7 @@
   "containerEnv": {
     "CI": "false"
   },
-  "postCreateCommand": "bash -lc 'cd frontend && npm ci'",
+  "postCreateCommand": "bash -lc 'cd frontend && npm install'",
   "postStartCommand": "bash -lc '(cd frontend && npm run start:devc &) && .devcontainer/scripts/wait-for-port.sh 4200 180'",
   "customizations": {
     "vscode": {

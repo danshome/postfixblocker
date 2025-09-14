@@ -8,7 +8,7 @@
   "containerEnv": {
     "CI": "false"
   },
-  "postCreateCommand": "npm ci",
+  "postCreateCommand": "npm install",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -20,4 +20,3 @@
     }
   }
 }
-
