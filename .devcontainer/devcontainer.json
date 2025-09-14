@@ -1,0 +1,28 @@
+{
+  "name": "PostfixBlocker UI Dev",
+  "image": "mcr.microsoft.com/playwright:v1.48.0-jammy",
+  "remoteUser": "pwuser",
+  "updateRemoteUserUID": true,
+  "runArgs": ["--add-host=host.docker.internal:host-gateway"],
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "forwardPorts": [4200],
+  "portsAttributes": {
+    "4200": { "label": "Angular UI" }
+  },
+  "containerEnv": {
+    "CI": "false"
+  },
+  "postCreateCommand": "bash -lc 'cd frontend && npm ci'",
+  "postStartCommand": "bash -lc '(cd frontend && npm run start:devc &) && .devcontainer/scripts/wait-for-port.sh 4200 180'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "angular.ng-template",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "firsttris.vscode-jest-runner",
+        "ms-playwright.playwright"
+      ]
+    }
+  }
+}

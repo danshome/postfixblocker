@@ -1,0 +1,23 @@
+{
+  "name": "PostfixBlocker Frontend Dev",
+  "image": "mcr.microsoft.com/playwright:v1.48.0-jammy",
+  "remoteUser": "pwuser",
+  "updateRemoteUserUID": true,
+  "runArgs": ["--add-host=host.docker.internal:host-gateway"],
+  "forwardPorts": [4200],
+  "containerEnv": {
+    "CI": "false"
+  },
+  "postCreateCommand": "npm ci",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "angular.ng-template",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ms-playwright.playwright"
+      ]
+    }
+  }
+}
+
