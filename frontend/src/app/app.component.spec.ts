@@ -1,7 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { FormsModule } from '@angular/forms';
-
 import { AppComponent } from './app.component';
 
 interface Entry { id: number; pattern: string; is_regex: boolean; }
@@ -11,8 +9,8 @@ describe('AppComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [AppComponent],
-      imports: [HttpClientTestingModule, FormsModule],
+      // Import standalone component and testing HttpClient
+      imports: [AppComponent, HttpClientTestingModule],
     }).compileComponents();
     httpMock = TestBed.inject(HttpTestingController);
   });
@@ -84,4 +82,3 @@ describe('AppComponent', () => {
     expect(comp.entries.length).toBe(0);
   });
 });
-

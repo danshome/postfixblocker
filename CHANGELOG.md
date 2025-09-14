@@ -87,3 +87,16 @@
 ## 2025-09-14 11:08 UTC
 
 - Repo hygiene: Update root `.gitignore` to ignore `frontend/.angular/` explicitly (Angular workspace cache inside the frontend app).
+
+## 2025-09-14 11:15 UTC
+
+- Frontend: Migrate to standalone bootstrap for Angular 20.
+  - `AppComponent` marked `standalone: true` with `CommonModule` and `FormsModule` imports.
+  - `main.ts` uses `bootstrapApplication(AppComponent)` with `provideHttpClient()`.
+  - `angular.json` build target switched to `@angular-devkit/build-angular:application`.
+- Tests: Update `app.component.spec.ts` to import standalone `AppComponent` + `HttpClientTestingModule`; unit tests pass under Karma/ChromeHeadless.
+
+## 2025-09-14 11:20 UTC
+
+- Frontend: Remove deprecated `defaultProject` from `frontend/angular.json` to silence Angular CLI workspace warning.
+- Frontend: Set `target: ES2022` and `useDefineForClassFields: false` in `frontend/tsconfig.json` to match Angular CLI defaults and remove the TS warning.
