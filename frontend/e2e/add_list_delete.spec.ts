@@ -34,13 +34,13 @@ test('add, list, and delete entries', async ({ page }) => {
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   await expect(page.locator('table')).toContainText(['bulk1@example.com', 'bulk2@example.com']);
 
-  // Select two entries and delete selected
-  await page.locator('tr.mat-row', { hasText: 'bulk1@example.com' }).getByRole('checkbox').check();
-  await page.locator('tr.mat-row', { hasText: 'bulk2@example.com' }).getByRole('checkbox').check();
+  // Select two entries (click rows) and delete selected
+  await page.locator('tr.mat-row', { hasText: 'bulk1@example.com' }).click();
+  await page.locator('tr.mat-row', { hasText: 'bulk2@example.com' }).click();
   await page.getByRole('button', { name: 'Delete Selected' }).click();
   await expect(page.locator('table')).not.toContainText(['bulk1@example.com', 'bulk2@example.com']);
 
   // Delete all remaining
   await page.getByRole('button', { name: 'Delete All' }).click();
-  await expect(page.locator('mat-list-item')).toHaveCount(0);
+  await expect(page.locator('table')).toContainText('No data');
 });

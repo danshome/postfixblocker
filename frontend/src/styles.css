@@ -1,0 +1,50 @@
+:root {
+  --page-padding: 16px;
+}
+
+main.container {
+  display: grid;
+  gap: 16px;
+  padding: var(--page-padding);
+}
+
+.full {
+  width: 100%;
+}
+
+.actions, .list-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+mat-list-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  column-gap: 8px;
+  align-items: center;
+}
+
+.item-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+mat-list-item.selected {
+  background: rgba(63, 81, 181, 0.12);
+  border-radius: 4px;
+}
+
+tr.selected {
+  background: rgba(63, 81, 181, 0.12);
+}
+
+table {
+  width: 100%;
+}
+
+.filter-row th {
+  padding: 0 8px;
+}

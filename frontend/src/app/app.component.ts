@@ -272,8 +272,8 @@ export class AppComponent implements OnInit {
       const el = document.querySelector(
         `input[data-edit-id="${this.editingId}"]`
       ) as HTMLInputElement | null;
+      // Focus only; do not select the whole value so users can edit part
       el?.focus();
-      el?.select();
     });
   }
 
@@ -285,6 +285,7 @@ export class AppComponent implements OnInit {
 
   commitEdit(ev?: Event): void {
     if (ev) ev.stopPropagation();
+    if (this.savingEdit) return; // prevent double-submit from Enter + blur
     const id = this.editingId;
     if (!id) return;
     const newPattern = (this.editValue || '').trim();
@@ -297,20 +298,49 @@ export class AppComponent implements OnInit {
       this.cancelEdit();
       return;
     }
+    // Close the editor immediately to avoid a second commit on blur
     this.savingEdit = true;
+    this.editingId = null;
+    this.editValue = '';
     this.http
       .put(`/addresses/${id}`, { pattern: newPattern })
       .subscribe({
         next: () => {
           this.savingEdit = false;
-          this.cancelEdit();
           this.load();
         },
-        error: () => {
-          // On error (e.g., conflict), revert the edit and keep list consistent
-          this.savingEdit = false;
-          this.cancelEdit();
-          this.load();
+        error: (err) => {
+          // Fallback path for older backends without update endpoint:
+          // create a new entry with the updated pattern, then delete the old one.
+          // This changes the ID but preserves the list content.
+          const currentIsRegex = current.is_regex;
+          if (err && (err.status === 404 || err.status === 405 || err.status === 501)) {
+            this.http
+              .post('/addresses', { pattern: newPattern, is_regex: currentIsRegex })
+              .subscribe({
+                next: () => {
+                  this.http.delete(`/addresses/${id}`).subscribe({
+                    next: () => {
+                      this.savingEdit = false;
+                      this.load();
+                    },
+                    error: () => {
+                      this.savingEdit = false;
+                      this.load();
+                    },
+                  });
+                },
+                error: () => {
+                  // Revert on failure
+                  this.savingEdit = false;
+                  this.load();
+                },
+              });
+          } else {
+            // Revert on other failures (e.g., conflict)
+            this.savingEdit = false;
+            this.load();
+          }
         },
       });
   }

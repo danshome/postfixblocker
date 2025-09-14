@@ -258,3 +258,11 @@ The format is based on [Keep a Changelog], and this project adheres to
   - Replace truncated "de" text in Actions with a trash icon (inline SVG; no external icon font required).
   - Add inline editing: double-click a Pattern cell to edit in-place; press Enter or blur to save. Uses new backend update endpoint.
 - Backend API: Add `PUT /addresses/<id>` (also accepts `PATCH`) to update `pattern` and/or `is_regex`; returns 404 if not found and 409 on duplicate pattern.
+
+## 2025-09-14 17:55 UTC
+
+- Frontend: Fix inline edit double-submit (Enter + blur) causing duplicate rows by guarding and closing the editor before save.
+
+## 2025-09-14 18:05 UTC
+
+- Frontend: Improve inline editing UX — stop auto-selecting the entire email on edit so partial edits are easy. Input now focuses without selecting all text.
