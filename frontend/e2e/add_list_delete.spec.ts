@@ -15,26 +15,32 @@ test('add, list, and delete entries', async ({ page }) => {
   await page.goto('/');
 
   // Initially empty
-  await expect(page.locator('ul li')).toHaveCount(0);
+  await expect(page.locator('table')).toContainText('No data');
 
-  // Add a literal address
-  await page.getByPlaceholder('email or regex', { exact: true }).fill('e2e1@example.com');
+  // Add a literal address via paste box
+  await page.getByPlaceholder('paste emails or regex (one per line)').fill('e2e1@example.com');
   await page.getByRole('button', { name: 'Add', exact: true }).click();
-  await expect(page.locator('ul li')).toContainText(['e2e1@example.com']);
+  await expect(page.locator('table')).toContainText('e2e1@example.com');
 
-  // Add a regex entry
-  await page.getByPlaceholder('email or regex', { exact: true }).fill('.*@e2e.com');
-  await page.getByRole('checkbox', { name: 'Regex' }).first().check();
+  // Add a regex entry via paste box
+  await page.getByPlaceholder('paste emails or regex (one per line)').fill('.*@e2e.com');
+  await page.getByRole('checkbox', { name: 'Regex' }).check();
   await page.getByRole('button', { name: 'Add', exact: true }).click();
-  await expect(page.locator('ul li')).toContainText(['(regex)']);
+  const regexRow = page.locator('tr.mat-row', { hasText: '.*@e2e.com' });
+  await expect(regexRow).toContainText('Yes');
 
-  // Bulk add two addresses (one per line)
-  await page.getByPlaceholder('one email or regex per line').fill('bulk1@example.com\nbulk2@example.com');
-  await page.getByRole('button', { name: 'Add List' }).click();
-  await expect(page.locator('ul li')).toContainText(['bulk1@example.com', 'bulk2@example.com']);
+  // Bulk add two addresses (one per line) via paste box
+  await page.getByPlaceholder('paste emails or regex (one per line)').fill('bulk1@example.com\nbulk2@example.com');
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(page.locator('table')).toContainText(['bulk1@example.com', 'bulk2@example.com']);
 
-  // Delete the first entry
-  const first = page.locator('ul li', { hasText: 'e2e1@example.com' });
-  await first.getByRole('button', { name: 'Delete' }).click();
-  await expect(first).toHaveCount(0);
+  // Select two entries and delete selected
+  await page.locator('tr.mat-row', { hasText: 'bulk1@example.com' }).getByRole('checkbox').check();
+  await page.locator('tr.mat-row', { hasText: 'bulk2@example.com' }).getByRole('checkbox').check();
+  await page.getByRole('button', { name: 'Delete Selected' }).click();
+  await expect(page.locator('table')).not.toContainText(['bulk1@example.com', 'bulk2@example.com']);
+
+  // Delete all remaining
+  await page.getByRole('button', { name: 'Delete All' }).click();
+  await expect(page.locator('mat-list-item')).toHaveCount(0);
 });

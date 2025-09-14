@@ -1,4 +1,5 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { AppComponent } from './app.component';
 
@@ -10,7 +11,7 @@ describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       // Import standalone component and testing HttpClient
-      imports: [AppComponent, HttpClientTestingModule],
+      imports: [AppComponent, HttpClientTestingModule, NoopAnimationsModule],
     }).compileComponents();
     httpMock = TestBed.inject(HttpTestingController);
   });
@@ -35,7 +36,7 @@ describe('AppComponent', () => {
     expect(comp.entries[0].pattern).toBe('blocked@example.com');
   });
 
-  it('adds an entry then reloads and resets form', () => {
+  it('adds an entry (via paste box) then reloads and resets form', fakeAsync(() => {
     const fixture = TestBed.createComponent(AppComponent);
     const comp = fixture.componentInstance;
     fixture.detectChanges();
@@ -43,24 +44,26 @@ describe('AppComponent', () => {
     // Initial GET
     httpMock.expectOne('/addresses').flush([]);
 
-    comp.newPattern = 'new@example.com';
-    comp.isRegex = false;
-    comp.add();
+    comp.bulkText = 'new@example.com\n';
+    comp.bulkIsRegex = false;
+    comp.addBulk();
+    tick();
 
-    const post = httpMock.expectOne('/addresses');
+    const post = httpMock.expectOne(req => req.method === 'POST' && req.url === '/addresses');
     expect(post.request.method).toBe('POST');
     expect(post.request.body).toEqual({ pattern: 'new@example.com', is_regex: false });
     post.flush({ status: 'ok' }, { status: 201, statusText: 'Created' });
 
     // Reload after add
-    const reload = httpMock.expectOne('/addresses');
+    tick();
+    const reload = httpMock.expectOne(req => req.method === 'GET' && req.url === '/addresses');
     expect(reload.request.method).toBe('GET');
     reload.flush([{ id: 2, pattern: 'new@example.com', is_regex: false }]);
 
-    expect(comp.newPattern).toBe('');
-    expect(comp.isRegex).toBe(false);
+    expect(comp.bulkText).toBe('');
+    expect(comp.bulkIsRegex).toBe(false);
     expect(comp.entries.length).toBe(1);
-  });
+  }));
 
   it('removes an entry then reloads', () => {
     const fixture = TestBed.createComponent(AppComponent);
@@ -82,7 +85,7 @@ describe('AppComponent', () => {
     expect(comp.entries.length).toBe(0);
   });
 
-  it('adds bulk entries (two lines) and reloads', async () => {
+  it('adds multiple entries from paste box (two lines) and reloads', fakeAsync(() => {
     const fixture = TestBed.createComponent(AppComponent);
     const comp = fixture.componentInstance;
     fixture.detectChanges();
@@ -92,32 +95,61 @@ describe('AppComponent', () => {
 
     comp.bulkText = 'a1@example.com\n a2@example.com\n';
     comp.bulkIsRegex = false;
-    const promise = comp.addBulk();
+    comp.addBulk();
+    tick();
 
-    const post1 = httpMock.expectOne('/addresses');
+    const post1 = httpMock.expectOne(req => req.method === 'POST' && req.url === '/addresses');
     expect(post1.request.method).toBe('POST');
     expect(post1.request.body).toEqual({ pattern: 'a1@example.com', is_regex: false });
     post1.flush({ status: 'ok' }, { status: 201, statusText: 'Created' });
 
-    // Allow microtask turn for next HTTP to be enqueued
-    await Promise.resolve();
-    const post2 = httpMock.expectOne('/addresses');
+    tick();
+    const post2 = httpMock.expectOne(req => req.method === 'POST' && req.url === '/addresses');
     expect(post2.request.method).toBe('POST');
     expect(post2.request.body).toEqual({ pattern: 'a2@example.com', is_regex: false });
     post2.flush({ status: 'ok' }, { status: 201, statusText: 'Created' });
 
     // Reload after bulk
-    await Promise.resolve();
-    const reload = httpMock.expectOne('/addresses');
+    tick();
+    const reload = httpMock.expectOne(req => req.method === 'GET' && req.url === '/addresses');
     expect(reload.request.method).toBe('GET');
     reload.flush([
       { id: 1, pattern: 'a1@example.com', is_regex: false },
       { id: 2, pattern: 'a2@example.com', is_regex: false },
     ]);
-
-    await promise;
     expect(comp.bulkText).toBe('');
     expect(comp.bulkIsRegex).toBe(false);
     expect(comp.entries.length).toBe(2);
-  });
+  }));
+
+  it('deletes selected entries then reloads', fakeAsync(() => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const comp = fixture.componentInstance;
+    fixture.detectChanges();
+
+    // Initial GET with two entries
+    httpMock.expectOne('/addresses').flush([
+      { id: 10, pattern: 's1@example.com', is_regex: false },
+      { id: 11, pattern: 's2@example.com', is_regex: false },
+    ]);
+
+    // Select both and delete selected
+    comp.toggleSelect(10, true);
+    comp.toggleSelect(11, true);
+    comp.deleteSelected();
+    tick();
+
+    const del1 = httpMock.expectOne(req => req.method === 'DELETE' && req.url === '/addresses/10');
+    del1.flush({ status: 'deleted' });
+    tick();
+    const del2 = httpMock.expectOne(req => req.method === 'DELETE' && req.url === '/addresses/11');
+    del2.flush({ status: 'deleted' });
+
+    // Reload after deleteSelected
+    tick();
+    const reload = httpMock.expectOne('/addresses');
+    reload.flush([]);
+
+    expect(comp.selected.size).toBe(0);
+  }));
 });

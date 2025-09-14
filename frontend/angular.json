@@ -14,7 +14,11 @@
             "index": "src/index.html",
             "polyfills": ["zone.js"],
             "browser": "src/main.ts",
-            "tsConfig": "tsconfig.json"
+            "tsConfig": "tsconfig.json",
+            "styles": [
+              "src/styles.css",
+              "@angular/material/prebuilt-themes/indigo-pink.css"
+            ]
           }
         },
         "serve": {

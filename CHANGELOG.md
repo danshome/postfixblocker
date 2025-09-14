@@ -221,3 +221,40 @@ The format is based on [Keep a Changelog], and this project adheres to
 ## 2025-09-14 14:10 UTC
 
 - Frontend: Add bulk input support to UI. New textarea accepts one email/regex per line and an "Add List" action posts entries sequentially (duplicates/blank lines ignored). Unit and e2e tests updated.
+
+## 2025-09-14 14:20 UTC
+
+- Frontend: Simplify UI to a single paste box + Regex toggle and a single "Add" button. Removed the separate single-add input. Updated unit/e2e tests and selectors accordingly.
+
+## 2025-09-14 14:25 UTC
+
+- Frontend tests: Stabilize unit test timing for paste-box add by awaiting a microtask before asserting the first POST request.
+
+## 2025-09-14 14:32 UTC
+
+- Frontend: Add multi-select with per-item checkboxes, a "Select all" master checkbox, and buttons to "Delete Selected" and "Delete All". Deletions are processed sequentially and the list reloads afterward. Unit/e2e tests updated.
+
+## 2025-09-14 14:40 UTC
+
+- Frontend: Modernize UI with Angular Material (toolbar, cards, form field, checkboxes, buttons, list, icons, progress bar). Add Material theme and animations. Update e2e selectors for Material DOM.
+
+## 2025-09-14 14:50 UTC
+
+- Frontend: Improve selection UX — list items highlight when selected, clicking an item toggles selection, and click‑drag across items performs multi‑select/deselect. Added visual style for selected rows.
+
+## 2025-09-14 17:10 UTC
+
+- Frontend: Present block list emails in an Angular Material data table with sorting, pagination, and filtering:
+  - Add a quick client-side filter input above the table (current page only).
+  - Keep server-side sorting/pagination/filtering for scalability and integrate with `mat-sort` and `mat-paginator`.
+  - Show a `matNoDataRow` message when filters yield no results.
+- Frontend e2e: Update Playwright spec to target the Material table (rows, checkboxes) instead of the previous list view.
+
+## 2025-09-14 17:40 UTC
+
+- Frontend: Clean up block list table UI
+  - Remove duplicate header row and the Search/Sort-by/Direction controls; keep a single Filter box.
+  - Enable sorting by clicking table headers (Angular Material `mat-sort` retained).
+  - Replace truncated "de" text in Actions with a trash icon (inline SVG; no external icon font required).
+  - Add inline editing: double-click a Pattern cell to edit in-place; press Enter or blur to save. Uses new backend update endpoint.
+- Backend API: Add `PUT /addresses/<id>` (also accepts `PATCH`) to update `pattern` and/or `is_regex`; returns 404 if not found and 409 on duplicate pattern.
