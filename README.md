@@ -1,4 +1,110 @@
+<!-- Updated to best practices on 2025-09-14; preserves project-specific content. -->
 # Postfix Blocker
+
+<!-- BEGIN GENERATED: README:STANDARD_BLOCK -->
+
+[![CI Status][ci-badge]][ci-url] [![Coverage][codecov-badge]][codecov-url]
+
+This repository is part of {{ORG_NAME}} and the canonical project name is
+{{PROJECT_NAME}}. The primary language is {{PRIMARY_LANGUAGE}} and the minimum
+supported toolchain is {{MIN_SUPPORTED_VERSIONS}}.
+
+## At‑a‑Glance
+
+- Key features:
+  - API + background service to manage a Postfix recipient blocklist.
+  - Supports PostgreSQL and IBM DB2 11.5 via SQLAlchemy.
+  - Angular web UI for CRUD operations over `/addresses`.
+  - Docker Compose for local development and E2E testing.
+
+## Quickstart
+
+Prerequisites: {{MIN_SUPPORTED_VERSIONS}}
+
+```bash
+{{BUILD_CMD}}
+{{TEST_CMD}}
+{{RUN_CMD}}
+```
+
+Example for this repository:
+
+```bash
+# Build + start services
+docker compose up --build -d
+
+# Run tests
+pytest -q
+
+# Tail API logs
+docker compose logs -f postfix
+```
+
+## Contents
+
+- [Quickstart](#quickstart)
+- [Usage Examples](#usage-examples)
+- [Project Structure](#project-structure)
+- [Docs & Guides](#docs--guides)
+- [License](#license)
+
+## Usage Examples
+
+List addresses via API:
+
+```bash
+curl -s http://localhost:5001/addresses | jq .
+```
+
+Add and delete an address:
+
+```bash
+curl -X POST http://localhost:5001/addresses \
+  -H 'Content-Type: application/json' \
+  -d '{"pattern":"user@example.com","is_regex":false}'
+
+curl -X DELETE http://localhost:5001/addresses/1
+```
+
+## Project Structure
+
+```text
+app/            # Flask API and blocker service
+frontend/       # Angular web UI
+docker/         # Container configuration
+tests/          # Unit, backend, and E2E tests
+```
+
+## Docs & Guides
+
+- [CONTRIBUTING](CONTRIBUTING.md)
+- [CODE OF CONDUCT](CODE_OF_CONDUCT.md)
+- [SECURITY](SECURITY.md)
+- [CHANGELOG](CHANGELOG.md)
+- [ROADMAP](ROADMAP.md)
+- [ARCHITECTURE](ARCHITECTURE.md)
+- [TESTING](TESTING.md)
+- [SUPPORT](SUPPORT.md)
+- [FAQ](FAQ.md)
+
+## License
+
+SPDX-License-Identifier: MIT. See [LICENSE](LICENSE) for details.
+
+[ci-badge]: {{CI_STATUS_BADGE_URL}}
+[ci-url]: {{CI_STATUS_BADGE_URL}}
+[codecov-badge]: {{CODECOV_BADGE_URL}}
+[codecov-url]: {{CODECOV_BADGE_URL}}
+
+<!-- END GENERATED: README:STANDARD_BLOCK -->
+
+<!--
+Git hygiene (maintainers):
+Suggested commit message for this sweep:
+  docs: create/update repo standard docs (README, CONTRIBUTING, SECURITY, etc.)
+
+If LICENSE changes are required, open a separate PR explaining rationale.
+-->
 
 This project provides a Python service and Angular web UI for managing a block
 list of email recipients for Postfix. Blocked addresses are stored in a

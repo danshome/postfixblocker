@@ -1,3 +1,27 @@
+<!-- Updated to best practices on 2025-09-14; Keep a Changelog header added. -->
+# Changelog
+
+<!-- BEGIN GENERATED: CHANGELOG:HEADER -->
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog], and this project adheres to
+[Semantic Versioning].
+
+## [Unreleased]
+### Added
+- TODO: Add new features here.
+
+### Changed
+- TODO: Document changes here.
+
+### Fixed
+- TODO: List fixes here.
+
+[Keep a Changelog]: https://keepachangelog.com/en/1.1.0/
+[Semantic Versioning]: https://semver.org/spec/v2.0.0.html
+
+<!-- END GENERATED: CHANGELOG:HEADER -->
+
 ## 2025-09-13 00:00 UTC
 
 - Add IBM DB2 11.5 Docker service in `docker-compose.yml`.

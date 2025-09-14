@@ -1,3 +1,4 @@
+<!-- Updated to best practices on 2025-09-14; appended generated agent docs while preserving maintainer instructions. -->
 # AGENTS
 
 This repository contains a Python service and Angular web UI for managing a
@@ -39,3 +40,34 @@ Every time you make changes that affect the frontend, follow this exact sequence
 - `npm run e2e`
 
 Do not skip these steps. If any step fails, fix the issues before proceeding. After applying fixes, repeat the checklist to verify.
+
+<!-- BEGIN GENERATED: AGENTS:INVENTORY -->
+
+## Automation & Agent Inventory (Supplemental)
+
+This section documents the automation/agents used around the project to aid
+maintainers and contributors. It does not change the development instructions
+above.
+
+| Name         | Role                    | Inputs              | Outputs             | Triggers            | Dependencies |
+|--------------|-------------------------|---------------------|---------------------|---------------------|--------------|
+| codex-cli    | Coding assistant (you)  | Repo + prompts      | Patches, suggestions| Manual (developer)  | Docker, pytest|
+
+### Interface Contracts
+
+```json
+{
+  "agent": "codex-cli",
+  "input": {"task": "string", "context": "files+env"},
+  "output": {"patches": ["git-diff"], "notes": "string"}
+}
+```
+
+### Observability & Runbooks
+
+- Logs: Console in the CLI session
+- Metrics/Tracing: N/A
+- Failure modes: Sandbox limits, network restrictions, missing dependencies
+- Runbook: Re-run with adjusted permissions; consult `AGENTS.md` instructions
+
+<!-- END GENERATED: AGENTS:INVENTORY -->
