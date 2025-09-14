@@ -147,8 +147,14 @@ service. Two Postfix services are available:
 Note: The Docker image for `postfix` installs only the base Python
 dependencies (no DB2 client). The heavier DB2 client packages are installed
 only in the `postfix_db2` image to keep builds fast and compatible across
-architectures (e.g., Apple Silicon). The compose file pins services to
-`linux/amd64` for reliable DB2 support.
+architectures (e.g., Apple Silicon). Images are now based on Rocky Linux 9
+to align with RHEL 9.5. The compose file pins services to `linux/amd64` for
+reliable DB2 support.
+
+Base image choice
+- We use `rockylinux/rockylinux:9` (OSS‑sponsored, upstream‑maintained) rather
+  than the deprecated `rockylinux:9` library image to ensure timely updates and
+  security fixes.
 
 ### Database backends
 
@@ -164,6 +170,9 @@ architectures (e.g., Apple Silicon). The compose file pins services to
     - `db2+ibm_db://db2inst1:blockerpass@localhost:50000/BLOCKER`
   - Note: DB2 container typically requires several GB of RAM and runs in
     privileged mode in the sample compose for simplicity in dev.
+  - Architecture note: DB2 Python drivers are installed only on x86_64. On
+    arm64 (e.g., Apple Silicon) local builds may skip driver install and DB2
+    tests will be skipped.
 
 Switching the Postfix service to DB2:
 
@@ -259,6 +268,12 @@ cd frontend && npm run e2e
 Notes:
 - Both devcontainers forward `4200`.
 - The dev server proxies `/addresses` to the host API (default `http://localhost:5001`). Ensure `docker compose up` is running.
+
+PCRE map support
+- PCRE map support is required to enforce regex rules. On RHEL/Rocky 9 it may
+  be provided by the `postfix-pcre` subpackage; the image enables CRB and
+  installs `postfix-pcre`, then asserts availability by checking that
+  `postconf -m` contains `pcre` during build.
 
 ## End-to-end demo
 

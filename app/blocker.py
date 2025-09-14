@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+import subprocess
 from typing import List, Optional
 from dataclasses import dataclass
 
@@ -168,6 +169,25 @@ def reload_postfix() -> None:
         logging.error("Failed to reload postfix: %s", exc)
 
 
+# One-time capability check flags
+_PCRE_CHECKED = False
+_PCRE_AVAILABLE = False
+_PCRE_REGEX_WARNED = False
+
+
+def _has_postfix_pcre() -> bool:
+    """Return True if Postfix supports PCRE maps ("pcre" listed in postconf -m)."""
+    try:
+        res = subprocess.run(["postconf", "-m"], capture_output=True, text=True, check=True)
+        return "pcre" in res.stdout.lower()
+    except FileNotFoundError:
+        logging.error("'postconf' not found; cannot verify Postfix PCRE support.")
+        return False
+    except Exception as exc:  # pragma: no cover - environment dependent
+        logging.warning("Could not verify Postfix PCRE support via 'postconf -m': %s", exc)
+        return False
+
+
 def monitor_loop() -> None:
     engine = get_engine()
     # Be resilient to slow DB startup (e.g., DB2 taking minutes). Keep the
@@ -183,10 +203,33 @@ def monitor_loop() -> None:
         except Exception as exc:  # pragma: no cover - depends on external DB readiness
             logging.warning("DB init failed: %s; retrying in %ss", exc, CHECK_INTERVAL)
         time.sleep(CHECK_INTERVAL)
+
+    # One-time PCRE capability check (log explicit error once on startup)
+    global _PCRE_CHECKED, _PCRE_AVAILABLE
+    if not _PCRE_CHECKED:
+        _PCRE_AVAILABLE = _has_postfix_pcre()
+        _PCRE_CHECKED = True
+        if not _PCRE_AVAILABLE:
+            logging.error(
+                "Postfix PCRE support not detected (no 'pcre' in 'postconf -m'). "
+                "Regex rules will not be enforced and 'postfix reload' may fail "
+                "if main.cf references a PCRE map. Ensure Postfix PCRE support is enabled."
+            )
     last_hash = None
     while True:
         try:
             entries = fetch_entries(engine)
+            # Warn once if regex entries exist but PCRE is unavailable
+            global _PCRE_REGEX_WARNED
+            if (not _PCRE_AVAILABLE) and (not _PCRE_REGEX_WARNED):
+                regex_count = sum(1 for e in entries if e.is_regex)
+                if regex_count:
+                    logging.warning(
+                        "%d regex entries present but Postfix PCRE support is missing; "
+                        "regex rules will NOT be enforced.",
+                        regex_count,
+                    )
+                    _PCRE_REGEX_WARNED = True
             current_hash = hash(tuple((e.pattern, e.is_regex) for e in entries))
             if current_hash != last_hash:
                 write_map_files(entries)

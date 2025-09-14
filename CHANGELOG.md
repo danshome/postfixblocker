@@ -186,3 +186,34 @@ The format is based on [Keep a Changelog], and this project adheres to
 ## 2025-09-14 13:05 UTC
 
 - Tests: Add `tests/conftest.py` to optionally run `docker compose down` and `docker compose up --build -d` before tests. Enabled automatically when backend/e2e tests are collected, or force with `PYTEST_COMPOSE_ALWAYS=1` or `--compose-rebuild`.
+
+## 2025-09-14 13:20 UTC
+
+- Docs: Add production (RHEL 9.5, no Docker) deployment instructions for `app/blocker.py` and `app/api.py` to `INSTALL.md`, including systemd units, SELinux notes, and Postfix integration.
+
+## 2025-09-14 13:30 UTC
+
+- Docker: Rebase `docker/postfix/Dockerfile` to CentOS Stream 9 (RHEL 9 family). Switch to `dnf`, install `postfix`, `rsyslog`, `supervisor`, and `python3`. Keep optional DB2 deps via `ENABLE_DB2` with `pip3`. Aligns local dev env with RHEL 9.5.
+
+## 2025-09-14 13:35 UTC
+
+- Docker: Flip base to Rocky Linux 9 for closer parity with RHEL 9.5. Update README accordingly.
+
+## 2025-09-14 13:38 UTC
+
+- Docker: Enforce PCRE map support in images by asserting `postconf -m` lists `pcre` (built-in on RHEL/Rocky 9). Update README/INSTALL with PCRE requirement and behavior notes.
+
+## 2025-09-14 13:45 UTC
+
+- Blocker: Add runtime guard in `app/blocker.py` to preflight `postconf -m` and log a clear error once on startup when PCRE support is missing.
+
+## 2025-09-14 13:48 UTC
+
+- Blocker: Emit a warning when regex entries exist but Postfix PCRE support is missing, including the count of regex rules that will not be enforced.
+## 2025-09-14 13:52 UTC
+
+- Docker: Switch base image reference to `rockylinux/rockylinux:9` (OSS‑sponsored upstream image) instead of the legacy `rockylinux:9` library image. README notes the rationale.
+
+## 2025-09-14 13:58 UTC
+
+- Docker: Skip installing DB2 Python drivers on non‑x86_64 architectures (e.g., arm64) to avoid build failures; log the skip. README clarifies DB2 support is x86_64 for local builds; tests will skip accordingly on other arches.

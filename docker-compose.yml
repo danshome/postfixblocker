@@ -18,7 +18,6 @@ services:
       dockerfile: docker/postfix/Dockerfile
       args:
         ENABLE_DB2: "0"
-    platform: linux/amd64
     ports:
       - "1025:25"
       - "5001:5000"
