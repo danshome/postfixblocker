@@ -60,3 +60,30 @@
 ## 2025-09-14 09:45 UTC
 
 - DevContainer status check: Add `.devcontainer/scripts/wait-for-port.sh` and update root DevContainer to wait for `http://localhost:4200` before marking the container ready.
+
+## 2025-09-14 10:05 UTC
+
+- Frontend: Upgrade Angular packages to `^20.0.0` and switch the CLI builder to `@angular-devkit/build-angular:application`.
+- Frontend: Update `rxjs` to `^7.8.x` (Angular 20 peer range) and `zone.js` to `^0.15.0`.
+- Tooling: Bump `@angular/cli` to `^20.0.0` and `typescript` to `^5.6.0`.
+
+## 2025-09-14 10:20 UTC
+
+- Unit tests: Switch to Karma + Jasmine for Angular 20 to resolve Jest preset incompatibilities; add `karma.conf.js` and `src/test.ts`, configure `angular.json:test` target.
+- Dependencies: Remove Jest-related dev deps; add Karma/Jasmine dev deps and `@angular-devkit/build-angular`.
+
+## 2025-09-14 10:35 UTC
+
+- Docs: Update `AGENTS.md` with a Codex AI agent frontend-change checklist including clean install, unit tests, and e2e steps.
+
+## 2025-09-14 10:58 UTC
+
+- Repo hygiene: Add `.angular/` to `.gitignore` to avoid committing Angular workspace cache/config artifacts.
+
+## 2025-09-14 11:02 UTC
+
+- Repo hygiene: Re-add `.angular/` to `.gitignore` after accidental overwrite.
+
+## 2025-09-14 11:08 UTC
+
+- Repo hygiene: Update root `.gitignore` to ignore `frontend/.angular/` explicitly (Angular workspace cache inside the frontend app).

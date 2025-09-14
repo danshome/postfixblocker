@@ -88,14 +88,14 @@ Markers to scope runs:
 - Backend (requires Docker DBs): `pytest -m backend`
 - E2E (requires full stack): `pytest -m e2e`
 
-### Frontend testing
+### Frontend testing (Angular 20)
 
-Angular UI unit tests (Jest):
+Angular UI unit tests (Karma + Jasmine):
 
 ```
 cd frontend
 npm install
-npm test
+npm test  # runs ng test
 ```
 
 Angular UI e2e tests (Playwright):
