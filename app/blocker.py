@@ -170,7 +170,19 @@ def reload_postfix() -> None:
 
 def monitor_loop() -> None:
     engine = get_engine()
-    init_db(engine)
+    # Be resilient to slow DB startup (e.g., DB2 taking minutes). Keep the
+    # process alive and retry schema initialization instead of exiting so
+    # supervisord doesn't thrash the process with rapid restarts.
+    while True:
+        try:
+            init_db(engine)
+            logging.info("Database schema ready.")
+            break
+        except OperationalError as exc:
+            logging.warning("DB init not ready: %s; retrying in %ss", exc, CHECK_INTERVAL)
+        except Exception as exc:  # pragma: no cover - depends on external DB readiness
+            logging.warning("DB init failed: %s; retrying in %ss", exc, CHECK_INTERVAL)
+        time.sleep(CHECK_INTERVAL)
     last_hash = None
     while True:
         try:
@@ -182,6 +194,8 @@ def monitor_loop() -> None:
                 last_hash = current_hash
         except OperationalError as exc:
             logging.error("Database error: %s", exc)
+        except Exception as exc:  # pragma: no cover - transient external failures
+            logging.error("Unexpected error: %s", exc)
         time.sleep(CHECK_INTERVAL)
 
 

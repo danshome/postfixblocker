@@ -150,3 +150,15 @@
 ## 2025-09-14 12:30 UTC
 
 - Frontend e2e typings: Remove per-project `webServer` and per-project `env` to satisfy Playwright 1.48 type definitions. Use a single top-level `webServer` (`start:matrix`) and per-project `baseURL` only. Tests reset state via the dev-server proxy.
+
+## 2025-09-14 12:45 UTC
+
+- API: Deduplicate repeated string literals in `app/api.py` by introducing constants for route paths, JSON keys, and status/error messages. This reduces refactor risk and silences the linter warning about duplicated strings.
+
+## 2025-09-14 12:55 UTC
+
+- Blocker resilience: Make `app/blocker.py` retry `init_db` with backoff until the database is ready (particularly for DB2, which can take minutes). Prevents rapid supervisor restarts and unblocks e2e DB2 runs.
+
+## 2025-09-14 13:05 UTC
+
+- Tests: Add `tests/conftest.py` to optionally run `docker compose down` and `docker compose up --build -d` before tests. Enabled automatically when backend/e2e tests are collected, or force with `PYTEST_COMPOSE_ALWAYS=1` or `--compose-rebuild`.
