@@ -1,14 +1,12 @@
-import { test, expect, request as pwRequest } from '@playwright/test';
-
-const API_BASE = process.env.API_BASE || 'http://localhost:5001';
+import { test, expect } from '@playwright/test';
 
 test.beforeEach(async ({ request }) => {
-  // Reset backend state to ensure deterministic UI tests
-  const resp = await request.get(`${API_BASE}/addresses`);
+  // Reset backend state via the dev-server proxy for the current project
+  const resp = await request.get('/addresses');
   if (resp.ok()) {
     const items = await resp.json();
     for (const it of items as any[]) {
-      await request.delete(`${API_BASE}/addresses/${it.id}`);
+      await request.delete(`/addresses/${it.id}`);
     }
   }
 });
@@ -35,4 +33,3 @@ test('add, list, and delete entries', async ({ page }) => {
   await first.getByRole('button', { name: 'Delete' }).click();
   await expect(first).toHaveCount(0);
 });
-

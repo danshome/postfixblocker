@@ -5,21 +5,23 @@ export default defineConfig({
   timeout: 60_000,
   expect: { timeout: 5_000 },
   retries: 0,
-  use: {
-    baseURL: 'http://localhost:4200',
-    headless: true,
-  },
+  workers: 1,
   webServer: {
-    command: 'npm run start -- --proxy-config proxy.conf.json',
-    port: 4200,
-    timeout: 120_000,
+    command: 'npm run start:matrix',
+    url: 'http://127.0.0.1:4201',
+    timeout: 300_000,
     reuseExistingServer: true,
   },
   projects: [
+    // Postgres-backed UI
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'pg-chromium',
+      use: { ...devices['Desktop Chrome'], baseURL: 'http://127.0.0.1:4200' },
+    },
+    // DB2-backed UI on a different port to avoid collision
+    {
+      name: 'db2-chromium',
+      use: { ...devices['Desktop Chrome'], baseURL: 'http://127.0.0.1:4201' },
     },
   ],
 });
-

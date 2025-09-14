@@ -8,6 +8,9 @@ import {
 // Initialize the Angular testing environment.
 getTestBed().initTestEnvironment(
   BrowserDynamicTestingModule,
-  platformBrowserDynamicTesting(),
+platformBrowserDynamicTesting(),
 );
 
+// Prevent Karma from reporting a full page reload if something triggers beforeunload
+// during the test lifecycle (e.g., devserver or plugin quirks).
+(window as any).onbeforeunload = null;

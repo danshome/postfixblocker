@@ -107,12 +107,23 @@ Run with Playwright starting the dev server and proxying API calls to the Flask 
 
 ```
 cd frontend
-npm run e2e
+npm run e2e  # runs both Postgres and DB2 matrix sequentially (starts dev servers on 4200 then 4201)
 ```
 
 Notes:
-- The dev server proxies `/addresses` to `http://localhost:5001` using `frontend/proxy.conf.json`.
-- To target the DB2-backed API on port `5002`, change `target` in `proxy.conf.json` accordingly.
+- Default Postgres API: `ng serve` uses `frontend/proxy.conf.json` to proxy `/addresses` to `http://localhost:5001`.
+- DB2 API: use `npm run start:db2` which uses `frontend/proxy.db2.json` to proxy to `http://localhost:5002`.
+- DB2 container can take a few minutes to initialize. If you see proxy ECONNRESET errors, wait until `curl http://localhost:5002/addresses` returns `[]` and refresh.
+ - Ensure ports `4200` and `4201` are free before running the matrix.
+
+Run e2e against DB2 only (optional):
+
+```
+cd frontend
+npm run e2e:db2
+```
+
+This runs only the DB2 Playwright project. The test runner starts both dev servers via the matrix web server, then targets the DB2 UI (port 4201) and API (port 5002).
 
 ### Frontend DevContainers
 

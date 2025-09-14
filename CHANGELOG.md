@@ -100,3 +100,53 @@
 
 - Frontend: Remove deprecated `defaultProject` from `frontend/angular.json` to silence Angular CLI workspace warning.
 - Frontend: Set `target: ES2022` and `useDefineForClassFields: false` in `frontend/tsconfig.json` to match Angular CLI defaults and remove the TS warning.
+
+## 2025-09-14 11:26 UTC
+
+- Frontend tests: Eliminate noisy "Some of your tests did a full page reload!" by running Karma in non-watch mode and simplifying reporters.
+  - `frontend/package.json`: `npm test` now runs `ng test --watch=false`.
+  - `frontend/karma.conf.js`: remove HTML reporter and set `autoWatch: false`.
+  - `frontend/src/test.ts`: guard against beforeunload noise.
+
+## 2025-09-14 11:30 UTC
+
+- Frontend e2e: Fix Playwright webServer startup by updating Angular dev-server config to use `buildTarget` instead of deprecated `browserTarget` in `frontend/angular.json`.
+
+## 2025-09-14 11:34 UTC
+
+- Frontend build: Update Angular 20 application builder config to use `browser: "src/main.ts"` instead of deprecated `main`. Remove unused `polyfills` in build options. This resolves dev-server schema validation errors when starting Playwright's webServer.
+
+## 2025-09-14 11:40 UTC
+
+- Frontend e2e: Ensure API proxy is active during `ng serve` by adding `proxyConfig: "proxy.conf.json"` to the `serve` target in `frontend/angular.json`. This fixes 404s for `/addresses` during Playwright runs.
+
+## 2025-09-14 11:48 UTC
+
+- API resilience: Make `app/api.py` lazily initialize the database and return 503 `{"error": "database not ready"}` when the backend is unavailable (e.g., DB2 startup). This prevents the API process from crashing so the dev proxy no longer shows ECONNRESET and the UI can stay responsive.
+
+## 2025-09-14 11:55 UTC
+
+- Frontend e2e (DB2): Add `frontend/playwright.db2.config.ts` and npm scripts `e2e:db2` and `e2e:db2:ui` to run the e2e suite against the DB2-backed API via `npm run start:db2`.
+
+## 2025-09-14 12:05 UTC
+
+- Frontend e2e matrix: Update `frontend/playwright.config.ts` to run a two-project matrix:
+  - `pg-chromium` using `npm run start` on port 4200 (Postgres API).
+  - `db2-chromium` using `npm run start:db2 -- --port 4201` on port 4201 (DB2 API).
+  - E2E spec resets state via proxied `/addresses` so no per-project env is needed.
+
+## 2025-09-14 12:10 UTC
+
+- Frontend e2e: Avoid IPv6 localhost issues by setting Playwright project `baseURL` and `webServer.url` to `http://127.0.0.1` for both PG and DB2 projects to prevent ECONNREFUSED(::1) during readiness checks and API resets.
+
+## 2025-09-14 12:15 UTC
+
+- Frontend e2e: Move Playwright `webServer` to a top-level array launching both `ng serve` instances (4200 for PG, 4201 for DB2) so tests reliably wait for servers before running per-project specs.
+
+## 2025-09-14 12:25 UTC
+
+- Frontend e2e cleanup: Remove redundant `frontend/playwright.db2.config.ts`. Update npm scripts `e2e:db2` and `e2e:db2:ui` to use `--project db2-chromium` within the unified matrix config.
+
+## 2025-09-14 12:30 UTC
+
+- Frontend e2e typings: Remove per-project `webServer` and per-project `env` to satisfy Playwright 1.48 type definitions. Use a single top-level `webServer` (`start:matrix`) and per-project `baseURL` only. Tests reset state via the dev-server proxy.

@@ -23,19 +23,33 @@ export class AppComponent implements OnInit {
   }
 
   load(): void {
-    this.http.get<Entry[]>('/addresses').subscribe(data => this.entries = data);
+    this.http.get<Entry[]>('/addresses').subscribe({
+      next: data => (this.entries = data),
+      error: () => (this.entries = []),
+    });
   }
 
   add(): void {
-    this.http.post('/addresses', { pattern: this.newPattern, is_regex: this.isRegex })
-      .subscribe(() => {
-        this.newPattern = '';
-        this.isRegex = false;
-        this.load();
+    this.http
+      .post('/addresses', {
+        pattern: this.newPattern,
+        is_regex: this.isRegex,
+      })
+      .subscribe({
+        next: () => {
+          this.newPattern = '';
+          this.isRegex = false;
+          this.load();
+        },
+        error: () => {
+          // Keep form values so user can retry when backend becomes available
+        },
       });
   }
 
   remove(id: number): void {
-    this.http.delete(`/addresses/${id}`).subscribe(() => this.load());
+    this.http
+      .delete(`/addresses/${id}`)
+      .subscribe({ next: () => this.load(), error: () => {} });
   }
 }
