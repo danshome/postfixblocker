@@ -18,15 +18,20 @@ test('add, list, and delete entries', async ({ page }) => {
   await expect(page.locator('ul li')).toHaveCount(0);
 
   // Add a literal address
-  await page.getByPlaceholder('email or regex').fill('e2e1@example.com');
-  await page.getByRole('button', { name: 'Add' }).click();
+  await page.getByPlaceholder('email or regex', { exact: true }).fill('e2e1@example.com');
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
   await expect(page.locator('ul li')).toContainText(['e2e1@example.com']);
 
   // Add a regex entry
-  await page.getByPlaceholder('email or regex').fill('.*@e2e.com');
-  await page.getByLabel('Regex').check();
-  await page.getByRole('button', { name: 'Add' }).click();
+  await page.getByPlaceholder('email or regex', { exact: true }).fill('.*@e2e.com');
+  await page.getByRole('checkbox', { name: 'Regex' }).first().check();
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
   await expect(page.locator('ul li')).toContainText(['(regex)']);
+
+  // Bulk add two addresses (one per line)
+  await page.getByPlaceholder('one email or regex per line').fill('bulk1@example.com\nbulk2@example.com');
+  await page.getByRole('button', { name: 'Add List' }).click();
+  await expect(page.locator('ul li')).toContainText(['bulk1@example.com', 'bulk2@example.com']);
 
   // Delete the first entry
   const first = page.locator('ul li', { hasText: 'e2e1@example.com' });

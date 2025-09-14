@@ -5,6 +5,16 @@
 </label>
 <button (click)="add()">Add</button>
 
+<h3>Bulk add</h3>
+<textarea [(ngModel)]="bulkText" rows="6" cols="60" placeholder="one email or regex per line"></textarea>
+<div>
+  <label>
+    <input type="checkbox" [(ngModel)]="bulkIsRegex"> Regex
+  </label>
+  <button (click)="addBulk()">Add List</button>
+  <small>Duplicates and blank lines are ignored.</small>
+  </div>
+
 <ul>
   <li *ngFor="let e of entries">
     {{e.pattern}} <span *ngIf="e.is_regex">(regex)</span>

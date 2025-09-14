@@ -217,3 +217,7 @@ The format is based on [Keep a Changelog], and this project adheres to
 ## 2025-09-14 13:58 UTC
 
 - Docker: Skip installing DB2 Python drivers on non‑x86_64 architectures (e.g., arm64) to avoid build failures; log the skip. README clarifies DB2 support is x86_64 for local builds; tests will skip accordingly on other arches.
+
+## 2025-09-14 14:10 UTC
+
+- Frontend: Add bulk input support to UI. New textarea accepts one email/regex per line and an "Add List" action posts entries sequentially (duplicates/blank lines ignored). Unit and e2e tests updated.

@@ -81,4 +81,43 @@ describe('AppComponent', () => {
     reload.flush([]);
     expect(comp.entries.length).toBe(0);
   });
+
+  it('adds bulk entries (two lines) and reloads', async () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const comp = fixture.componentInstance;
+    fixture.detectChanges();
+
+    // Initial GET
+    httpMock.expectOne('/addresses').flush([]);
+
+    comp.bulkText = 'a1@example.com\n a2@example.com\n';
+    comp.bulkIsRegex = false;
+    const promise = comp.addBulk();
+
+    const post1 = httpMock.expectOne('/addresses');
+    expect(post1.request.method).toBe('POST');
+    expect(post1.request.body).toEqual({ pattern: 'a1@example.com', is_regex: false });
+    post1.flush({ status: 'ok' }, { status: 201, statusText: 'Created' });
+
+    // Allow microtask turn for next HTTP to be enqueued
+    await Promise.resolve();
+    const post2 = httpMock.expectOne('/addresses');
+    expect(post2.request.method).toBe('POST');
+    expect(post2.request.body).toEqual({ pattern: 'a2@example.com', is_regex: false });
+    post2.flush({ status: 'ok' }, { status: 201, statusText: 'Created' });
+
+    // Reload after bulk
+    await Promise.resolve();
+    const reload = httpMock.expectOne('/addresses');
+    expect(reload.request.method).toBe('GET');
+    reload.flush([
+      { id: 1, pattern: 'a1@example.com', is_regex: false },
+      { id: 2, pattern: 'a2@example.com', is_regex: false },
+    ]);
+
+    await promise;
+    expect(comp.bulkText).toBe('');
+    expect(comp.bulkIsRegex).toBe(false);
+    expect(comp.entries.length).toBe(2);
+  });
 });
