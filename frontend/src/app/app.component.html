@@ -1,6 +1,11 @@
 <mat-toolbar color="primary">Postfix Blocker</mat-toolbar>
 
 <main class="container">
+  <!-- Backend status banner -->
+  <div *ngIf="backendNotReady || backendUnreachable" class="notice" [class.warn]="backendNotReady" [class.error]="backendUnreachable">
+    <ng-container *ngIf="backendNotReady">Backend is starting up (database not ready). Please wait and try again.</ng-container>
+    <ng-container *ngIf="backendUnreachable">Cannot reach backend API. Ensure services are running.</ng-container>
+  </div>
   <mat-card>
     <mat-card-title>Add Addresses</mat-card-title>
     <mat-card-content>
@@ -29,6 +34,12 @@
       </div>
       <div class="list-actions">
         <mat-checkbox (change)="toggleSelectAll($event.checked)">Select all</mat-checkbox>
+        <button mat-stroked-button color="primary" (click)="setSelectedMode(true)" [disabled]="selected.size === 0 || busy">Selected → Test</button>
+        <button mat-stroked-button color="accent" (click)="setSelectedMode(false)" [disabled]="selected.size === 0 || busy">Selected → Enforce</button>
+        <span style="flex:1 1 auto;"></span>
+        <button mat-button (click)="setAllMode(true)" [disabled]="entries.length === 0 || busy">All → Test</button>
+        <button mat-button (click)="setAllMode(false)" [disabled]="entries.length === 0 || busy">All → Enforce</button>
+        <span style="flex:1 1 auto;"></span>
         <button mat-stroked-button color="warn" (click)="deleteSelected()" [disabled]="selected.size === 0 || busy">Delete Selected</button>
         <button mat-raised-button color="warn" (click)="deleteAll()" [disabled]="entries.length === 0 || busy">Delete All</button>
       </div>
@@ -69,6 +80,18 @@
           <td mat-cell *matCellDef="let e">{{e.is_regex ? 'Yes' : 'No'}}</td>
         </ng-container>
 
+        <!-- Mode Column -->
+        <ng-container matColumnDef="mode">
+          <th mat-header-cell *matHeaderCellDef>Mode</th>
+          <td mat-cell *matCellDef="let e">
+            <button mat-stroked-button
+                    [color]="(e.test_mode ?? true) ? 'primary' : 'accent'"
+                    (click)="toggleTestMode(e)">
+              {{ (e.test_mode ?? true) ? 'Test' : 'Enforce' }}
+            </button>
+          </td>
+        </ng-container>
+
         <!-- Updated Column -->
         <ng-container matColumnDef="updated_at">
           <th mat-header-cell *matHeaderCellDef mat-sort-header="updated_at">Updated</th>
@@ -89,10 +112,10 @@
         </ng-container>
 
         <!-- Header row -->
-        <tr mat-header-row *matHeaderRowDef="['id','pattern','is_regex','updated_at','actions']"></tr>
+        <tr mat-header-row *matHeaderRowDef="['id','pattern','is_regex','mode','updated_at','actions']"></tr>
 
         <!-- Data rows -->
-        <tr mat-row *matRowDef="let row; columns: ['id','pattern','is_regex','updated_at','actions'];"
+        <tr mat-row *matRowDef="let row; columns: ['id','pattern','is_regex','mode','updated_at','actions'];"
             [class.selected]="isSelected(row.id)"
             (mousedown)="onItemMouseDown(row.id, $event)"
             (mouseenter)="onItemMouseEnter(row.id)"
@@ -100,7 +123,7 @@
 
         <!-- Row shown when there is no matching data (for quick filter) -->
         <tr class="mat-row" *matNoDataRow>
-          <td class="mat-cell" colspan="5">No data matching the filter "{{localFilterInput.value}}"</td>
+          <td class="mat-cell" colspan="6">No data matching the filter "{{localFilterInput.value}}"</td>
         </tr>
       </table>
       <mat-paginator [length]="total" [pageIndex]="pageIndex" [pageSize]="pageSize"

@@ -9,8 +9,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
-import { MatListModule } from '@angular/material/list';
-import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
@@ -18,7 +16,7 @@ import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatDividerModule } from '@angular/material/divider';
 import { HostListener } from '@angular/core';
 
-interface Entry { id: number; pattern: string; is_regex: boolean; }
+interface Entry { id: number; pattern: string; is_regex: boolean; test_mode?: boolean; }
 
 @Component({
   selector: 'app-root',
@@ -32,8 +30,6 @@ interface Entry { id: number; pattern: string; is_regex: boolean; }
     MatInputModule,
     MatCheckboxModule,
     MatButtonModule,
-    MatListModule,
-    MatIconModule,
     MatProgressBarModule,
     MatDividerModule,
     MatPaginatorModule,
@@ -53,6 +49,9 @@ export class AppComponent implements OnInit {
   private dragActive = false;
   private dragMode: 'select' | 'deselect' = 'select';
   private suppressClick = false;
+  // Backend status banner flags
+  backendNotReady = false;     // API reachable but DB not ready (503)
+  backendUnreachable = false;  // Network/connection error
 
   // Inline edit state for the pattern column
   editingId: number | null = null;
@@ -69,6 +68,9 @@ export class AppComponent implements OnInit {
   // Quick, client-side filter (applies to the current page only)
   localFilter = '';
 
+  // Default test mode for new entries
+  defaultTestMode = true;
+
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
@@ -84,6 +86,9 @@ export class AppComponent implements OnInit {
     };
     this.http.get<any>('/addresses', { params }).subscribe({
       next: resp => {
+        // Clear banners on successful load
+        this.backendNotReady = false;
+        this.backendUnreachable = false;
         if (Array.isArray(resp)) {
           // Fallback to legacy response
           this.entries = resp as Entry[];
@@ -94,7 +99,8 @@ export class AppComponent implements OnInit {
         }
         this.recomputeFilteredEntries();
       },
-      error: () => {
+      error: (err) => {
+        this.setBackendStatusFromError(err);
         this.entries = [];
         this.total = 0;
         this.recomputeFilteredEntries();
@@ -149,10 +155,11 @@ export class AppComponent implements OnInit {
       for (const p of patterns) {
         try {
           await firstValueFrom(
-            this.http.post('/addresses', { pattern: p, is_regex: this.bulkIsRegex })
+            this.http.post('/addresses', { pattern: p, is_regex: this.bulkIsRegex, test_mode: this.defaultTestMode })
           );
-        } catch {
-          // ignore individual failures and continue
+        } catch (err) {
+          // mark backend status and continue
+          this.setBackendStatusFromError(err);
         }
       }
     } finally {
@@ -185,8 +192,9 @@ export class AppComponent implements OnInit {
         try {
           await firstValueFrom(this.http.delete(`/addresses/${id}`));
           this.selected.delete(id);
-        } catch {
-          // Continue even if a deletion fails
+        } catch (err) {
+          // Continue even if a deletion fails, but surface backend status
+          this.setBackendStatusFromError(err);
         }
       }
     } finally {
@@ -203,7 +211,7 @@ export class AppComponent implements OnInit {
   remove(id: number): void {
     this.http
       .delete(`/addresses/${id}`)
-      .subscribe({ next: () => this.load(), error: () => {} });
+      .subscribe({ next: () => this.load(), error: (err) => this.setBackendStatusFromError(err) });
   }
 
   trackById(index: number, item: Entry): number {
@@ -260,6 +268,39 @@ export class AppComponent implements OnInit {
     this.sortDir = (sort.direction as any) || 'asc';
     this.pageIndex = 0;
     this.load();
+  }
+
+  // Toggle test/enforce mode for a single entry
+  toggleTestMode(entry: Entry): void {
+    const current = !!(entry.test_mode ?? true);
+    this.http.put(`/addresses/${entry.id}`, { test_mode: !current }).subscribe({
+      next: () => this.load(),
+      error: (err) => { this.setBackendStatusFromError(err); this.load(); },
+    });
+  }
+
+  // Bulk toggle for selected IDs
+  setSelectedMode(testMode: boolean): void {
+    const ids = Array.from(this.selected);
+    if (ids.length === 0) return;
+    this.busy = true;
+    const run = async () => {
+      for (const id of ids) {
+        try { await firstValueFrom(this.http.put(`/addresses/${id}`, { test_mode: testMode })); } catch (err) { this.setBackendStatusFromError(err); }
+      }
+    };
+    run().finally(() => { this.busy = false; this.load(); });
+  }
+
+  // Bulk toggle for all currently loaded entries
+  setAllMode(testMode: boolean): void {
+    this.busy = true;
+    const run = async () => {
+      for (const e of this.entries) {
+        try { await firstValueFrom(this.http.put(`/addresses/${e.id}`, { test_mode: testMode })); } catch (err) { this.setBackendStatusFromError(err); }
+      }
+    };
+    run().finally(() => { this.busy = false; this.load(); });
   }
 
   // Inline edit handlers
@@ -324,24 +365,38 @@ export class AppComponent implements OnInit {
                       this.savingEdit = false;
                       this.load();
                     },
-                    error: () => {
+                    error: (e2) => {
+                      this.setBackendStatusFromError(e2);
                       this.savingEdit = false;
                       this.load();
                     },
                   });
                 },
-                error: () => {
+                error: (e1) => {
+                  this.setBackendStatusFromError(e1);
                   // Revert on failure
                   this.savingEdit = false;
                   this.load();
                 },
               });
           } else {
+            this.setBackendStatusFromError(err);
             // Revert on other failures (e.g., conflict)
             this.savingEdit = false;
             this.load();
           }
         },
       });
+  }
+
+  private setBackendStatusFromError(err: any): void {
+    const status = err?.status ?? 0;
+    if (status === 503) {
+      this.backendNotReady = true;
+      this.backendUnreachable = false;
+    } else if (status === 0) {
+      // Network-level error (proxy/backend down)
+      this.backendUnreachable = true;
+    }
   }
 }

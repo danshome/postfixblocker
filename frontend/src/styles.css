@@ -48,3 +48,19 @@ table {
 .filter-row th {
   padding: 0 8px;
 }
+
+/* Simple banner styles for backend status */
+.notice {
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin: 8px 0;
+  font-size: 14px;
+}
+.notice.warn {
+  background: #fff3cd; /* amber-100 */
+  color: #5c3d00;
+}
+.notice.error {
+  background: #fdecea; /* red-50 */
+  color: #611a15;
+}

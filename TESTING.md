@@ -29,6 +29,47 @@ pytest -m backend
 pytest -m e2e
 ```
 
+## Linting (Serverless)
+
+This repo supports local, serverless static analysis (no SonarQube server required).
+
+Python (ruff, mypy, bandit):
+
+```
+python -m pip install -r requirements-dev.txt
+./scripts/lint-python.sh
+```
+
+Angular/TypeScript (ESLint + sonarjs):
+
+```
+cd frontend
+npm install
+npm run lint
+```
+
+Tooling configs:
+- Ruff + Mypy in `pyproject.toml`
+- Bandit in `.bandit`
+- ESLint in `frontend/.eslintrc.cjs`
+
+## Pre-commit hooks
+
+Install and enable pre-commit to run the linters automatically on commit:
+
+```
+python -m pip install -r requirements-dev.txt
+pre-commit install
+# Run on all files once
+pre-commit run --all-files
+```
+
+Hooks included:
+- Ruff format + lint (Python)
+- Mypy (types)
+- Bandit (security)
+- ESLint (frontend TypeScript)
+
 When backend/e2e tests are selected, pytest can optionally run
 `docker compose down` and `docker compose up --build -d` first. To force this
 for any run, use:
@@ -51,4 +92,3 @@ PYTEST_COMPOSE_ALWAYS=1 pytest
 - Capture container logs on failure.
 
 <!-- END GENERATED: TESTING:MAIN -->
-

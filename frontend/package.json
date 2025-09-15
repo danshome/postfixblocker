@@ -9,6 +9,8 @@
     "build": "ng build",
     "test": "ng test --watch=false",
     "test:watch": "ng test --watch",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "lint:fix": "npm run lint -- --fix",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:db2": "playwright test --project db2-chromium",
@@ -28,6 +30,11 @@
     "zone.js": "^0.15.0"
   },
   "devDependencies": {
+    "eslint": "^9.10.0",
+    "@typescript-eslint/parser": "^8.7.0",
+    "@typescript-eslint/eslint-plugin": "^8.7.0",
+    "eslint-plugin-sonarjs": "^1.0.3",
+    "eslint-plugin-import": "^2.29.1",
     "@angular/cli": "^20.0.0",
     "@angular-devkit/build-angular": "^20.0.0",
     "@playwright/test": "^1.48.0",

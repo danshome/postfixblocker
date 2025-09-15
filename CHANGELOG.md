@@ -266,3 +266,55 @@ The format is based on [Keep a Changelog], and this project adheres to
 ## 2025-09-14 18:05 UTC
 
 - Frontend: Improve inline editing UX — stop auto-selecting the entire email on edit so partial edits are easy. Input now focuses without selecting all text.
+
+## 2025-09-14 18:30 UTC
+
+- Blocker/Test Mode: Add per-entry "test_mode" support
+  - DB: Add `test_mode` boolean column (defaults to true) with an automatic migration for existing tables (PostgreSQL + DB2).
+  - Postfix maps: Maintain two sets of access maps — enforced (`blocked_recipients`, `.pcre`) and test-only (`blocked_recipients_test`, `.pcre`).
+  - Postfix config: Use `warn_if_reject` with the test maps so they log would-be rejections without blocking.
+  - API: Include `test_mode` in list responses; accept `test_mode` in POST and PUT/PATCH to update entries.
+- Frontend: Add Mode column with per-row toggle (Test/Enforce), bulk actions for selected and for all, and default new entries to Test mode.
+
+## 2025-09-14 18:45 UTC
+
+- Tests/Packaging: Make `app/` a proper Python package and `tests/` importable
+  - Add `app/__init__.py` so `from app import blocker` resolves to this repo’s module, avoiding conflicts with third-party `app` packages in the venv.
+  - Add `tests/__init__.py` so absolute imports like `from tests.utils_wait ...` work during pytest collection.
+  - Update E2E tests to set `test_mode=False` on inserted rows so they remain enforced under the new monitor mode feature.
+
+## 2025-09-14 19:05 UTC
+
+- Static analysis: Add local SonarQube setup and scanner config (later removed; see 19:35 UTC).
+## 2025-09-14 19:25 UTC
+
+- Linting (serverless): Add local static analysis without a server
+  - Python: Add Ruff, Mypy, and Bandit configs and helper script (`scripts/lint-python.sh`).
+  - Frontend: Add ESLint config with `@typescript-eslint` and `eslint-plugin-sonarjs`, npm scripts `lint` and `lint:fix`, and helper script (`scripts/lint-frontend.sh`).
+  - Docs: Update TESTING.md with linting instructions. Add `requirements-dev.txt` for Python dev tools.
+## 2025-09-14 19:35 UTC
+
+- Cleanup: Remove SonarQube server integration to keep tooling fully serverless
+  - Remove `sonarqube` service and volumes from `docker-compose.yml`.
+  - Remove `sonar-project.properties` and `scripts/run-sonar-scanner.sh`.
+  - Retain serverless linters: Ruff, Mypy, Bandit, and ESLint (sonarjs) remain.
+
+## 2025-09-14 19:50 UTC
+
+- Developer UX: Add pre-commit hooks to run serverless linters automatically
+  - `.pre-commit-config.yaml` with Ruff (format+lint), Mypy, Bandit, and ESLint (frontend).
+  - `requirements-dev.txt`: add `pre-commit`.
+  - `TESTING.md`: instructions to install, enable, and run `pre-commit`.
+
+## 2025-09-14 20:10 UTC
+
+- Lint fixes: Make pre-commit pass cleanly
+  - Python: Sort/format imports, modernize type hints to built-in generics and `|` unions, replace asserts with explicit errors, and switch Postfix execs to `subprocess.run` with absolute paths.
+  - Bandit: Remove broad `try/except: pass`, add targeted `# nosec` justifications where appropriate, and avoid binding API to all interfaces by default (container sets `API_HOST=0.0.0.0`).
+  - Frontend: Add ESLint flat config `frontend/eslint.config.cjs` for ESLint v9.
+
+## 2025-09-15 00:15 UTC
+
+- Frontend dev-server warnings: remove deprecated `--disable-host-check` and silence prebundle warning
+  - package.json: drop `--disable-host-check` from `start:devc` and `start:db2`.
+  - angular.json: set `serve.options.prebundle=false` to avoid the “Prebundling ... not used because scripts optimization is enabled” message.

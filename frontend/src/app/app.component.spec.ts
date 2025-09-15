@@ -24,8 +24,7 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges(); // triggers ngOnInit -> load()
 
-    const req = httpMock.expectOne('/addresses');
-    expect(req.request.method).toBe('GET');
+    const req = httpMock.expectOne(r => r.method === 'GET' && r.url.startsWith('/addresses'));
     const data: Entry[] = [
       { id: 1, pattern: 'blocked@example.com', is_regex: false },
     ];
@@ -42,22 +41,22 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     // Initial GET
-    httpMock.expectOne('/addresses').flush([]);
+    httpMock.expectOne(r => r.method === 'GET' && r.url.startsWith('/addresses')).flush([]);
 
     comp.bulkText = 'new@example.com\n';
     comp.bulkIsRegex = false;
     comp.addBulk();
     tick();
 
-    const post = httpMock.expectOne(req => req.method === 'POST' && req.url === '/addresses');
+    const post = httpMock.expectOne(r => r.method === 'POST' && r.url === '/addresses');
     expect(post.request.method).toBe('POST');
-    expect(post.request.body).toEqual({ pattern: 'new@example.com', is_regex: false });
+    expect(post.request.body.pattern).toBe('new@example.com');
+    expect(post.request.body.is_regex).toBe(false);
     post.flush({ status: 'ok' }, { status: 201, statusText: 'Created' });
 
     // Reload after add
     tick();
-    const reload = httpMock.expectOne(req => req.method === 'GET' && req.url === '/addresses');
-    expect(reload.request.method).toBe('GET');
+    const reload = httpMock.expectOne(r => r.method === 'GET' && r.url.startsWith('/addresses'));
     reload.flush([{ id: 2, pattern: 'new@example.com', is_regex: false }]);
 
     expect(comp.bulkText).toBe('');
@@ -71,7 +70,9 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     // Initial GET
-    httpMock.expectOne('/addresses').flush([{ id: 5, pattern: 'x@y.com', is_regex: false }]);
+    httpMock.expectOne(r => r.method === 'GET' && r.url.startsWith('/addresses')).flush([
+      { id: 5, pattern: 'x@y.com', is_regex: false },
+    ]);
 
     comp.remove(5);
     const del = httpMock.expectOne('/addresses/5');
@@ -79,8 +80,7 @@ describe('AppComponent', () => {
     del.flush({ status: 'deleted' });
 
     // Reload after delete
-    const reload = httpMock.expectOne('/addresses');
-    expect(reload.request.method).toBe('GET');
+    const reload = httpMock.expectOne(r => r.method === 'GET' && r.url.startsWith('/addresses'));
     reload.flush([]);
     expect(comp.entries.length).toBe(0);
   });
@@ -91,28 +91,29 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     // Initial GET
-    httpMock.expectOne('/addresses').flush([]);
+    httpMock.expectOne(r => r.method === 'GET' && r.url.startsWith('/addresses')).flush([]);
 
     comp.bulkText = 'a1@example.com\n a2@example.com\n';
     comp.bulkIsRegex = false;
     comp.addBulk();
     tick();
 
-    const post1 = httpMock.expectOne(req => req.method === 'POST' && req.url === '/addresses');
+    const post1 = httpMock.expectOne(r => r.method === 'POST' && r.url === '/addresses');
     expect(post1.request.method).toBe('POST');
-    expect(post1.request.body).toEqual({ pattern: 'a1@example.com', is_regex: false });
+    expect(post1.request.body.pattern).toBe('a1@example.com');
+    expect(post1.request.body.is_regex).toBe(false);
     post1.flush({ status: 'ok' }, { status: 201, statusText: 'Created' });
 
     tick();
-    const post2 = httpMock.expectOne(req => req.method === 'POST' && req.url === '/addresses');
+    const post2 = httpMock.expectOne(r => r.method === 'POST' && r.url === '/addresses');
     expect(post2.request.method).toBe('POST');
-    expect(post2.request.body).toEqual({ pattern: 'a2@example.com', is_regex: false });
+    expect(post2.request.body.pattern).toBe('a2@example.com');
+    expect(post2.request.body.is_regex).toBe(false);
     post2.flush({ status: 'ok' }, { status: 201, statusText: 'Created' });
 
     // Reload after bulk
     tick();
-    const reload = httpMock.expectOne(req => req.method === 'GET' && req.url === '/addresses');
-    expect(reload.request.method).toBe('GET');
+    const reload = httpMock.expectOne(r => r.method === 'GET' && r.url.startsWith('/addresses'));
     reload.flush([
       { id: 1, pattern: 'a1@example.com', is_regex: false },
       { id: 2, pattern: 'a2@example.com', is_regex: false },
@@ -128,7 +129,7 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     // Initial GET with two entries
-    httpMock.expectOne('/addresses').flush([
+    httpMock.expectOne(r => r.method === 'GET' && r.url.startsWith('/addresses')).flush([
       { id: 10, pattern: 's1@example.com', is_regex: false },
       { id: 11, pattern: 's2@example.com', is_regex: false },
     ]);
@@ -147,7 +148,7 @@ describe('AppComponent', () => {
 
     // Reload after deleteSelected
     tick();
-    const reload = httpMock.expectOne('/addresses');
+    const reload = httpMock.expectOne(r => r.method === 'GET' && r.url.startsWith('/addresses'));
     reload.flush([]);
 
     expect(comp.selected.size).toBe(0);

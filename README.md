@@ -61,7 +61,7 @@ Add and delete an address:
 ```bash
 curl -X POST http://localhost:5001/addresses \
   -H 'Content-Type: application/json' \
-  -d '{"pattern":"user@example.com","is_regex":false}'
+  -d '{"pattern":"user@example.com","is_regex":false, "test_mode":true}'
 
 curl -X DELETE http://localhost:5001/addresses/1
 ```
@@ -188,6 +188,27 @@ Then rebuild/restart:
 ```
 docker compose up --build
 ```
+
+## Postfix test mode (monitor-only)
+
+This project supports a per-entry "test mode". When enabled for an address or
+regex, mail to that recipient is not blocked; instead Postfix logs a warning
+that the message would have been rejected. This uses `warn_if_reject` in
+`smtpd_recipient_restrictions` with dedicated test access maps.
+
+- Enforced maps: `/etc/postfix/blocked_recipients`, `/etc/postfix/blocked_recipients.pcre`
+- Test maps: `/etc/postfix/blocked_recipients_test`, `/etc/postfix/blocked_recipients_test.pcre`
+
+Rebuild and restart the Postfix containers after pulling this change so the
+updated `main.cf` is applied:
+
+```
+docker compose build postfix postfix_db2
+docker compose up -d
+```
+
+In the UI you can toggle mode per row, for selected rows, or set all
+to Test/Enforce. New entries default to Test mode.
 
 ## Testing
 
