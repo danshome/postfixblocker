@@ -33,13 +33,13 @@ RUN ARCH=$(uname -m); \
         echo "Skipping DB2 Python deps (ENABLE_DB2=$ENABLE_DB2, ARCH=$ARCH)"; \
     fi
 
-COPY app /opt/app
+COPY postfix_blocker /opt/postfix_blocker
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Ensure application log directory exists
 RUN mkdir -p /var/log/app
 
-WORKDIR /opt/app
+WORKDIR /opt
 
 EXPOSE 25 5000
 

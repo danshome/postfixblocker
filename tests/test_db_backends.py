@@ -19,7 +19,7 @@ except Exception:  # pragma: no cover - SQLAlchemy not installed
     create_engine = None  # type: ignore
     OperationalError = Exception  # type: ignore
 
-from app import blocker
+from postfix_blocker import blocker
 from tests.utils_wait import wait_for_db_url
 
 

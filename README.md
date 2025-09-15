@@ -119,9 +119,11 @@ For DB2 support, Python dependencies `ibm-db` and `ibm-db-sa` are required
 
 ## Components
 
-* **Python service (`app/blocker.py`)** – Monitors the database table and
-  rewrites Postfix access maps when changes occur.
-* **Flask API (`app/api.py`)** – REST API used by the Angular UI to manage
+* **Python service (`postfix_blocker/blocker.py`)** – Monitors the database table and
+  rewrites Postfix access maps when changes occur. Inside the Docker container
+  the code lives under `/opt/postfix_blocker` and runs as a module
+  (`python -m postfix_blocker.blocker`).
+* **Flask API (`postfix_blocker/api.py`)** – REST API used by the Angular UI to manage
   blocked addresses.
 * **Angular UI (`frontend`)** – Simple interface to view, add, and remove
   entries.
@@ -319,12 +321,12 @@ Configuration via environment variables (optional):
 Running inside the Postfix container (useful on some hosts):
 
 ```bash
-docker compose cp tests/e2e_test.py postfix:/opt/app/e2e_run.py
+docker compose cp tests/e2e_test.py postfix:/opt/postfix_blocker/e2e_run.py
 docker compose exec postfix env \
   BLOCKER_DB_URL=postgresql://blocker:blocker@db:5432/blocker \
   SMTP_HOST=127.0.0.1 SMTP_PORT=25 \
   MAILHOG_HOST=mailhog MAILHOG_PORT=8025 \
-  python /opt/app/e2e_run.py
+  python /opt/postfix_blocker/e2e_run.py
 ```
 
 Mass traffic demo
@@ -335,12 +337,12 @@ Mass traffic demo
 python tests/e2e_test.py --mass --total 300
 
 # Inside the postfix container (recommended if host DB port is blocked)
-docker compose cp tests/e2e_test.py postfix:/opt/app/e2e_run.py
+docker compose cp tests/e2e_test.py postfix:/opt/postfix_blocker/e2e_run.py
 docker compose exec postfix env \
   BLOCKER_DB_URL=postgresql://blocker:blocker@db:5432/blocker \
   SMTP_HOST=127.0.0.1 SMTP_PORT=25 \
   MAILHOG_HOST=mailhog MAILHOG_PORT=8025 \
-  python /opt/app/e2e_run.py --mass --total 300
+  python /opt/postfix_blocker/e2e_run.py --mass --total 300
 
 Using DB2 instead of Postgres inside the postfix container:
 
@@ -349,7 +351,7 @@ docker compose exec postfix env \
   BLOCKER_DB_URL=ibm_db_sa://db2inst1:blockerpass@db2:50000/BLOCKER \
   SMTP_HOST=127.0.0.1 SMTP_PORT=25 \
   MAILHOG_HOST=mailhog MAILHOG_PORT=8025 \
-  python /opt/app/e2e_run.py
+  python /opt/postfix_blocker/e2e_run.py
 ```
 ```
 

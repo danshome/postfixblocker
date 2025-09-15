@@ -25,10 +25,10 @@ The format is based on [Keep a Changelog], and this project adheres to
 ## 2025-09-13 00:00 UTC
 
 - Add IBM DB2 11.5 Docker service in `docker-compose.yml`.
-- Make `app/blocker.py` backend-agnostic (DB2 + PostgreSQL):
+- Make `postfix_blocker/blocker.py` backend-agnostic (DB2 + PostgreSQL):
   - Declare index via SQLAlchemy; remove backend-specific `CREATE INDEX IF NOT EXISTS`.
   - Export `get_blocked_table()` and publish `blocked_table` after initialization.
-- Update `app/api.py` to fetch the table via `get_blocked_table()` at runtime.
+- Update `postfix_blocker/api.py` to fetch the table via `get_blocked_table()` at runtime.
 - Update backend tests to document valid DB2 URLs.
 - Add DB2 drivers to `requirements.txt` (`ibm-db`, `ibm-db-sa`).
 
@@ -57,7 +57,7 @@ The format is based on [Keep a Changelog], and this project adheres to
 ## 2025-09-14 04:55 UTC
 
 - Tests: Fix E2E to avoid SQLAlchemy connect_args incompatible with DB2; add optional debug logging.
-- Backend: Adjust app/blocker.py to avoid duplicate index creation and DB2 warnings; simplify schema.
+- Backend: Adjust postfix_blocker/blocker.py to avoid duplicate index creation and DB2 warnings; simplify schema.
 - Docker: Rebuild postfix images to include latest app code; confirmed DB2 stack works end-to-end.
 - Local runs: Execute tests from host against exposed ports; no tests copied into DB containers.
 
@@ -146,7 +146,7 @@ The format is based on [Keep a Changelog], and this project adheres to
 
 ## 2025-09-14 11:48 UTC
 
-- API resilience: Make `app/api.py` lazily initialize the database and return 503 `{"error": "database not ready"}` when the backend is unavailable (e.g., DB2 startup). This prevents the API process from crashing so the dev proxy no longer shows ECONNRESET and the UI can stay responsive.
+- API resilience: Make `postfix_blocker/api.py` lazily initialize the database and return 503 `{"error": "database not ready"}` when the backend is unavailable (e.g., DB2 startup). This prevents the API process from crashing so the dev proxy no longer shows ECONNRESET and the UI can stay responsive.
 
 ## 2025-09-14 11:55 UTC
 
@@ -177,11 +177,11 @@ The format is based on [Keep a Changelog], and this project adheres to
 
 ## 2025-09-14 12:45 UTC
 
-- API: Deduplicate repeated string literals in `app/api.py` by introducing constants for route paths, JSON keys, and status/error messages. This reduces refactor risk and silences the linter warning about duplicated strings.
+- API: Deduplicate repeated string literals in `postfix_blocker/api.py` by introducing constants for route paths, JSON keys, and status/error messages. This reduces refactor risk and silences the linter warning about duplicated strings.
 
 ## 2025-09-14 12:55 UTC
 
-- Blocker resilience: Make `app/blocker.py` retry `init_db` with backoff until the database is ready (particularly for DB2, which can take minutes). Prevents rapid supervisor restarts and unblocks e2e DB2 runs.
+- Blocker resilience: Make `postfix_blocker/blocker.py` retry `init_db` with backoff until the database is ready (particularly for DB2, which can take minutes). Prevents rapid supervisor restarts and unblocks e2e DB2 runs.
 
 ## 2025-09-14 13:05 UTC
 
@@ -189,7 +189,7 @@ The format is based on [Keep a Changelog], and this project adheres to
 
 ## 2025-09-14 13:20 UTC
 
-- Docs: Add production (RHEL 9.5, no Docker) deployment instructions for `app/blocker.py` and `app/api.py` to `INSTALL.md`, including systemd units, SELinux notes, and Postfix integration.
+- Docs: Add production (RHEL 9.5, no Docker) deployment instructions for `postfix_blocker/blocker.py` and `postfix_blocker/api.py` to `INSTALL.md`, including systemd units, SELinux notes, and Postfix integration.
 
 ## 2025-09-14 13:30 UTC
 
@@ -205,7 +205,7 @@ The format is based on [Keep a Changelog], and this project adheres to
 
 ## 2025-09-14 13:45 UTC
 
-- Blocker: Add runtime guard in `app/blocker.py` to preflight `postconf -m` and log a clear error once on startup when PCRE support is missing.
+- Blocker: Add runtime guard in `postfix_blocker/blocker.py` to preflight `postconf -m` and log a clear error once on startup when PCRE support is missing.
 
 ## 2025-09-14 13:48 UTC
 
@@ -278,8 +278,8 @@ The format is based on [Keep a Changelog], and this project adheres to
 
 ## 2025-09-14 18:45 UTC
 
-- Tests/Packaging: Make `app/` a proper Python package and `tests/` importable
-  - Add `app/__init__.py` so `from app import blocker` resolves to this repo’s module, avoiding conflicts with third-party `app` packages in the venv.
+- Tests/Packaging: Make `postfix_blocker/` a proper Python package and `tests/` importable
+  - Add `postfix_blocker/__init__.py` so `from postfix_blocker import blocker` resolves to this repo’s module.
   - Add `tests/__init__.py` so absolute imports like `from tests.utils_wait ...` work during pytest collection.
   - Update E2E tests to set `test_mode=False` on inserted rows so they remain enforced under the new monitor mode feature.
 
@@ -323,5 +323,5 @@ The format is based on [Keep a Changelog], and this project adheres to
 
 - Observability: Add structured logging for API and blocker
   - API: per-request logs (start, end with duration, and exceptions). Configurable via `API_LOG_LEVEL` and optional rotating file via `API_LOG_FILE`.
-  - Blocker: log map preparation counts, bytes written per file, and each postmap/reload invocation. Configurable via `BLOCKER_LOG_LEVEL` and rotating file `BLOCKER_LOG_FILE` (defaults to `/var/log/app/blocker.log`).
+  - Blocker: log map preparation counts, bytes written per file, and each postmap/reload invocation. Configurable via `BLOCKER_LOG_LEVEL` and rotating file `BLOCKER_LOG_FILE` (defaults to `/var/log/postfix_blocker/blocker.log`).
   - Docker: forward `api` and `blocker` stdout/stderr to Docker logs by setting `stdout_logfile=/dev/stdout` and `redirect_stderr=true` in supervisord. Ensure `/var/log/app` exists in image.

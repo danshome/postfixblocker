@@ -38,18 +38,19 @@ except Exception:  # pragma: no cover
     requests = None  # type: ignore
 
 # Import blocker with flexible fallbacks.
-# 1) Try package import (when running from repo root)
-# 2) Try local module import (when running inside /opt/app in the container)
-# 3) As a last resort, prepend repo root to sys.path and retry package import
+# 1) Try new package name (preferred)
+# 2) Try local module import (when running inside /opt/postfix_blocker in the container)
+# 3) Fallback: prepend repo root to sys.path and retry package import
 try:  # pragma: no cover - import shim
-    from app import blocker  # type: ignore
+    from postfix_blocker import blocker  # type: ignore
 except ModuleNotFoundError:  # pragma: no cover
     try:
         import blocker  # type: ignore
     except ModuleNotFoundError:
         ROOT = Path(__file__).resolve().parent.parent
+        # Parent of the package directory must be on sys.path
         sys.path.insert(0, str(ROOT))
-        from app import blocker  # type: ignore
+        from postfix_blocker import blocker  # type: ignore
 
 DB_URL = os.environ.get('BLOCKER_DB_URL', 'postgresql://blocker:blocker@localhost:5433/blocker')
 

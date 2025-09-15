@@ -27,6 +27,7 @@ services:
     environment:
       BLOCKER_DB_URL: postgresql://blocker:blocker@db:5432/blocker
       API_LOG_FILE: /var/log/app/api.log
+      BLOCKER_LOG_FILE: /var/log/app/blocker.log
     volumes:
       - ./logs:/var/log/app
   postfix_db2:
@@ -45,6 +46,7 @@ services:
     environment:
       BLOCKER_DB_URL: ibm_db_sa://db2inst1:blockerpass@db2:50000/BLOCKER
       API_LOG_FILE: /var/log/app/api.log
+      BLOCKER_LOG_FILE: /var/log/app/blocker.log
     volumes:
       - ./logs:/var/log/app
   db2:

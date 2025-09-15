@@ -1,4 +1,4 @@
-import logging
+import logging  # moved to postfix_blocker.api
 import os
 import time
 from typing import TYPE_CHECKING, Any, cast
@@ -43,7 +43,8 @@ def _init_logging() -> None:
     level_name = os.environ.get('API_LOG_LEVEL', 'INFO').upper()
     level = getattr(logging, level_name, logging.INFO)
     app.logger.setLevel(level)
-    logging.getLogger().setLevel(level)
+    root = logging.getLogger()
+    root.setLevel(level)
     # Optional file handler
     log_path = os.environ.get('API_LOG_FILE')
     if log_path:
@@ -55,9 +56,14 @@ def _init_logging() -> None:
             fh.setLevel(level)
             fmt = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s %(message)s')
             fh.setFormatter(fmt)
+            # Attach to both the Flask app logger and the root logger so any
+            # library logs (e.g., werkzeug) are captured as well.
             app.logger.addHandler(fh)
+            if not any(isinstance(h, RotatingFileHandler) and getattr(h, 'baseFilename', '') == fh.baseFilename for h in root.handlers):
+                root.addHandler(fh)
         except Exception as exc:  # pragma: no cover - filesystem/permissions
             app.logger.warning('Could not set up API file logging: %s', exc)
+    app.logger.info('API logging initialized (level=%s, file=%s)', level_name, log_path or 'none')
 
 
 @app.before_request

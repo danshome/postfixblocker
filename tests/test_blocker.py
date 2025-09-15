@@ -3,7 +3,7 @@ import tempfile
 
 import pytest
 
-from app import blocker
+from postfix_blocker import blocker
 
 
 @pytest.mark.unit

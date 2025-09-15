@@ -54,8 +54,8 @@ MAILHOG_PORT=8025
 
 ## Production Deployment (RHEL 9.5, no Docker)
 
-This section describes how to run only the Python blocker (`app/blocker.py`)
-and API (`app/api.py`) on a RHEL 9.5 host where Postfix is already installed
+This section describes how to run only the Python blocker (`postfix_blocker/blocker.py`)
+and API (`postfix_blocker/api.py`) on a RHEL 9.5 host where Postfix is already installed
 and the database runs on a separate server. The Angular UI is optional and is
 not covered here.
 
@@ -179,7 +179,7 @@ Type=simple
 User=root
 WorkingDirectory=/opt/postfixblocker
 EnvironmentFile=/opt/postfixblocker/.env
-ExecStart=/opt/postfixblocker/venv/bin/python -m app.blocker
+ExecStart=/opt/postfixblocker/venv/bin/python -m postfix_blocker.blocker
 Restart=on-failure
 RestartSec=5s
 
@@ -200,7 +200,7 @@ Type=simple
 User={{PROJECT_NAME}}  # TODO: replace or use a service account
 WorkingDirectory=/opt/postfixblocker
 EnvironmentFile=/opt/postfixblocker/.env
-ExecStart=/opt/postfixblocker/venv/bin/gunicorn -w 2 -b 127.0.0.1:${PORT} app.api:app
+ExecStart=/opt/postfixblocker/venv/bin/gunicorn -w 2 -b 127.0.0.1:${PORT} postfix_blocker.api:app
 Restart=on-failure
 RestartSec=5s
 
@@ -269,9 +269,9 @@ or provide wrapper scripts.
 
 ### Notes on PCRE requirement and behavior
 
-- The API (`app/api.py`) does not require Postfix PCRE support and will run
+- The API (`postfix_blocker/api.py`) does not require Postfix PCRE support and will run
   regardless.
-- The blocker (`app/blocker.py`) writes both the hash and PCRE map files and
+- The blocker (`postfix_blocker/blocker.py`) writes both the hash and PCRE map files and
   runs `postmap` only on the hash map (PCRE maps are plain text). It then
   executes `postfix reload`.
 - If PCRE support is missing and your `main.cf` references the PCRE map, the

@@ -15,8 +15,8 @@ flowchart LR
 
 ## Components
 
-- Flask API (`app/api.py`): CRUD endpoints on `/addresses`.
-- Blocker Service (`app/blocker.py`): Polls DB and writes Postfix maps.
+- Flask API (`postfix_blocker/api.py`): CRUD endpoints on `/addresses`.
+- Blocker Service (`postfix_blocker/blocker.py`): Polls DB and writes Postfix maps.
 - Frontend (`frontend/`): Angular app that calls the API.
 - Database: `blocked_addresses` table.
 
@@ -40,4 +40,3 @@ flowchart LR
 See also: [AGENTS](AGENTS.md), [TESTING](TESTING.md).
 
 <!-- END GENERATED: ARCH:MAIN -->
-

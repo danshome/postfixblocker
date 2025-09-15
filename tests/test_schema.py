@@ -4,7 +4,7 @@ import pytest
 @pytest.mark.unit
 def test_blocked_table_schema():
     pytest.importorskip('sqlalchemy')
-    from app import blocker
+    from postfix_blocker import blocker
 
     # Should not raise
     tbl = blocker.get_blocked_table()

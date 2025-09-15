@@ -1,4 +1,4 @@
-import logging
+import logging  # moved to postfix_blocker.blocker
 import os
 import subprocess  # nosec B404
 import time
@@ -41,7 +41,7 @@ def _setup_blocker_logging() -> None:
     level = getattr(logging, level_name, logging.INFO)
     logging.getLogger().setLevel(level)
     # Optional file handler
-    log_path = os.environ.get('BLOCKER_LOG_FILE') or '/var/log/app/blocker.log'
+    log_path = os.environ.get('BLOCKER_LOG_FILE') or '/var/log/postfix_blocker/blocker.log'
     try:
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
         from logging.handlers import RotatingFileHandler
