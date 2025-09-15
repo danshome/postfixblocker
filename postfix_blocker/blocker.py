@@ -38,9 +38,20 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(me
 
 def _setup_blocker_logging() -> None:
     # Default to DEBUG for detailed diagnostics; override via BLOCKER_LOG_LEVEL
-    level_name = os.environ.get('BLOCKER_LOG_LEVEL', 'DEBUG').upper()
-    level = getattr(logging, level_name, logging.INFO)
-    logging.getLogger().setLevel(level)
+    raw = (os.environ.get('BLOCKER_LOG_LEVEL') or 'INFO').strip()
+    level_name = raw.upper()
+    try:
+        level = int(raw)
+    except Exception:
+        level = getattr(logging, level_name, logging.INFO)
+    root = logging.getLogger()
+    root.setLevel(level)
+    # Ensure existing handlers honor the configured level (basicConfig/other libs)
+    for h in list(root.handlers):
+        try:
+            h.setLevel(level)
+        except Exception:
+            pass
     # Optional file handler
     log_path = os.environ.get('BLOCKER_LOG_FILE') or '/var/log/postfix-blocker/blocker.log'
     try:
@@ -60,6 +71,13 @@ def _setup_blocker_logging() -> None:
             root.addHandler(fh)
     except Exception as exc:  # pragma: no cover - filesystem/permissions
         logging.warning('Could not set up blocker file logging: %s', exc)
+    # Emit a clear initialization line with requested/effective level and file
+    logging.info(
+        'Blocker logging initialized (requested_level=%s effective_level=%s file=%s)',
+        level_name,
+        logging.getLevelName(root.level),
+        log_path,
+    )
 
 
 DB_URL = os.environ.get('BLOCKER_DB_URL', 'postgresql://blocker:blocker@db:5432/blocker')

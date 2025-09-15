@@ -40,11 +40,24 @@ _db_ready = False
 
 # ----- Logging setup & request logging -----
 def _init_logging() -> None:
-    level_name = os.environ.get('API_LOG_LEVEL', 'INFO').upper()
-    level = getattr(logging, level_name, logging.INFO)
+    # Resolve desired level from env; accept names (DEBUG) or ints (10)
+    raw = (os.environ.get('API_LOG_LEVEL') or 'INFO').strip()
+    level_name = raw.upper()
+    try:
+        level = int(raw)
+    except Exception:
+        level = getattr(logging, level_name, logging.INFO)
+
     app.logger.setLevel(level)
     root = logging.getLogger()
     root.setLevel(level)
+    
+    # Ensure existing handlers honor the configured level (Flask/werkzeug add their own)
+    for h in list(app.logger.handlers) + list(root.handlers):
+        try:
+            h.setLevel(level)
+        except Exception:
+            pass
     # Optional file handler
     log_path = os.environ.get('API_LOG_FILE')
     if log_path:
@@ -63,7 +76,13 @@ def _init_logging() -> None:
                 root.addHandler(fh)
         except Exception as exc:  # pragma: no cover - filesystem/permissions
             app.logger.warning('Could not set up API file logging: %s', exc)
-    app.logger.info('API logging initialized (level=%s, file=%s)', level_name, log_path or 'none')
+    # Log both requested and effective levels for easier troubleshooting
+    app.logger.info(
+        'API logging initialized (requested_level=%s effective_level=%s file=%s)',
+        level_name,
+        logging.getLevelName(app.logger.level),
+        log_path or 'none',
+    )
 
 
 @app.before_request
