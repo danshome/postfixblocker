@@ -1,6 +1,6 @@
 import { test, expect } from 'playwright/test';
 
-async function waitForApiReady(request: any, timeoutMs = 120_000): Promise<void> {
+async function waitForApiReady(request: any, timeoutMs = 600_000): Promise<void> {
   const start = Date.now();
   // Poll until API is ready (200 OK) or timeout
   // Playwright's request fixture shares baseURL with each project so '/addresses' proxies correctly
@@ -51,11 +51,13 @@ test('add, list, and delete entries', async ({ page }) => {
   // Bulk add two addresses (one per line) via paste box
   await page.getByPlaceholder('paste emails or regex (one per line)').fill('bulk1@example.com\nbulk2@example.com');
   await page.getByRole('button', { name: 'Add', exact: true }).click();
-  await expect(page.locator('table')).toContainText(['bulk1@example.com', 'bulk2@example.com']);
+  // Wait for both bulk rows to appear in the table body
+  await expect(body.getByRole('row', { name: /bulk1@example\.com/ })).toBeVisible({ timeout: 15000 });
+  await expect(body.getByRole('row', { name: /bulk2@example\.com/ })).toBeVisible({ timeout: 15000 });
 
-  // Select two entries (click rows) and delete selected
-  await page.locator('tr.mat-row', { hasText: 'bulk1@example.com' }).click();
-  await page.locator('tr.mat-row', { hasText: 'bulk2@example.com' }).click();
+  // Select two entries (click rows from tbody) and delete selected
+  await body.getByRole('row', { name: /bulk1@example\.com/ }).click();
+  await body.getByRole('row', { name: /bulk2@example\.com/ }).click();
   await page.getByRole('button', { name: 'Delete Selected' }).click();
   await expect(page.locator('table')).not.toContainText(['bulk1@example.com', 'bulk2@example.com']);
 

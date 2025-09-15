@@ -2,7 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
-  timeout: 60_000,
+  // DB2 can take several minutes to become available; increase test timeout
+  timeout: 600_000,
   expect: { timeout: 5_000 },
   retries: 0,
   workers: 1,

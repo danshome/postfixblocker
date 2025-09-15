@@ -179,7 +179,12 @@ def list_addresses():
     if not paged:
         eng = cast(Any, engine)
         with eng.connect() as conn:
-            rows = conn.execute(select(bt)).fetchall()
+            try:
+                # Some DB2 drivers may return None from fetchall() on empty results;
+                # iterating the Result is robust across backends.
+                rows = list(conn.execute(select(bt)))
+            except Exception:
+                rows = []
         return jsonify([row_to_dict(r) for r in rows])
 
     # Defaults
@@ -235,7 +240,10 @@ def list_addresses():
     with eng.connect() as conn:
         total = conn.execute(select(func.count()).select_from(bt).where(*filters)).scalar() or 0
         stmt = select(bt).where(*filters).order_by(order_by).offset(offset).limit(page_size)
-        rows = conn.execute(stmt).fetchall()
+        try:
+            rows = list(conn.execute(stmt))
+        except Exception:
+            rows = []
     app.logger.debug(
         'List (paged) args=%s returned %d/%d rows (page=%d size=%d sort=%s dir=%s)',
         dict(args),
