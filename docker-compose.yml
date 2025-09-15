@@ -26,10 +26,10 @@ services:
       - mailhog
     environment:
       BLOCKER_DB_URL: postgresql://blocker:blocker@db:5432/blocker
-      API_LOG_FILE: /var/log/app/api.log
-      BLOCKER_LOG_FILE: /var/log/app/blocker.log
+      API_LOG_FILE: /var/log/postfix-blocker/api.log
+      BLOCKER_LOG_FILE: /var/log/postfix-blocker/blocker.log
     volumes:
-      - ./logs:/var/log/app
+      - ./logs:/var/log/postfix-blocker
   postfix_db2:
     build:
       context: .
@@ -45,10 +45,10 @@ services:
       - mailhog
     environment:
       BLOCKER_DB_URL: ibm_db_sa://db2inst1:blockerpass@db2:50000/BLOCKER
-      API_LOG_FILE: /var/log/app/api.log
-      BLOCKER_LOG_FILE: /var/log/app/blocker.log
+      API_LOG_FILE: /var/log/postfix-blocker/api.log
+      BLOCKER_LOG_FILE: /var/log/postfix-blocker/blocker.log
     volumes:
-      - ./logs:/var/log/app
+      - ./logs:/var/log/postfix-blocker
   db2:
     image: ibmcom/db2:11.5.8.0
     platform: linux/amd64

@@ -41,7 +41,7 @@ def _setup_blocker_logging() -> None:
     level = getattr(logging, level_name, logging.INFO)
     logging.getLogger().setLevel(level)
     # Optional file handler
-    log_path = os.environ.get('BLOCKER_LOG_FILE') or '/var/log/postfix_blocker/blocker.log'
+    log_path = os.environ.get('BLOCKER_LOG_FILE') or '/var/log/postfix-blocker/blocker.log'
     try:
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
         from logging.handlers import RotatingFileHandler
@@ -157,9 +157,13 @@ def init_db(engine: SAEngine) -> None:  # type: ignore[override]
     # Lightweight migration: ensure 'test_mode' column exists and is NOT NULL DEFAULT 1
     try:
         insp = _inspect(engine) if _inspect is not None else None  # type: ignore
-        existing_cols = {
-            c['name'].lower() for c in (insp.get_columns('blocked_addresses') if insp else [])
-        }
+        cols = []
+        if insp is not None:
+            try:
+                cols = insp.get_columns('blocked_addresses') or []
+            except Exception:
+                cols = []
+        existing_cols = {(c.get('name') or '').lower() for c in cols}
     except Exception:
         existing_cols = set()
     if 'test_mode' not in existing_cols:
@@ -194,9 +198,13 @@ def fetch_entries(engine: SAEngine) -> list[BlockEntry]:  # type: ignore[overrid
     if _blocked_table is None:  # pragma: no cover - defensive
         raise RuntimeError('blocked table not initialized')
     with engine.connect() as conn:  # type: ignore[attr-defined]
-        rows = conn.execute(
+        res = conn.execute(
             select(_blocked_table.c.pattern, _blocked_table.c.is_regex, _blocked_table.c.test_mode)
-        ).fetchall()
+        )
+        try:
+            rows = res.fetchall() or []
+        except TypeError:
+            rows = []
         return [BlockEntry(pattern=row[0], is_regex=row[1], test_mode=bool(row[2])) for row in rows]
 
 
@@ -351,10 +359,10 @@ def monitor_loop() -> None:
                 write_map_files(entries)
                 reload_postfix()
                 last_hash = current_hash
-        except SAOperationalError as exc:
-            logging.error('Database error: %s', exc)
-        except Exception as exc:  # pragma: no cover - transient external failures
-            logging.error('Unexpected error: %s', exc)
+        except SAOperationalError:
+            logging.exception('Database error')
+        except Exception:  # pragma: no cover - transient external failures
+            logging.exception('Unexpected error')
         time.sleep(CHECK_INTERVAL)
 
 

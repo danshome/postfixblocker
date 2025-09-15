@@ -37,7 +37,7 @@ COPY postfix_blocker /opt/postfix_blocker
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Ensure application log directory exists
-RUN mkdir -p /var/log/app
+RUN mkdir -p /var/log/postfix-blocker
 
 WORKDIR /opt
 

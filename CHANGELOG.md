@@ -323,5 +323,5 @@ The format is based on [Keep a Changelog], and this project adheres to
 
 - Observability: Add structured logging for API and blocker
   - API: per-request logs (start, end with duration, and exceptions). Configurable via `API_LOG_LEVEL` and optional rotating file via `API_LOG_FILE`.
-  - Blocker: log map preparation counts, bytes written per file, and each postmap/reload invocation. Configurable via `BLOCKER_LOG_LEVEL` and rotating file `BLOCKER_LOG_FILE` (defaults to `/var/log/postfix_blocker/blocker.log`).
-  - Docker: forward `api` and `blocker` stdout/stderr to Docker logs by setting `stdout_logfile=/dev/stdout` and `redirect_stderr=true` in supervisord. Ensure `/var/log/app` exists in image.
+  - Blocker: log map preparation counts, bytes written per file, and each postmap/reload invocation. Configurable via `BLOCKER_LOG_LEVEL` and rotating file `BLOCKER_LOG_FILE` (defaults to `/var/log/postfix-blocker/blocker.log`).
+  - Docker: forward `api` and `blocker` stdout/stderr to Docker logs by setting `stdout_logfile=/dev/stdout` and `redirect_stderr=true` in supervisord. Ensure `/var/log/postfix-blocker` exists in image.
