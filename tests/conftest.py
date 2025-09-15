@@ -14,6 +14,11 @@ import sys
 
 import pytest
 
+try:
+    import requests  # type: ignore
+except Exception:  # pragma: no cover
+    requests = None  # type: ignore
+
 
 def pytest_addoption(parser: pytest.Parser) -> None:
     group = parser.getgroup('compose')
@@ -100,3 +105,38 @@ def compose_stack(pytestconfig: pytest.Config) -> None:
         else:
             print('[compose] Starting stack (no rebuild)...', flush=True)
             run([*compose, 'up', '-d', '--build'])
+
+
+@pytest.fixture(scope='session', autouse=True)
+def _cleanup_api_state() -> None:
+    """Best-effort cleanup of API state before and after the test session.
+
+    Ensures that when DB2 runs on a persistent volume, leftover addresses from
+    prior runs don't affect tests. Uses the API to delete entries for both
+    Postgres (5001) and DB2 (5002) services if available.
+    """
+    if not requests:
+        return
+
+    def wipe(port: int) -> None:
+        base = f'http://127.0.0.1:{port}'
+        try:
+            r = requests.get(f'{base}/addresses', timeout=3)
+            if r.status_code != 200:
+                return
+            for it in r.json() if isinstance(r.json(), list) else r.json().get('items', []):
+                try:
+                    requests.delete(f'{base}/addresses/{it["id"]}', timeout=3)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    # Pre-session cleanup
+    wipe(5001)
+    wipe(5002)
+
+    # Post-session cleanup
+    yield
+    wipe(5001)
+    wipe(5002)

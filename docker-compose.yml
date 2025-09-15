@@ -65,9 +65,13 @@ services:
       REPODB: "false"
       ARCHIVE_LOGS: "false"
     privileged: true
+    volumes:
+      - db2data:/database
     ports:
       - "50000:50000"
     # To test with DB2, set postfix BLOCKER_DB_URL to for example:
     #   ibm_db_sa://db2inst1:blockerpass@db2:50000/BLOCKER
-    # and ensure the Python image includes ibm-db and ibm-db-sa packages.
+  # and ensure the Python image includes ibm-db and ibm-db-sa packages.
+volumes:
+  db2data:
   

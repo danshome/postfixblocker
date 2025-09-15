@@ -50,7 +50,8 @@ help:
 	@echo "  make test              Python unit + frontend unit"
 	@echo "  make e2e               Backend + E2E tests (starts compose)"
 	@echo "  make compose-up        docker compose up --build -d"
-	@echo "  make compose-down      docker compose down -v --remove-orphans"
+	@echo "  make compose-down      docker compose down --remove-orphans (preserves volumes)"
+	@echo "  make compose-down-hard docker compose down -v --remove-orphans (destroys volumes)"
 	@echo "  make hooks-update      Run 'pre-commit autoupdate' to refresh hook pins"
 	@echo "  make format            Run formatters (ruff + ESLint --fix)"
 	@echo "  make docker-rebuild    docker compose build --no-cache"
@@ -162,8 +163,12 @@ compose-up:
 	@$(DOCKER_COMPOSE) up -d --build
 
 compose-down:
-	$(call log_step,Docker compose down -v --remove-orphans)
-	@$(DOCKER_COMPOSE) down -v --remove-orphans || true
+		$(call log_step,Docker compose down --remove-orphans)
+		@$(DOCKER_COMPOSE) down --remove-orphans || true
+
+compose-down-hard:
+		$(call log_step,Docker compose down -v --remove-orphans)
+		@$(DOCKER_COMPOSE) down -v --remove-orphans || true
 
 docker-rebuild:
 	$(call log_step,Docker compose build --no-cache)
