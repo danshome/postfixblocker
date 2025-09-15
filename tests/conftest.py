@@ -61,7 +61,23 @@ def compose_stack(pytestconfig: pytest.Config) -> None:
     force = pytestconfig.getoption('--compose-rebuild') or always
     needs = getattr(pytestconfig, '_compose_needs_stack', False)
 
-    # Rebuild when forced or when backend/e2e tests are part of this run
+    # Helper: determine if the stack is already up (skip rebuilds in that case)
+    def stack_running() -> bool:
+        if not compose:
+            return False
+        try:
+            out = subprocess.run(
+                [*compose, 'ps', '--services', '--filter', 'status=running'],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout
+            services = {line.strip() for line in out.splitlines() if line.strip()}
+            return bool({'postfix', 'postfix_db2'} & services)
+        except Exception:
+            return False
+
+    # Only manage the stack when backend/e2e tests are selected or forced
     if not (force or needs):
         return
 
@@ -72,7 +88,15 @@ def compose_stack(pytestconfig: pytest.Config) -> None:
             print(f'[compose] Command failed ({exc.returncode}): {" ".join(cmd)}', file=sys.stderr)
             # Do not fail the whole test run; tests will skip if services are unavailable
 
-    print('[compose] Bringing stack down...', flush=True)
-    run([*compose, 'down', '-v', '--remove-orphans'])
-    print('[compose] Building and starting stack...', flush=True)
-    run([*compose, 'up', '-d', '--build'])  # build latest app code
+    if force:
+        print('[compose] Forced rebuild requested...', flush=True)
+        print('[compose] Bringing stack down...', flush=True)
+        run([*compose, 'down', '-v', '--remove-orphans'])
+        print('[compose] Building and starting stack...', flush=True)
+        run([*compose, 'up', '-d', '--build'])
+    else:
+        if stack_running():
+            print('[compose] Stack already running; skipping rebuild', flush=True)
+        else:
+            print('[compose] Starting stack (no rebuild)...', flush=True)
+            run([*compose, 'up', '-d', '--build'])

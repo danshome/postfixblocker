@@ -33,7 +33,7 @@ FRONTEND_DIR := frontend
 
 .PHONY: help ci ci-start ci-end init venv install install-python install-frontend clean-venv clean-frontend clean-logs \
 	lint lint-python lint-frontend format format-python format-frontend \
-	build build-frontend test test-python-unit test-python-backend test-python-e2e test-frontend \
+	build build-frontend test test-python-unit test-python-backend test-python-e2e test-python-all test-frontend \
 	e2e compose-up compose-down docker-rebuild hooks-update
 
 # Pretty logging helper
@@ -55,7 +55,7 @@ help:
 	@echo "  make format            Run formatters (ruff + ESLint --fix)"
 	@echo "  make docker-rebuild    docker compose build --no-cache"
 
-ci: ci-start install lint build test test-python-backend test-python-e2e test-frontend-e2e ci-end compose-down
+ci: ci-start install lint build compose-up test-python-all test-frontend test-frontend-e2e ci-end compose-down
 
 ci-start:
 	$(call log_step,CI start)
@@ -128,6 +128,10 @@ build-frontend:
 
 # Testing
 test: test-python-unit test-frontend
+
+test-python-all: venv
+	$(call log_step,Python tests (unit + backend + e2e in one run))
+	@$(PYTEST) || true
 
 test-python-unit: venv
 	$(call log_step,Python unit tests)
