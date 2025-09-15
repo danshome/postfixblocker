@@ -210,6 +210,8 @@ def list_addresses():
         total = conn.execute(select(func.count()).select_from(bt).where(*filters)).scalar() or 0
         stmt = select(bt).where(*filters).order_by(order_by).offset(offset).limit(page_size)
         rows = conn.execute(stmt).fetchall()
+    app.logger.debug('List (paged) args=%s returned %d/%d rows (page=%d size=%d sort=%s dir=%s)',
+                     dict(args), len(rows), total, page, page_size, sort, direction)
     return jsonify(
         {
             'items': [row_to_dict(r) for r in rows],

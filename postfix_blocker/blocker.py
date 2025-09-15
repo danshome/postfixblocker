@@ -37,7 +37,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(me
 
 
 def _setup_blocker_logging() -> None:
-    level_name = os.environ.get('BLOCKER_LOG_LEVEL', 'INFO').upper()
+    # Default to DEBUG for detailed diagnostics; override via BLOCKER_LOG_LEVEL
+    level_name = os.environ.get('BLOCKER_LOG_LEVEL', 'DEBUG').upper()
     level = getattr(logging, level_name, logging.INFO)
     logging.getLogger().setLevel(level)
     # Optional file handler

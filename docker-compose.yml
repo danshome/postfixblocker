@@ -28,6 +28,8 @@ services:
       BLOCKER_DB_URL: postgresql://blocker:blocker@db:5432/blocker
       API_LOG_FILE: /var/log/postfix-blocker/api.log
       BLOCKER_LOG_FILE: /var/log/postfix-blocker/blocker.log
+      API_LOG_LEVEL: DEBUG
+      BLOCKER_LOG_LEVEL: DEBUG
     volumes:
       - ./logs:/var/log/postfix-blocker
   postfix_db2:
@@ -47,6 +49,8 @@ services:
       BLOCKER_DB_URL: ibm_db_sa://db2inst1:blockerpass@db2:50000/BLOCKER
       API_LOG_FILE: /var/log/postfix-blocker/api.log
       BLOCKER_LOG_FILE: /var/log/postfix-blocker/blocker.log
+      API_LOG_LEVEL: DEBUG
+      BLOCKER_LOG_LEVEL: DEBUG
     volumes:
       - ./logs:/var/log/postfix-blocker
   db2:
