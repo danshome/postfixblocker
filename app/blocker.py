@@ -35,6 +35,32 @@ except Exception:  # pragma: no cover - exercised when SQLAlchemy is missing
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 
+
+def _setup_blocker_logging() -> None:
+    level_name = os.environ.get('BLOCKER_LOG_LEVEL', 'INFO').upper()
+    level = getattr(logging, level_name, logging.INFO)
+    logging.getLogger().setLevel(level)
+    # Optional file handler
+    log_path = os.environ.get('BLOCKER_LOG_FILE') or '/var/log/app/blocker.log'
+    try:
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        from logging.handlers import RotatingFileHandler
+
+        fh = RotatingFileHandler(log_path, maxBytes=10 * 1024 * 1024, backupCount=5)
+        fh.setLevel(level)
+        fmt = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s %(message)s')
+        fh.setFormatter(fmt)
+        root = logging.getLogger()
+        # Avoid duplicate handlers
+        if not any(
+            isinstance(h, RotatingFileHandler) and getattr(h, 'baseFilename', '') == fh.baseFilename
+            for h in root.handlers
+        ):
+            root.addHandler(fh)
+    except Exception as exc:  # pragma: no cover - filesystem/permissions
+        logging.warning('Could not set up blocker file logging: %s', exc)
+
+
 DB_URL = os.environ.get('BLOCKER_DB_URL', 'postgresql://blocker:blocker@db:5432/blocker')
 CHECK_INTERVAL = float(os.environ.get('BLOCKER_INTERVAL', '5'))
 POSTFIX_DIR = os.environ.get('POSTFIX_DIR', '/etc/postfix')
@@ -199,6 +225,14 @@ def write_map_files(entries: list[BlockEntry]) -> None:
             else:
                 literal_lines.append(line_lit)
 
+    logging.info(
+        'Preparing Postfix maps: enforce(lit=%d, re=%d) test(lit=%d, re=%d)',
+        len(literal_lines),
+        len(regex_lines),
+        len(test_literal_lines),
+        len(test_regex_lines),
+    )
+
     paths = {
         'literal': os.path.join(POSTFIX_DIR, 'blocked_recipients'),
         'regex': os.path.join(POSTFIX_DIR, 'blocked_recipients.pcre'),
@@ -217,11 +251,15 @@ def write_map_files(entries: list[BlockEntry]) -> None:
         f.write('\n'.join(test_regex_lines) + ('\n' if test_regex_lines else ''))
 
     logging.info(
-        'Wrote maps: %s, %s, %s, %s',
+        'Wrote maps: %s (bytes=%d), %s (bytes=%d), %s (bytes=%d), %s (bytes=%d)',
         paths['literal'],
+        os.path.getsize(paths['literal']),
         paths['regex'],
+        os.path.getsize(paths['regex']),
         paths['test_literal'],
+        os.path.getsize(paths['test_literal']),
         paths['test_regex'],
+        os.path.getsize(paths['test_regex']),
     )
 
 
@@ -230,7 +268,7 @@ def reload_postfix() -> None:
     literal_path = os.path.join(POSTFIX_DIR, 'blocked_recipients')
     test_literal_path = os.path.join(POSTFIX_DIR, 'blocked_recipients_test')
     try:
-        logging.info('Running postmap')
+        logging.info('Running postmap on %s and %s', literal_path, test_literal_path)
         rc1 = subprocess.run(['/usr/sbin/postmap', literal_path], check=False).returncode  # nosec B603
         rc1b = subprocess.run(['/usr/sbin/postmap', test_literal_path], check=False).returncode  # nosec B603
         logging.info('Reloading postfix')
@@ -333,4 +371,5 @@ def get_blocked_table() -> Table:
 
 
 if __name__ == '__main__':
+    _setup_blocker_logging()
     monitor_loop()

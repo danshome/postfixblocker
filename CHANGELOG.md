@@ -318,3 +318,10 @@ The format is based on [Keep a Changelog], and this project adheres to
 - Frontend dev-server warnings: remove deprecated `--disable-host-check` and silence prebundle warning
   - package.json: drop `--disable-host-check` from `start:devc` and `start:db2`.
   - angular.json: set `serve.options.prebundle=false` to avoid the “Prebundling ... not used because scripts optimization is enabled” message.
+
+## 2025-09-15 01:55 UTC
+
+- Observability: Add structured logging for API and blocker
+  - API: per-request logs (start, end with duration, and exceptions). Configurable via `API_LOG_LEVEL` and optional rotating file via `API_LOG_FILE`.
+  - Blocker: log map preparation counts, bytes written per file, and each postmap/reload invocation. Configurable via `BLOCKER_LOG_LEVEL` and rotating file `BLOCKER_LOG_FILE` (defaults to `/var/log/app/blocker.log`).
+  - Docker: forward `api` and `blocker` stdout/stderr to Docker logs by setting `stdout_logfile=/dev/stdout` and `redirect_stderr=true` in supervisord. Ensure `/var/log/app` exists in image.

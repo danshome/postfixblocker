@@ -28,13 +28,13 @@ repos:
   - repo: local
     hooks:
       - id: eslint-frontend
-        name: ESLint (frontend)
+        name: ESLint (frontend, --fix)
         language: system
         entry: bash
         args:
           - -lc
           - >-
-            cd frontend && if [ -d node_modules ]; then npm run lint; else echo '[eslint]
-            Skipping: node_modules not installed'; fi
+            cd frontend && if [ -d node_modules ]; then (npm run lint:fix || npm run lint);
+            else echo '[eslint] Skipping: node_modules not installed'; fi
         files: ^frontend/src/.*\.(ts|tsx)$
         pass_filenames: false

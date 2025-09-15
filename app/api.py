@@ -1,7 +1,9 @@
+import logging
 import os
+import time
 from typing import TYPE_CHECKING, Any, cast
 
-from flask import Flask, abort, jsonify, request
+from flask import Flask, abort, g, jsonify, request
 from sqlalchemy import func, inspect, select
 from sqlalchemy.exc import IntegrityError
 
@@ -36,6 +38,71 @@ engine: Any = None
 _db_ready = False
 
 
+# ----- Logging setup & request logging -----
+def _init_logging() -> None:
+    level_name = os.environ.get('API_LOG_LEVEL', 'INFO').upper()
+    level = getattr(logging, level_name, logging.INFO)
+    app.logger.setLevel(level)
+    logging.getLogger().setLevel(level)
+    # Optional file handler
+    log_path = os.environ.get('API_LOG_FILE')
+    if log_path:
+        try:
+            os.makedirs(os.path.dirname(log_path), exist_ok=True)
+            from logging.handlers import RotatingFileHandler
+
+            fh = RotatingFileHandler(log_path, maxBytes=10 * 1024 * 1024, backupCount=5)
+            fh.setLevel(level)
+            fmt = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s %(message)s')
+            fh.setFormatter(fmt)
+            app.logger.addHandler(fh)
+        except Exception as exc:  # pragma: no cover - filesystem/permissions
+            app.logger.warning('Could not set up API file logging: %s', exc)
+
+
+@app.before_request
+def _log_request_start() -> None:  # pragma: no cover - integration behavior
+    g._start_time = time.time()
+    try:
+        qs = request.query_string.decode('utf-8') if request.query_string else ''
+    except Exception:
+        qs = ''
+    app.logger.info(
+        'API %s %s%s from=%s',
+        request.method,
+        request.path,
+        f'?{qs}' if qs else '',
+        request.remote_addr,
+    )
+
+
+@app.after_request
+def _log_request_end(response):  # pragma: no cover - integration behavior
+    try:
+        start = getattr(g, '_start_time', None)
+        dur_ms = (time.time() - start) * 1000.0 if start else 0.0
+    except Exception:
+        dur_ms = 0.0
+    app.logger.info(
+        'API done %s %s status=%s duration=%.1fms',
+        request.method,
+        request.path,
+        response.status_code,
+        dur_ms,
+    )
+    return response
+
+
+@app.teardown_request
+def _log_request_teardown(exc):  # pragma: no cover - integration behavior
+    if exc is not None:
+        app.logger.exception('API error on %s %s: %s', request.method, request.path, exc)
+
+
+# Initialize logging once
+_init_logging()
+
+
 def ensure_db_ready() -> bool:
     """Ensure database schema is initialized; return True on success.
 
@@ -43,10 +110,9 @@ def ensure_db_ready() -> bool:
     (e.g., DB2 taking minutes to initialize). Routes can respond gracefully
     while retrying on subsequent requests.
     """
-    global _db_ready
+    global _db_ready, engine
     if _db_ready:
         return True
-    global engine
     try:
         if engine is None:
             engine = get_engine()

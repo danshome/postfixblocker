@@ -19,6 +19,12 @@ need to be supported.
 - After making any changes, always re-run the unit tests, backend tests, and E2E tests, and fix any issues.
 - Always update documentation if necessary. 
 - Always update the CHANGELOG.md file with the date and time of the change.
+- After making any changes, run the pre-commit hooks across the repo and fix all issues:
+  - `python -m pip install -r requirements-dev.txt` (one-time)
+  - Quick path to auto-fix, restage, and run hooks: `./scripts/precommit-fix.sh`
+    - This runs Ruff format + fix and ESLint --fix first to minimize reruns, then executes all hooks.
+  - Or run manually: `pre-commit run --all-files`
+  - Ensure Ruff, Mypy, Bandit, and ESLint pass before committing.
 
 ## Codex AI agent – Frontend change checklist
 
