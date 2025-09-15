@@ -6,3 +6,4 @@ dist/
 frontend/.angular/
 .env
 .idea
+logs/
