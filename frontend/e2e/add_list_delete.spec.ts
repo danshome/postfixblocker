@@ -1,6 +1,22 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from 'playwright/test';
+
+async function waitForApiReady(request: any, timeoutMs = 120_000): Promise<void> {
+  const start = Date.now();
+  // Poll until API is ready (200 OK) or timeout
+  // Playwright's request fixture shares baseURL with each project so '/addresses' proxies correctly
+  for (;;) {
+    const resp = await request.get('/addresses');
+    if (resp.ok()) return;
+    if (Date.now() - start > timeoutMs) {
+      throw new Error(`API not ready after ${timeoutMs}ms (last status=${resp.status()})`);
+    }
+    await new Promise(r => setTimeout(r, 1000));
+  }
+}
 
 test.beforeEach(async ({ request }) => {
+  // Ensure backend is up (DB ready) before proceeding
+  await waitForApiReady(request);
   // Reset backend state via the dev-server proxy for the current project
   const resp = await request.get('/addresses');
   if (resp.ok()) {
@@ -26,8 +42,11 @@ test('add, list, and delete entries', async ({ page }) => {
   await page.getByPlaceholder('paste emails or regex (one per line)').fill('.*@e2e.com');
   await page.getByRole('checkbox', { name: 'Regex' }).check();
   await page.getByRole('button', { name: 'Add', exact: true }).click();
-  const regexRow = page.locator('tr.mat-row', { hasText: '.*@e2e.com' });
-  await expect(regexRow).toContainText('Yes');
+  // Scope to the table body to avoid matching the header row, then locate the row by name
+  const body = page.getByRole('rowgroup').nth(1); // 0 = header, 1 = body
+  const rowByPattern = body.getByRole('row', { name: /\.\*@e2e\.com/ });
+  await expect(rowByPattern).toBeVisible({ timeout: 30000 });
+  await expect(rowByPattern.getByRole('cell').nth(2)).toHaveText('Yes', { timeout: 30000 });
 
   // Bulk add two addresses (one per line) via paste box
   await page.getByPlaceholder('paste emails or regex (one per line)').fill('bulk1@example.com\nbulk2@example.com');

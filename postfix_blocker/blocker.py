@@ -1,4 +1,4 @@
-import logging  # moved to postfix_blocker.blocker
+import logging
 import os
 import signal
 import subprocess  # nosec B404
@@ -148,7 +148,17 @@ class BlockEntry:
 def get_engine() -> SAEngine:  # type: ignore[override]
     if not _SA_AVAILABLE:
         raise RuntimeError('SQLAlchemy is not installed; cannot create engine.')
-    return create_engine(DB_URL)  # type: ignore[misc]
+    # Enable resilient pooling across both Postgres and DB2 drivers
+    # - pool_pre_ping: validate connections before use to avoid stale sockets
+    # - pool_use_lifo: reuse most-recently-returned connections to improve locality
+    return create_engine(  # type: ignore[misc]
+        DB_URL,
+        pool_pre_ping=True,
+        pool_use_lifo=True,
+        pool_size=20,
+        max_overflow=0,
+        pool_recycle=3600,
+    )
 
 
 def init_db(engine: SAEngine) -> None:  # type: ignore[override]

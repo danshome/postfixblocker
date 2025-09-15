@@ -1,4 +1,4 @@
-import logging  # moved to postfix_blocker.api
+import logging
 import os
 import signal
 import time
@@ -331,7 +331,6 @@ def update_address(entry_id: int):
         abort(400, 'no updatable fields provided')
 
     bt = get_blocked_table()
-    from sqlalchemy.exc import IntegrityError as _IntegrityError  # local import
 
     eng = cast(Any, engine)
     with eng.connect() as conn:
@@ -340,7 +339,7 @@ def update_address(entry_id: int):
             if res.rowcount == 0:
                 abort(404)
             conn.commit()
-        except _IntegrityError:
+        except IntegrityError:
             abort(409, 'pattern already exists')
     try:
         _notify_blocker_refresh()
