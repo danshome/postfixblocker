@@ -5,68 +5,40 @@ on:
   pull_request:
 
 jobs:
-  unit:
+  ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.9.21'
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest
-      - name: Run unit tests
-        run: pytest -m unit -q
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  backend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.9.21'
-      - name: Install deps
+          python-version: '3.11'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Python and frontend deps
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest
-      - name: Start DB backends
-        run: |
-          docker compose up -d db db2 mailhog
-      - name: Run backend tests (both DBs)
+          make install
+
+      - name: Install Playwright browsers
+        uses: microsoft/playwright-github-action@v1
+
+      - name: Run unified CI (lint, build, tests)
         env:
           TEST_PG_URL: postgresql://blocker:blocker@localhost:5433/blocker
           TEST_DB2_URL: ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER
           BACKEND_WAIT_TIMEOUT_PG: '180'
-          BACKEND_WAIT_TIMEOUT_DB2: '600'
-        run: pytest -m backend -q
-
-  e2e:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.9.21'
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest
-      - name: Start full stack (both postfix services)
-        run: |
-          docker compose up -d
-      - name: Run e2e tests for both backends
-        env:
-          TEST_PG_URL: postgresql://blocker:blocker@localhost:5433/blocker
-          TEST_DB2_URL: ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER
-          BACKEND_WAIT_TIMEOUT_PG: '180'
-          BACKEND_WAIT_TIMEOUT_DB2: '600'
+          BACKEND_WAIT_TIMEOUT_DB2: '900'
           SMTP_PORT_PG: '1025'
           SMTP_PORT_DB2: '1026'
           MAILHOG_HOST: 'localhost'
           MAILHOG_PORT: '8025'
-        run: pytest -m e2e -q
-
+        run: |
+          make ci

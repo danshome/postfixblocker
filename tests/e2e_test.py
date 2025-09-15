@@ -84,7 +84,7 @@ def mailhog_messages():
     for item in data.get('items', []):
         to = item.get('To', [])
         if to:
-            recipients.append(f"{to[0]['Mailbox']}@{to[0]['Domain']}")
+            recipients.append(f'{to[0]["Mailbox"]}@{to[0]["Domain"]}')
     return recipients
 
 
@@ -186,7 +186,7 @@ def mailhog_counts():
     for item in data.get('items', []):
         to = item.get('To', [])
         if to:
-            r = f"{to[0]['Mailbox']}@{to[0]['Domain']}"
+            r = f'{to[0]["Mailbox"]}@{to[0]["Domain"]}'
             counts[r] = counts.get(r, 0) + 1
     return counts
 

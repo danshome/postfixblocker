@@ -1,5 +1,5 @@
 # Local static analysis (serverless)
-ruff==0.6.9
-mypy==1.11.2
-bandit==1.7.9
-pre-commit==3.8.0
+ruff
+mypy
+bandit
+pre-commit

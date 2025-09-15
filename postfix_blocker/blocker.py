@@ -1,9 +1,11 @@
 import logging  # moved to postfix_blocker.blocker
 import os
+import signal
 import subprocess  # nosec B404
+import threading
 import time
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 # NOTE: Make SQLAlchemy an optional dependency at import time so unit tests that
 # only exercise file-writing logic don't require the package to be installed.
@@ -50,8 +52,8 @@ def _setup_blocker_logging() -> None:
     for h in list(root.handlers):
         try:
             h.setLevel(level)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.debug('Could not set handler level: %s', exc)
     # Optional file handler
     log_path = os.environ.get('BLOCKER_LOG_FILE') or '/var/log/postfix-blocker/blocker.log'
     try:
@@ -83,6 +85,7 @@ def _setup_blocker_logging() -> None:
 DB_URL = os.environ.get('BLOCKER_DB_URL', 'postgresql://blocker:blocker@db:5432/blocker')
 CHECK_INTERVAL = float(os.environ.get('BLOCKER_INTERVAL', '5'))
 POSTFIX_DIR = os.environ.get('POSTFIX_DIR', '/etc/postfix')
+PID_FILE = os.environ.get('BLOCKER_PID_FILE', '/var/run/postfix-blocker/blocker.pid')
 
 """Database schema and helpers for Postfix Blocker.
 
@@ -176,7 +179,7 @@ def init_db(engine: SAEngine) -> None:  # type: ignore[override]
     # Lightweight migration: ensure 'test_mode' column exists and is NOT NULL DEFAULT 1
     try:
         insp = _inspect(engine) if _inspect is not None else None  # type: ignore
-        cols = []
+        cols: list[Any] = []
         if insp is not None:
             try:
                 cols = insp.get_columns('blocked_addresses') or []
@@ -225,6 +228,26 @@ def fetch_entries(engine: SAEngine) -> list[BlockEntry]:  # type: ignore[overrid
         except TypeError:
             rows = []
         return [BlockEntry(pattern=row[0], is_regex=row[1], test_mode=bool(row[2])) for row in rows]
+
+
+def get_change_marker(engine: SAEngine) -> Optional[tuple[str, int]]:
+    """Return a lightweight marker indicating table changes or None if unsupported.
+
+    Uses (max(updated_at), count(*)) so any insert/update/delete changes the marker
+    without fetching full rows. Falls back to None if the column is missing or
+    the backend/dialect cannot compute the aggregate.
+    """
+    _ensure_sa_schema_loaded()
+    if _blocked_table is None:  # pragma: no cover - defensive
+        return None
+    try:
+        with engine.connect() as conn:  # type: ignore[attr-defined]
+            row = conn.execute(select(func.max(_blocked_table.c.updated_at), func.count())).one()
+            max_ts, cnt = row[0], int(row[1] or 0)
+            marker = (str(max_ts) if max_ts is not None else '', cnt)
+            return marker
+    except Exception:
+        return None
 
 
 def write_map_files(entries: list[BlockEntry]) -> None:
@@ -330,6 +353,33 @@ def _has_postfix_pcre() -> bool:
         return False
 
 
+_refresh_event = threading.Event()
+
+
+def _sigusr1(_signum, _frame) -> None:  # pragma: no cover - signal handler
+    _refresh_event.set()
+
+
+def _setup_signal_ipc() -> None:
+    try:
+        signal.signal(signal.SIGUSR1, _sigusr1)
+        logging.info('Blocker listening for SIGUSR1 to trigger refresh')
+    except Exception as exc:  # pragma: no cover - platform dependent
+        logging.warning('Could not set SIGUSR1 handler: %s', exc)
+
+
+def _write_pid_file() -> None:
+    try:
+        d = os.path.dirname(PID_FILE)
+        if d:
+            os.makedirs(d, exist_ok=True)
+        with open(PID_FILE, 'w', encoding='utf-8') as f:
+            f.write(str(os.getpid()))
+        logging.info('Blocker PID file written: %s', PID_FILE)
+    except Exception as exc:  # pragma: no cover - filesystem/permissions
+        logging.warning('Could not write PID file %s: %s', PID_FILE, exc)
+
+
 def monitor_loop() -> None:
     engine: Optional[SAEngine] = None
     # Be resilient to slow DB startup (e.g., DB2 taking minutes) or missing
@@ -358,9 +408,19 @@ def monitor_loop() -> None:
                 "Regex rules will not be enforced and 'postfix reload' may fail "
                 'if main.cf references a PCRE map. Ensure Postfix PCRE support is enabled.'
             )
+    last_marker: Optional[tuple[str, int]] = None
     last_hash = None
     while True:
         try:
+            marker = get_change_marker(engine)
+            if marker is not None and marker == last_marker:
+                # No change detected; sleep and continue
+                _refresh_event.wait(CHECK_INTERVAL)
+                # Clear the flag if it was set; loop will process next
+                if _refresh_event.is_set():
+                    _refresh_event.clear()
+                continue
+            # Fetch full entries only when change is detected or marker unavailable
             entries = fetch_entries(engine)
             # Warn once if regex entries exist but PCRE is unavailable
             global _PCRE_REGEX_WARNED
@@ -373,16 +433,26 @@ def monitor_loop() -> None:
                         regex_count,
                     )
                     _PCRE_REGEX_WARNED = True
-            current_hash = hash(tuple((e.pattern, e.is_regex) for e in entries))
-            if current_hash != last_hash:
+            # Include test_mode and sort for deterministic change detection.
+            # Previously, test_mode changes did not trigger a reload; include it here
+            # so switching between Test/Enforce updates the Postfix maps.
+            sig = tuple(sorted((e.pattern, bool(e.is_regex), bool(e.test_mode)) for e in entries))
+            current_hash = hash(sig)
+            # Update when either marker changed or content hash changed (fallback)
+            if (marker is not None and marker != last_marker) or (
+                marker is None and current_hash != last_hash
+            ):
                 write_map_files(entries)
                 reload_postfix()
                 last_hash = current_hash
+                last_marker = marker
         except SAOperationalError:
             logging.exception('Database error')
         except Exception:  # pragma: no cover - transient external failures
             logging.exception('Unexpected error')
-        time.sleep(CHECK_INTERVAL)
+        _refresh_event.wait(CHECK_INTERVAL)
+        if _refresh_event.is_set():
+            _refresh_event.clear()
 
 
 def get_blocked_table() -> Table:
@@ -399,4 +469,6 @@ def get_blocked_table() -> Table:
 
 if __name__ == '__main__':
     _setup_blocker_logging()
+    _setup_signal_ipc()
+    _write_pid_file()
     monitor_loop()

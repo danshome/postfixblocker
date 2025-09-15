@@ -2,6 +2,5 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."/frontend
-echo "Running ESLint..."
-npm run lint
-
+echo "Running ESLint --fix..."
+npm run lint:fix || npm run lint

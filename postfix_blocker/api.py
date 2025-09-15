@@ -1,5 +1,6 @@
 import logging  # moved to postfix_blocker.api
 import os
+import signal
 import time
 from typing import TYPE_CHECKING, Any, cast
 
@@ -51,13 +52,15 @@ def _init_logging() -> None:
     app.logger.setLevel(level)
     root = logging.getLogger()
     root.setLevel(level)
-    
+
     # Ensure existing handlers honor the configured level (Flask/werkzeug add their own)
     for h in list(app.logger.handlers) + list(root.handlers):
         try:
             h.setLevel(level)
-        except Exception:
-            pass
+        except Exception as exc:
+            # Not all handlers allow setting level (or may be misconfigured)
+            # Log at debug instead of silently ignoring to satisfy linters.
+            app.logger.debug('Could not set handler level: %s', exc)
     # Optional file handler
     log_path = os.environ.get('API_LOG_FILE')
     if log_path:
@@ -72,7 +75,11 @@ def _init_logging() -> None:
             # Attach to both the Flask app logger and the root logger so any
             # library logs (e.g., werkzeug) are captured as well.
             app.logger.addHandler(fh)
-            if not any(isinstance(h, RotatingFileHandler) and getattr(h, 'baseFilename', '') == fh.baseFilename for h in root.handlers):
+            if not any(
+                isinstance(h, RotatingFileHandler)
+                and getattr(h, 'baseFilename', '') == fh.baseFilename
+                for h in root.handlers
+            ):
                 root.addHandler(fh)
         except Exception as exc:  # pragma: no cover - filesystem/permissions
             app.logger.warning('Could not set up API file logging: %s', exc)
@@ -229,8 +236,16 @@ def list_addresses():
         total = conn.execute(select(func.count()).select_from(bt).where(*filters)).scalar() or 0
         stmt = select(bt).where(*filters).order_by(order_by).offset(offset).limit(page_size)
         rows = conn.execute(stmt).fetchall()
-    app.logger.debug('List (paged) args=%s returned %d/%d rows (page=%d size=%d sort=%s dir=%s)',
-                     dict(args), len(rows), total, page, page_size, sort, direction)
+    app.logger.debug(
+        'List (paged) args=%s returned %d/%d rows (page=%d size=%d sort=%s dir=%s)',
+        dict(args),
+        len(rows),
+        total,
+        page,
+        page_size,
+        sort,
+        direction,
+    )
     return jsonify(
         {
             'items': [row_to_dict(r) for r in rows],
@@ -272,6 +287,10 @@ def add_address():
             conn.commit()
         except IntegrityError:
             abort(409, 'pattern already exists')
+    try:
+        _notify_blocker_refresh()
+    finally:
+        pass
     return {KEY_STATUS: STATUS_OK}, 201
 
 
@@ -284,6 +303,10 @@ def delete_address(entry_id):
         bt = get_blocked_table()
         conn.execute(bt.delete().where(bt.c.id == entry_id))
         conn.commit()
+    try:
+        _notify_blocker_refresh()
+    finally:
+        pass
     return {KEY_STATUS: STATUS_DELETED}
 
 
@@ -319,7 +342,30 @@ def update_address(entry_id: int):
             conn.commit()
         except _IntegrityError:
             abort(409, 'pattern already exists')
+    try:
+        _notify_blocker_refresh()
+    finally:
+        pass
     return {KEY_STATUS: STATUS_OK}
+
+
+# --- Optional Blocker refresh notification (signal-based IPC) ---
+def _notify_blocker_refresh() -> None:
+    """Best-effort notify the blocker to refresh immediately via SIGUSR1.
+
+    Reads the PID from BLOCKER_PID_FILE and sends SIGUSR1. Any errors are
+    logged at debug level and ignored to avoid impacting API latency.
+    """
+    pid_file = os.environ.get('BLOCKER_PID_FILE', '/var/run/postfix-blocker/blocker.pid')
+    try:
+        with open(pid_file, encoding='utf-8') as f:
+            pid_s = (f.read() or '').strip()
+        if not pid_s:
+            return
+        pid = int(pid_s)
+        os.kill(pid, signal.SIGUSR1)
+    except Exception as exc:  # pragma: no cover - optional/ephemeral
+        app.logger.debug('Blocker signal notify failed: %s', exc)
 
 
 if __name__ == '__main__':

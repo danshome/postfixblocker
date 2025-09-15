@@ -30,6 +30,9 @@ Prerequisites: {{MIN_SUPPORTED_VERSIONS}}
 Example for this repository:
 
 ```bash
+# Unified build + tests (Python + frontend)
+make ci
+
 # Build + start services
 docker compose up --build -d
 
@@ -129,6 +132,18 @@ For DB2 support, Python dependencies `ibm-db` and `ibm-db-sa` are required
   entries.
 * **Docker Compose environment** – Includes Postfix, PostgreSQL, IBM DB2 (optional),
   and MailHog for local testing.
+
+### API ↔ Blocker IPC (Refresh)
+
+- Mechanism: signal-based IPC on the same host/container.
+  - The blocker writes its PID to `BLOCKER_PID_FILE` (default: `/var/run/postfix-blocker/blocker.pid`).
+  - After add/update/delete commits, the API reads the PID file and sends `SIGUSR1` to trigger an immediate refresh (rewrite maps → `postmap` → `postfix reload`).
+- Configuration (already wired in Docker):
+  - `BLOCKER_PID_FILE` for both processes (supervisord passes it through).
+- Fallback behavior: if signaling fails (missing PID file, permissions, etc.), the blocker still detects changes via a lightweight DB marker (`max(updated_at)`, `count(*)`) within `BLOCKER_INTERVAL` seconds.
+- Verify manually (inside the postfix container):
+  - `kill -USR1 $(cat /var/run/postfix-blocker/blocker.pid)`
+  - Tail logs for: “Preparing Postfix maps…”, “Running postmap…”, “Reloading postfix”.
 
 ## Running locally
 

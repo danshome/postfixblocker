@@ -69,7 +69,7 @@ def compose_stack(pytestconfig: pytest.Config) -> None:
         try:
             subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError as exc:
-            print(f"[compose] Command failed ({exc.returncode}): {' '.join(cmd)}", file=sys.stderr)
+            print(f'[compose] Command failed ({exc.returncode}): {" ".join(cmd)}', file=sys.stderr)
             # Do not fail the whole test run; tests will skip if services are unavailable
 
     print('[compose] Bringing stack down...', flush=True)

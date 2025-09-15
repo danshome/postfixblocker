@@ -8,7 +8,9 @@ Usage:
     from postfix_blocker import blocker, api
 """
 
-from . import blocker  # noqa: F401
-from . import api  # noqa: F401
+from . import (
+    api,  # noqa: F401
+    blocker,  # noqa: F401
+)
 
-__all__ = ["blocker", "api"]
+__all__ = ['blocker', 'api']

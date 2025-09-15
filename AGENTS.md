@@ -10,6 +10,7 @@
 - `logs/` – Host‑mounted logs (`api.log`, `blocker.log`)
 
 ## Build, Test, and Development Commands
+- Unified build/test: `make ci` (lint, build, unit/backend/e2e for Python + frontend)
 - Start stacks: `docker compose up --build -d`
 - Python tests: `pytest -q` (markers: `-m unit|backend|e2e`)
 - Frontend unit: `cd frontend && npm install && npm test`
@@ -43,4 +44,8 @@
   - API: `API_LOG_LEVEL`, `API_LOG_FILE` → `./logs/api.log`
   - Blocker: `BLOCKER_LOG_LEVEL`, `BLOCKER_LOG_FILE` → `./logs/blocker.log`
 - Postfix maps live in `/etc/postfix/*`; blocker writes and reloads automatically
-
+- API ↔ Blocker refresh IPC (same host/container):
+  - Blocker writes a PID file and listens for `SIGUSR1` to trigger an immediate refresh.
+  - API sends `SIGUSR1` to the PID read from `BLOCKER_PID_FILE` after mutations.
+  - Ensure both processes share the same `BLOCKER_PID_FILE` path (default `/var/run/postfix-blocker/blocker.pid`).
+  - If signaling fails, blocker still polls using a DB change marker at `BLOCKER_INTERVAL`.

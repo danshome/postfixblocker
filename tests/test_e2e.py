@@ -37,9 +37,9 @@ def _targets():
 def test_e2e_both_backends(target):
     # Ensure DB and SMTP endpoints are ready; skip if not.
     if not wait_for_db_url(target['db_url']):
-        pytest.skip(f"DB not ready for {target['name']}")
+        pytest.skip(f'DB not ready for {target["name"]}')
     if not wait_for_smtp(target['smtp_host'], target['smtp_port'], total_timeout=60):
-        pytest.skip(f"SMTP not ready for {target['name']}")
+        pytest.skip(f'SMTP not ready for {target["name"]}')
     delivered = run_e2e_scenario(
         target['db_url'],
         target['smtp_host'],
@@ -49,7 +49,7 @@ def test_e2e_both_backends(target):
     )
 
     if not delivered:  # backend/service not available; skip rather than fail
-        pytest.skip(f"E2E target {target['name']} unavailable")
+        pytest.skip(f'E2E target {target["name"]} unavailable')
 
     assert 'allowed@example.com' in delivered
     assert 'blocked1@example.com' not in delivered
