@@ -77,3 +77,52 @@ above.
 - Runbook: Re-run with adjusted permissions; consult `AGENTS.md` instructions
 
 <!-- END GENERATED: AGENTS:INVENTORY -->
+# Repository Guidelines
+
+## Project Structure & Module Organization
+
+- `postfix_blocker/` – Python service modules:
+  - `blocker.py` (writes Postfix maps, reloads Postfix)
+  - `api.py` (Flask API for managing addresses)
+- `frontend/` – Angular 20 web UI (Material, Karma/Playwright).
+- `docker/` – Postfix images and supervisor config.
+- `tests/` – Pytest suites (`unit`, `backend`, `e2e`).
+- `logs/` – Host‑mounted logs from containers (API and blocker).
+
+## Build, Test, and Development Commands
+
+- Start stacks: `docker compose up --build -d`
+- Python tests: `pytest -q` (markers: `-m unit|backend|e2e`)
+- Frontend unit tests: `cd frontend && npm install && npm test`
+- Frontend e2e: `cd frontend && npm run e2e` (ensure Docker stack is up)
+- Quick lint/fix + hooks: `./scripts/precommit-fix.sh` (then commit)
+
+## Coding Style & Naming Conventions
+
+- Python: PEP 8; format with Ruff (`ruff format`), lint with Ruff/Mypy/Bandit.
+- TypeScript: ESLint (`@typescript-eslint`, `sonarjs`); Angular style guides.
+- Naming: Python `snake_case` (modules, functions), `PascalCase` classes; TS `PascalCase` components, `camelCase` services/vars.
+
+## Testing Guidelines
+
+- Pytest test files: `tests/test_*.py`. Keep fast, deterministic unit tests.
+- Backend/e2e tests require Docker services; skip gracefully if unavailable.
+- Frontend: Karma (unit) and Playwright (e2e). Prefer small, focused specs.
+- Run full suite before PR: `pytest -q && (cd frontend && npm test && npm run e2e)`.
+
+## Commit & Pull Request Guidelines
+
+- Commits: concise, imperative subject; include rationale in body when needed.
+- Pre‑commit is required before committing: `pre-commit run --all-files` (or use `./scripts/precommit-fix.sh`).
+- PRs must include:
+  - What/why, screenshots/GIFs for UI changes
+  - Passing tests (Python + frontend) and green pre‑commit
+  - Any config/doc updates (README/INSTALL/CHANGELOG) when applicable
+
+## Security & Configuration Tips
+
+- Never commit secrets. Use env vars and Docker secrets.
+- Logging controls:
+  - API: `API_LOG_LEVEL`, `API_LOG_FILE` (rotating)
+  - Blocker: `BLOCKER_LOG_LEVEL`, `BLOCKER_LOG_FILE` (rotating)
+- Host logs are under `./logs/` via Docker volume.
