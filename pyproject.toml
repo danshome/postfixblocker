@@ -28,3 +28,61 @@ no_implicit_optional = true
 show_error_codes = true
 pretty = true
 
+
+[build-system]
+requires = ["setuptools>=64", "wheel", "setuptools_scm[toml]>=7"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "postfix-blocker"
+description = "Postfix blocker service and Flask API to manage blocklists and control Postfix maps."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [{ name = "Dan McLaughlin" }]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Framework :: Flask",
+  "Topic :: Communications :: Email :: Filters",
+]
+dependencies = [
+  "Flask",
+  "SQLAlchemy",
+  "requests",
+  "psycopg2-binary",
+  "ibm-db",
+  "ibm-db-sa",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/danmclaughlin/postfixblocker"
+Repository = "https://github.com/danmclaughlin/postfixblocker"
+Issues = "https://github.com/danmclaughlin/postfixblocker/issues"
+Changelog = "https://github.com/danmclaughlin/postfixblocker/blob/main/CHANGELOG.md"
+
+[project.scripts]
+postfix-blocker-api = "postfix_blocker.web.__main__:main"
+postfix-blocker-blocker = "postfix_blocker.blocker:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["postfix_blocker*"]
+
+[tool.setuptools_scm]
+# Use Git tags for versioning; drop local version (+gHASH) for reproducible wheels
+local_scheme = "no-local-version"
+# Produce exact tag versions on tagged commits; do not bump to next .dev0
+version_scheme = "no-guess-dev"
+# Ignore non-SemVer tags (e.g. accidental dev tags like v0.1.dev48+...)
+tag_regex = "^(?:v)?(?P<version>\\d+\\.\\d+\\.\\d+)$"
+# Constrain git describe to only consider SemVer tags (with and without leading 'v')
+# This avoids assertion failures when a non-SemVer tag is the nearest one.
+git_describe_command = "git describe --dirty --tags --long --match 'v[0-9]*.[0-9]*.[0-9]*' --match '[0-9]*.[0-9]*.[0-9]*'"
+# If no valid tag is found, fall back to a safe base version
+fallback_version = "0.0.0"

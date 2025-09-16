@@ -1,9 +1,22 @@
+# Byte-compiled / cache
 __pycache__/
 *.pyc
+
+# Frontend
 node_modules/
+
+# Python build artifacts
+*.egg-info/
 dist/
+build/
+
+# Angular workspace cache/config
 .angular/
 frontend/.angular/
+
+# Local environment and IDE
 .env
 .idea
+
+# Logs
 logs/

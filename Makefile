@@ -34,7 +34,8 @@ FRONTEND_DIR := frontend
 .PHONY: help ci ci-start ci-end init venv install install-python install-frontend clean-venv clean-frontend clean-logs \
 	lint lint-python lint-frontend format format-python format-frontend \
 	build build-frontend test test-python-unit test-python-backend test-python-e2e test-python-all test-frontend \
-	e2e compose-up compose-down docker-rebuild hooks-update
+	e2e compose-up compose-down docker-rebuild hooks-update \
+	package changelog dist dist-clean check-dist version tag release publish-pypi
 
 # Pretty logging helper
 define log_step
@@ -185,3 +186,103 @@ hooks-update: venv
 	@echo "[pre-commit] Running autoupdate..."
 	@$(VENVPY) -m pre_commit autoupdate
 	@echo "[pre-commit] Done. Review and commit updated .pre-commit-config.yaml."
+
+
+# ---------------- Packaging / Release ----------------
+package: dist
+
+version: venv
+	$(call log_step,Compute version via setuptools_scm)
+	@$(VENVPIP) -q install -U setuptools_scm[toml] >/dev/null || true
+	@$(VENVPY) -c "import setuptools_scm; print(setuptools_scm.get_version())"
+
+dist-clean:
+	$(call log_step,Remove build artifacts)
+	@rm -rf dist build *.egg-info
+
+check-dist: venv
+	$(call log_step,Validate distribution metadata with twine)
+	@$(VENVPIP) -q install -U twine >/dev/null || true
+	@$(VENVPY) -m twine check dist/*
+
+# Build sdist + wheel using PEP 517/518 tooling
+# Uses setuptools_scm to derive version from Git tags.
+dist: venv dist-clean
+	$(call log_step,Build Python sdist+wheel)
+	@$(VENVPIP) -q install -U build twine setuptools_scm[toml] >/dev/null
+	@$(VENVPY) -m build
+	@$(VENVPY) -m twine check dist/*
+	@echo "Artifacts created under ./dist"
+
+# Create/annotate a Git tag for the current version and (optionally) a GitHub release
+# Requires: Git repo with tags; optional GitHub CLI 'gh' configured with GITHUB_TOKEN.
+release:
+	$(call log_step,Create Git tag (tag-first), generate changelog, push, and GitHub release)
+	@set -euo pipefail; \
+	if ! command -v git >/dev/null 2>&1; then echo "[git] Git not available; aborting"; exit 1; fi; \
+	SEMVER_TAGS=$$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*'); \
+	if [ -z "$$SEMVER_TAGS" ]; then \
+	  VERSION="0.0.0"; \
+	  TAG="v$$VERSION"; \
+	  echo "[release] No existing SemVer tags; creating initial tag $$TAG"; \
+	  git tag -a "$$TAG" -m "postfix-blocker $$VERSION" || true; \
+	else \
+	  VERSION=$$($(VENVPY) -c "import setuptools_scm; print(setuptools_scm.get_version())") || { echo "[release] Failed to compute version via setuptools_scm"; exit 1; }; \
+	  if echo "$$VERSION" | grep -q 'dev'; then \
+	    LATEST_SEMVER_TAG=$$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -n1); \
+	    if [ -z "$$LATEST_SEMVER_TAG" ]; then \
+	      echo "[release] No SemVer tag found; please create 'vX.Y.Z' and re-run."; \
+	      exit 1; \
+	    fi; \
+	    TAG="$$LATEST_SEMVER_TAG"; \
+    	 VERSION="$${TAG#v}"; \
+    	 echo "[release] Using latest SemVer tag $$TAG for release build (HEAD not at tag)"; \
+   else \
+    	 TAG="v$$VERSION"; \
+    	 if git rev-parse "$$TAG" >/dev/null 2>&1; then \
+    	   echo "[git] Tag $$TAG already exists"; \
+    	 else \
+    	   git tag -a "$$TAG" -m "postfix-blocker $$VERSION" || true; \
+    	   echo "[git] Created tag $$TAG"; \
+    	 fi; \
+   	fi; \
+ 	fi; \
+ 		echo "[release] Version=$$VERSION Tag=$$TAG"; \
+ 		if [ "${AUTO_CHANGELOG-0}" = "1" ]; then \
+ 		  echo "------------------------------------------------------------------"; \
+ 		  echo "[make] Generate CHANGELOG.md (AUTO_CHANGELOG=1)"; \
+ 		  echo "------------------------------------------------------------------"; \
+ 		  $(VENVPY) scripts/generate_changelog.py > CHANGELOG.md; \
+ 		  git add CHANGELOG.md; \
+ 		  git commit -m "chore(release): update changelog for $$VERSION" || true; \
+ 		fi; \
+ 		BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
+ 		echo "------------------------------------------------------------------"; \
+ 		echo "[git] Pushing $$BRANCH and tag $$TAG to origin"; \
+ 		echo "------------------------------------------------------------------"; \
+ 		git push -u origin "$$BRANCH"; \
+ 		git push origin "$$TAG"; \
+ 		echo "------------------------------------------------------------------"; \
+ 		echo "[make] Build Python sdist+wheel for release $$VERSION"; \
+ 		echo "------------------------------------------------------------------"; \
+ 		rm -rf dist build *.egg-info; \
+ 		$(VENVPIP) -q install -U build twine setuptools_scm[toml] >/dev/null; \
+ 		SETUPTOOLS_SCM_PRETEND_VERSION=$$VERSION $(VENVPY) -m build; \
+ 		$(VENVPY) -m twine check dist/*; \
+ 		if command -v gh >/dev/null 2>&1; then \
+ 		  gh release create "$$TAG" dist/* -t "postfix-blocker $$VERSION" -n "See CHANGELOG.md for details." || true; \
+ 		else \
+ 		  echo "[gh] GitHub CLI not found; upload dist/* to a GitHub Release named $$TAG"; \
+ 		fi
+
+# Publish to PyPI (requires TWINE_USERNAME/TWINE_PASSWORD or TWINE_API_KEY set)
+publish-pypi: dist
+	$(call log_step,Upload to PyPI with twine)
+	@$(VENVPY) -m twine upload dist/*
+
+
+# Generate CHANGELOG.md from Git history (Conventional Commits aware)
+changelog: venv
+	$(call log_step,Generate CHANGELOG.md from Git history)
+	@$(VENVPY) scripts/generate_changelog.py > CHANGELOG.md
+	@echo "[changelog] Wrote CHANGELOG.md — review and commit."

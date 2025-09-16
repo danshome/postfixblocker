@@ -1,17 +1,36 @@
-"""Compatibility package for the Postfix Blocker application.
+"""Postfix Blocker Python package.
 
-Allows importing the application modules via `postfix_blocker` while keeping
-the on-disk package named `app` for runtime paths. This avoids breaking
-existing container paths while presenting a clearer import name to callers.
+- Exposes runtime submodules via `postfix_blocker.*`.
+- Provides `__version__` for packaging/diagnostics.
 
-Usage:
+Usage examples:
+    from postfix_blocker import __version__
     from postfix_blocker import blocker, api
 """
 
+from __future__ import annotations
+
 import importlib as _importlib
 from typing import Any as _Any
+from typing import Callable as _Callable
 
-__all__ = ['blocker', 'api']
+# Package version (pep 621 / importlib.metadata)
+try:  # Python 3.8+ stdlib metadata
+    from importlib.metadata import version as _real_ver
+
+    _ver: _Callable[[str], str] = _real_ver
+except Exception:  # pragma: no cover - very old Pythons only
+
+    def _ver(_: str) -> str:
+        return '0.0.0'
+
+
+try:
+    __version__ = _ver('postfix-blocker')
+except Exception:  # fallback for editable/dev without installed metadata
+    __version__ = '0.0.0'
+
+__all__ = ['__version__', 'blocker', 'api']
 
 
 def __getattr__(name: str) -> _Any:  # PEP 562 lazy import of submodules
