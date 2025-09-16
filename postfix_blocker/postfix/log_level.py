@@ -58,25 +58,10 @@ def resolve_mail_log_path() -> str:
     preferred = '/var/log/maillog'
     fallback = '/var/log/mail.log'
     try:
-        pref_exists = os.path.exists(preferred)
-        fall_exists = os.path.exists(fallback)
-        if pref_exists and not fall_exists:
+        if os.path.exists(preferred) and os.path.getsize(preferred) > 0:
             return preferred
-        if fall_exists and not pref_exists:
+        if os.path.exists(fallback) and os.path.getsize(fallback) > 0:
             return fallback
-        if pref_exists and fall_exists:
-            # If both exist, choose the non-empty one; if both non-empty, choose newer mtime
-            pref_size = os.path.getsize(preferred)
-            fall_size = os.path.getsize(fallback)
-            if pref_size == 0 and fall_size > 0:
-                return fallback
-            if fall_size == 0 and pref_size > 0:
-                return preferred
-            if pref_size > 0 and fall_size > 0:
-                pref_mtime = os.path.getmtime(preferred)
-                fall_mtime = os.path.getmtime(fallback)
-                return preferred if pref_mtime >= fall_mtime else fallback
-        # If we got here, either neither exists or both are empty; fall back to preferred
     except Exception as exc:
         logging.getLogger(__name__).debug('resolve_mail_log_path stat failed: %s', exc)
         # Best-effort; return preferred by default
