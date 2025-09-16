@@ -59,10 +59,10 @@ dependencies = [
 dynamic = ["version"]
 
 [project.urls]
-Homepage = "https://github.com/danmclaughlin/postfixblocker"
-Repository = "https://github.com/danmclaughlin/postfixblocker"
-Issues = "https://github.com/danmclaughlin/postfixblocker/issues"
-Changelog = "https://github.com/danmclaughlin/postfixblocker/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/danshome/postfixblocker"
+Repository = "https://github.com/danshome/postfixblocker"
+Issues = "https://github.com/danshome/postfixblocker/issues"
+Changelog = "https://github.com/danshome/postfixblocker/blob/main/CHANGELOG.md"
 
 [project.scripts]
 postfix-blocker-api = "postfix_blocker.web.__main__:main"

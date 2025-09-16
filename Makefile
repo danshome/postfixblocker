@@ -212,6 +212,7 @@ dist: venv dist-clean
 	@$(VENVPIP) -q install -U build twine setuptools_scm[toml] >/dev/null
 	@$(VENVPY) -m build
 	@$(VENVPY) -m twine check dist/*
+	@rm -rf *.egg-info
 	@echo "Artifacts created under ./dist"
 
 # Create/annotate a Git tag for the current version and (optionally) a GitHub release
@@ -269,6 +270,7 @@ release:
  		$(VENVPIP) -q install -U build twine setuptools_scm[toml] >/dev/null; \
  		SETUPTOOLS_SCM_PRETEND_VERSION=$$VERSION $(VENVPY) -m build; \
  		$(VENVPY) -m twine check dist/*; \
+ 		rm -rf *.egg-info; \
  		if command -v gh >/dev/null 2>&1; then \
  		  gh release create "$$TAG" dist/* -t "postfix-blocker $$VERSION" -n "See CHANGELOG.md for details." || true; \
  		else \

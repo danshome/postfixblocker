@@ -133,4 +133,5 @@ git tag -d vX.Y.Z
 - Artifact version does not match tag: you probably built before tagging. Re‑tag (or tag correctly), run `make dist-clean`, then rebuild (`make dist`).
 - `twine upload` fails: ensure `TWINE_API_KEY` is set (or username/password). You can test credentials with `twine upload --repository testpypi`.
 - Wheels missing: ensure `build` is installed (Makefile installs it automatically during `make dist`).
+- `.egg-info` directory appears after build: this is expected metadata written by setuptools during sdist/wheel builds. It is not an old "egg" distribution. Our Makefile now cleans it automatically after `make dist` and inside `make release`. You can also remove it manually with `rm -rf *.egg-info`.
 - GitHub CLI errors: run `gh auth login` and ensure you have `GITHUB_TOKEN` set for CI environments.

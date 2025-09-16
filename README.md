@@ -3,11 +3,12 @@
 
 <!-- BEGIN GENERATED: README:STANDARD_BLOCK -->
 
-[![CI Status][ci-badge]][ci-url] [![Coverage][codecov-badge]][codecov-url]
+[![CI Status](https://github.com/danshome/postfixblocker/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/danshome/postfixblocker/actions/workflows/ci.yml) [![Coverage](https://img.shields.io/badge/coverage-N%2FA-lightgrey.svg)](https://github.com/danshome/postfixblocker/actions)
 
-This repository is part of {{ORG_NAME}} and the canonical project name is
-{{PROJECT_NAME}}. The primary language is {{PRIMARY_LANGUAGE}} and the minimum
-supported toolchain is {{MIN_SUPPORTED_VERSIONS}}.
+This repository is owned by danshome and the canonical project name is
+postfix-blocker (PyPI package; GitHub repo: postfixblocker). The primary
+language is Python and the minimum supported toolchain is: Python 3.9+ and
+Node.js 18+ (for the Angular frontend).
 
 ## At‑a‑Glance
 
@@ -19,12 +20,17 @@ supported toolchain is {{MIN_SUPPORTED_VERSIONS}}.
 
 ## Quickstart
 
-Prerequisites: {{MIN_SUPPORTED_VERSIONS}}
+Prerequisites: Python 3.9+, Node.js 18+, Docker (optional for full stack)
 
 ```bash
-{{BUILD_CMD}}
-{{TEST_CMD}}
-{{RUN_CMD}}
+# Build, lint, and run tests for backend + frontend
+make ci
+
+# Run Python tests only
+make test
+
+# Start the full stack locally
+docker compose up --build -d
 ```
 
 Example for this repository:
@@ -72,10 +78,10 @@ curl -X DELETE http://localhost:5001/addresses/1
 ## Project Structure
 
 ```text
-app/            # Flask API and blocker service
-frontend/       # Angular web UI
-docker/         # Container configuration
-tests/          # Unit, backend, and E2E tests
+postfix_blocker/  # Flask API and blocker service (Python package)
+frontend/         # Angular web UI
+docker/           # Container configuration
+tests/            # Unit, backend, and E2E tests
 ```
 
 ## Docs & Guides
@@ -93,11 +99,6 @@ tests/          # Unit, backend, and E2E tests
 ## License
 
 SPDX-License-Identifier: MIT. See [LICENSE](LICENSE) for details.
-
-[ci-badge]: {{CI_STATUS_BADGE_URL}}
-[ci-url]: {{CI_STATUS_BADGE_URL}}
-[codecov-badge]: {{CODECOV_BADGE_URL}}
-[codecov-url]: {{CODECOV_BADGE_URL}}
 
 <!-- END GENERATED: README:STANDARD_BLOCK -->
 
