@@ -37,20 +37,28 @@ try:  # pragma: no cover - optional dependency for demo helpers
 except Exception:  # pragma: no cover
     requests = None  # type: ignore
 
-# Import blocker with flexible fallbacks.
-# 1) Try new package name (preferred)
-# 2) Try local module import (when running inside /opt/postfix_blocker in the container)
-# 3) Fallback: prepend repo root to sys.path and retry package import
-try:  # pragma: no cover - import shim
-    from postfix_blocker import blocker  # type: ignore
-except ModuleNotFoundError:  # pragma: no cover
+# Import refactored DB helpers for test execution (avoid deprecated shim)
+try:  # pragma: no cover - keep import-safe for pytest collection
+    from postfix_blocker.db.migrations import init_db as _init_db
+    from postfix_blocker.db.schema import get_blocked_table as _get_blocked_table
+except Exception:  # pragma: no cover
+    _init_db = None  # type: ignore
+    _get_blocked_table = None  # type: ignore
+
+# Import blocker shim only when running as a standalone script, not during pytest
+# collection. This keeps tests free of DeprecationWarning while preserving the
+# demo script behaviour.
+if __name__ == '__main__':  # pragma: no cover - import shim only for script execution
     try:
-        import blocker  # type: ignore
-    except ModuleNotFoundError:
-        ROOT = Path(__file__).resolve().parent.parent
-        # Parent of the package directory must be on sys.path
-        sys.path.insert(0, str(ROOT))
         from postfix_blocker import blocker  # type: ignore
+    except ModuleNotFoundError:
+        try:
+            import blocker  # type: ignore
+        except ModuleNotFoundError:
+            ROOT = Path(__file__).resolve().parent.parent
+            # Parent of the package directory must be on sys.path
+            sys.path.insert(0, str(ROOT))
+            from postfix_blocker import blocker  # type: ignore
 
 DB_URL = os.environ.get('BLOCKER_DB_URL', 'postgresql://blocker:blocker@localhost:5433/blocker')
 
@@ -133,8 +141,11 @@ def run_e2e_scenario(db_url: str, smtp_host: str, smtp_port: int, mh_host: str, 
     except Exception as exc:
         _dbg(f'engine creation failed: {exc}')
         return []
+    if _init_db is None or _get_blocked_table is None:
+        _dbg('refactored DB helpers not available')
+        return []
     try:
-        blocker.init_db(engine)
+        _init_db(engine)
         _dbg('init_db ok')
     except Exception as exc:
         _dbg(f'init_db failed: {exc}')
@@ -143,9 +154,10 @@ def run_e2e_scenario(db_url: str, smtp_host: str, smtp_port: int, mh_host: str, 
     # Reset DB and MailHog
     try:
         with engine.connect() as conn:
-            conn.execute(blocker.get_blocked_table().delete())
+            bt = _get_blocked_table()
+            conn.execute(bt.delete())
             conn.execute(
-                blocker.get_blocked_table().insert(),
+                bt.insert(),
                 [
                     {'pattern': 'blocked1@example.com', 'is_regex': False, 'test_mode': False},
                     {'pattern': '.*@blocked.com', 'is_regex': True, 'test_mode': False},

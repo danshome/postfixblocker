@@ -22,7 +22,7 @@ DOCKER_COMPOSE ?= docker compose
 RUFF := $(VENVPY) -m ruff
 MYPY := $(VENVPY) -m mypy
 BANDIT := $(VENVPY) -m bandit
-PYTEST := $(VENVPY) -m pytest -q
+PYTEST := $(VENVPY) -m pytest
 NPM_RUN = cd $(FRONTEND_DIR) && $(NPM) run
 
 # Locations

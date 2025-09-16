@@ -49,3 +49,48 @@
   - API sends `SIGUSR1` to the PID read from `BLOCKER_PID_FILE` after mutations.
   - Ensure both processes share the same `BLOCKER_PID_FILE` path (default `/var/run/postfix-blocker/blocker.pid`).
   - If signaling fails, blocker still polls using a DB change marker at `BLOCKER_INTERVAL`.
+
+
+
+## Backend architecture: postfix_blocker
+
+The backend is organized into focused modules with thin entrypoints. Use these when extending the system:
+
+- config
+  - `postfix_blocker/config.py`: `Config` dataclass and `load_config()`. Centralizes env defaults (DB URL, intervals, paths, log-level defaults).
+
+- logging
+  - `postfix_blocker/logging_setup.py`: common logging initialization and dynamic level updates (`configure_logging`, `set_logger_level`).
+  - `postfix_blocker/services/log_levels.py`: thin wrapper for runtime level changes.
+
+- database
+  - `postfix_blocker/db/engine.py`: `get_engine()` — SQLAlchemy engine factory using env configuration.
+  - `postfix_blocker/db/schema.py`: lazy SQLAlchemy metadata and `blocked_addresses`, `cris_props` table definitions with getters.
+  - `postfix_blocker/db/migrations.py`: `init_db(engine)` — create tables and apply lightweight migrations.
+  - `postfix_blocker/db/props.py`: property keys and `get_prop()/set_prop()` upsert logic.
+
+- domain models
+  - `postfix_blocker/models/entries.py`: `BlockEntry` dataclass and row<->dict converters.
+
+- Postfix integration
+  - `postfix_blocker/postfix/maps.py`: `write_map_files(entries, postfix_dir=None)` — writes maps for enforce/test (literal and regex).
+  - `postfix_blocker/postfix/control.py`: `reload_postfix()`, `has_postfix_pcre()` — runs `postmap` and `postfix reload` with tolerant logging.
+  - `postfix_blocker/postfix/log_level.py`: `apply_postfix_log_level(level)`, `resolve_mail_log_path()` — maps UI levels to `debug_peer_level` and resolves mail log path.
+
+- services
+  - `postfix_blocker/services/blocker_service.py`: long-running monitor loop that reads DB entries, writes Postfix maps, reloads Postfix, and watches dynamic log level.
+  - `postfix_blocker/services/log_tail.py`: `tail_file(path, lines)` — deterministic tail for API responses.
+
+- web API
+  - `postfix_blocker/web/app_factory.py`: `create_app()` — Flask app factory; installs logging hooks, keeps lazy DB readiness, registers blueprints.
+  - `postfix_blocker/web/routes_addresses.py`: `/addresses` CRUD endpoints.
+  - `postfix_blocker/web/routes_logs.py`: `/logs/level/<service>`, `/logs/refresh/<name>`, `/logs/tail` endpoints.
+  - Run via `python -m postfix_blocker.web` (dev) or `gunicorn postfix_blocker.api:app` (prod). `postfix_blocker/api.py` is a thin entrypoint that delegates to the app factory.
+
+- legacy entrypoint (deprecation window)
+  - `postfix_blocker/blocker.py`: thin runner for the blocker service with deprecation warnings and back-compat shims (POSTFIX_DIR, BlockEntry, write_map_files, helper re-exports). Plan to remove re-exports after a deprecation window (see REFactor_STATUS.md).
+
+Adding features
+- DB-backed features: define tables in `db/schema.py`, add migrations in `db/migrations.py`, expose helpers in `services/*`, and surface via a new `web/routes_*.py` blueprint.
+- Logging: prefer `logging_setup.configure_logging()`; for dynamic changes, use `services/log_levels.set_level()`.
+- Postfix ops: use `postfix/*` modules. Do not shell out directly from routes; keep commands in `postfix/control.py`.

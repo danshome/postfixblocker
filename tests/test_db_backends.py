@@ -19,7 +19,8 @@ except Exception:  # pragma: no cover - SQLAlchemy not installed
     create_engine = None  # type: ignore
     OperationalError = Exception  # type: ignore
 
-from postfix_blocker import blocker
+from postfix_blocker.db.migrations import init_db
+from postfix_blocker.db.schema import get_blocked_table
 from tests.utils_wait import wait_for_db_url
 
 
@@ -34,8 +35,8 @@ def _default_urls():
 
 def _smoke_db(url: str) -> None:
     engine = create_engine(url)  # type: ignore[misc]
-    blocker.init_db(engine)
-    bt = blocker.get_blocked_table()
+    init_db(engine)
+    bt = get_blocked_table()
     with engine.connect() as conn:
         # Clean slate
         conn.execute(bt.delete())
@@ -49,9 +50,12 @@ def _smoke_db(url: str) -> None:
         )
         conn.commit()
 
-    # Read back via API function
-    entries = blocker.fetch_entries(engine)
-    pats = sorted((e.pattern, e.is_regex) for e in entries)
+    # Read back directly via SQLAlchemy (no legacy shim)
+    from sqlalchemy import select  # type: ignore
+
+    with engine.connect() as conn:
+        rows = list(conn.execute(select(bt.c.pattern, bt.c.is_regex)))
+    pats = sorted((r[0], r[1]) for r in rows)
     assert pats == [('.*@unit.test', True), ('unit1@example.com', False)]
 
 
