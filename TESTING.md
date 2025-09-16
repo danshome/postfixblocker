@@ -92,3 +92,14 @@ PYTEST_COMPOSE_ALWAYS=1 pytest
 - Capture container logs on failure.
 
 <!-- END GENERATED: TESTING:MAIN -->
+
+
+## E2E Observability Note
+
+The blocker service emits a deterministic single-line marker when it applies updated maps and (re)loads Postfix:
+
+```
+BLOCKER_APPLY maps_updated total_entries=N marker=... hash=...
+```
+
+E2E suites prefer this marker when waiting for a mode change to take effect. However, SMTP behavior is the source of truth: tests ultimately verify delivery (MailHog) or rejection (RCPT 5xx). This ensures we don’t hide real problems behind log timing—if enforcement didn’t apply, the SMTP check fails.

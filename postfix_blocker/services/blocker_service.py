@@ -145,6 +145,17 @@ def run_forever(config: Config | None = None) -> None:
             if (marker is not None and marker != last_marker) or (current_hash != last_hash):
                 write_map_files(entries, cfg.postfix_dir)
                 reload_postfix()
+                # Emit a deterministic single-line apply marker for E2E tests and operators
+                try:
+                    total = len(entries)
+                except Exception:
+                    total = -1
+                logging.info(
+                    'BLOCKER_APPLY maps_updated total_entries=%s marker=%s hash=%s',
+                    total,
+                    marker,
+                    current_hash,
+                )
                 last_hash = current_hash
                 last_marker = marker
         except SAOperationalError:

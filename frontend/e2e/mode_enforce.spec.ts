@@ -246,11 +246,19 @@ test.describe('UI Mode toggle affects delivery (MailHog)', () => {
           }
           const delta = idx >= 0 ? lines.slice(idx + 1) : lines;
           const deltaText = delta.join('\n').toLowerCase();
+          // Prefer a deterministic single-line marker emitted by the blocker service
+          if (deltaText.includes('blocker_apply')) {
+            return true;
+          }
+          // Backward compatible: infer from existing log phrases
           if (deltaText.includes('wrote maps:') && (deltaText.includes('reloading postfix') || deltaText.includes('running postmap'))) {
             return true;
           }
           // Fallback: if marker couldn't be found reliably, scan entire tail
           const allText = content.toLowerCase();
+          if (allText.includes('blocker_apply')) {
+            return true;
+          }
           if (allText.includes('wrote maps:') && (allText.includes('reloading postfix') || allText.includes('running postmap'))) {
             return true;
           }
@@ -261,7 +269,11 @@ test.describe('UI Mode toggle affects delivery (MailHog)', () => {
       return false;
     })(baseTail);
     if (!sawBlockerApply && isDb2Proj) {
-      console.warn('[DB2] Did not observe explicit blocker apply marker; continuing with delivery check after short delay');
+      // DB2 logging can lag; rely on actual delivery check to validate enforcement.
+      // To see this note in CI, set PW_E2E_VERBOSE=1
+      if (process.env.PW_E2E_VERBOSE === '1') {
+        console.log('[DB2][info] No explicit blocker-apply marker observed; continuing with delivery check');
+      }
       await new Promise(r => setTimeout(r, 2000));
     } else {
       expect(sawBlockerApply).toBeTruthy();
