@@ -50,7 +50,7 @@ MAILHOG_PORT=8025
 
 <!-- END GENERATED: INSTALL:MAIN -->
 
-<!-- BEGIN GENERATED: INSTALL:PROD_RHEL8 -->
+<!-- BEGIN GENERATED: INSTALL:PROD_RHEL9_5 -->
 
 ## Production Deployment (RHEL 9.5, no Docker)
 
@@ -67,20 +67,42 @@ not covered here.
   production WSGI server such as `gunicorn` (recommended) or restrict the
   built-in Flask server to localhost.
 
-### 1) OS prerequisites
+### 1) OS prerequisites (RHEL 9.5)
 
-Ensure Postfix is installed and PCRE map support is available (required for
-regex rules). On RHEL/Rocky 9, PCRE support may be provided by the `postfix-pcre`
-subpackage. If your repositories require it, enable CodeReady Builder (CRB)
-before installing:
+First, verify what is already installed on your RHEL 9.5 host. Only install
+packages if something is missing.
 
 ```bash
-sudo dnf install -y dnf-plugins-core
-sudo dnf config-manager --set-enabled crb || true
+# Postfix installed?
+rpm -q postfix || echo "postfix: NOT INSTALLED"
+
+# Does Postfix support PCRE maps? (required for regex rules)
+postconf -m | grep -qi pcre && echo "PCRE support: OK" || echo "PCRE support: MISSING"
+
+# Optional: show Postfix service status (does not fail the script)
+systemctl status postfix --no-pager || true
+```
+
+If Postfix is not installed or PCRE support is missing, install the required
+packages. On RHEL 9.5, enable the CodeReady Builder repo via subscription-manager if needed.
+
+```bash
+# Ensure you have an active RHEL subscription and subscription-manager configured
+sudo subscription-manager status || true
+
+# Optional: list repos and check for CodeReady Builder
+sudo subscription-manager repos --list | egrep -i 'codeready|builder' || true
+
+# Enable CodeReady Builder (RHEL 9.5)
+sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(/bin/arch)-rpms || true
+
+# Install Postfix with PCRE support
 sudo dnf install -y postfix postfix-pcre
+
+# Re-verify PCRE support after install
 postconf -m | grep -qi pcre || {
-  echo "ERROR: Postfix PCRE map support is missing." >&2
-  echo "On RHEL/Rocky 9, PCRE is typically built-in. If not, install the appropriate PCRE support package or rebuild Postfix with PCRE enabled." >&2
+  echo "ERROR: Postfix PCRE map support is still missing." >&2
+  echo "On RHEL 9.5, PCRE is typically built in or provided by postfix-pcre. If still missing, install the appropriate PCRE support package or rebuild Postfix with PCRE enabled." >&2
   exit 1
 }
 ```
@@ -238,7 +260,7 @@ server {
    - `/etc/postfix/blocked_recipients`
    - `/etc/postfix/blocked_recipients.pcre`
    - `/etc/postfix/blocked_recipients.db` (created by `postmap`)
-2. Check Postfix logs for a successful reload.
+2. Check Postfix logs for a successful reload (on RHEL 9.5, logs are in /var/log/maillog).
 3. Call the API:
 
 ```bash
@@ -290,4 +312,4 @@ sudo firewall-cmd --add-service=https --permanent
 sudo firewall-cmd --reload
 ```
 
-<!-- END GENERATED: INSTALL:PROD_RHEL8 -->
+<!-- END GENERATED: INSTALL:PROD_RHEL9_5 -->

@@ -30,8 +30,11 @@ services:
       BLOCKER_LOG_FILE: /var/log/postfix-blocker/blocker.log
       API_LOG_LEVEL: DEBUG
       BLOCKER_LOG_LEVEL: DEBUG
+    privileged: true
     volumes:
-      - ./logs:/var/log/postfix-blocker
+      - ./logs/postfix.api.log:/var/log/postfix-blocker/api.log
+      - ./logs/postfix.blocker.log:/var/log/postfix-blocker/blocker.log
+      - ./logs/postfix.maillog:/var/log/maillog
   postfix_db2:
     build:
       context: .
@@ -51,8 +54,11 @@ services:
       BLOCKER_LOG_FILE: /var/log/postfix-blocker/blocker.log
       API_LOG_LEVEL: DEBUG
       BLOCKER_LOG_LEVEL: DEBUG
+    privileged: true
     volumes:
-      - ./logs:/var/log/postfix-blocker
+      - ./logs/postfix_db2.api.log:/var/log/postfix-blocker/api.log
+      - ./logs/postfix_db2.blocker.log:/var/log/postfix-blocker/blocker.log
+      - ./logs/postfix_db2.maillog:/var/log/maillog
   db2:
     image: ibmcom/db2:11.5.8.0
     platform: linux/amd64
@@ -61,9 +67,10 @@ services:
       DB2INST1_PASSWORD: blockerpass
       DBNAME: BLOCKER
       AUTOCONFIG: "false"
-      TO_CREATE_SAMPLEDB: "false"
+      SAMPLEDB: "false"
       REPODB: "false"
-      ARCHIVE_LOGS: "false"
+      ARCHIVE_LOGS: "true"
+      PERSISTENT_HOME: "true"
     privileged: true
     volumes:
       - db2data:/database

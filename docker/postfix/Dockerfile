@@ -5,11 +5,14 @@ RUN dnf -y update && \
     dnf -y install dnf-plugins-core && \
     dnf -y install epel-release && \
     (dnf config-manager --set-enabled crb || true) && \
-    dnf -y install postfix postfix-pcre rsyslog supervisor python3 python3-pip which && \
+    dnf -y install postfix procps-ng postfix-pcre rsyslog supervisor python3 python3-pip which && \
     dnf -y install python3-devel gcc gcc-c++ make openssl-devel libffi-devel && \
     dnf clean all && rm -rf /var/cache/dnf && \
-    postconf -X maillog_file && \
     postconf -F 'smtp/inet/chroot=n'
+
+RUN sed -i 's/SysSock.Use="off"/SysSock.Use="on"/' /etc/rsyslog.conf && \
+    sed -i 's/^module(load="imjournal"/#module(load="imjournal"/' /etc/rsyslog.conf && \
+    touch /var/log/maillog /var/log/messages /var/log/secure /var/log/cron /var/log/boot.log
 
 # Postfix setup
 COPY docker/postfix/main.cf /etc/postfix/main.cf
@@ -36,9 +39,7 @@ RUN ARCH=$(uname -m); \
 COPY postfix_blocker /opt/postfix_blocker
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Ensure application log directory exists
-RUN mkdir -p /var/log/postfix-blocker
-RUN mkdir -p /var/run/postfix-blocker
+RUN mkdir -p /var/log/postfix-blocker /var/run/postfix-blocker
 
 WORKDIR /opt
 

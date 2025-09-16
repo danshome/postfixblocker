@@ -100,19 +100,21 @@ generate the right SQL for each backend.
 
 _metadata: Optional[MetaData] = None
 _blocked_table: Optional[Table] = None
+_props_table: Optional[Table] = None
 
 # Public references (assigned once constructed) for convenient imports
 blocked_table: Optional[Table] = None
 metadata: Optional[MetaData] = None
+props_table: Optional[Table] = None
 
 
 def _ensure_sa_schema_loaded() -> None:
-    global _metadata, _blocked_table
+    global _metadata, _blocked_table, _props_table
     if not _SA_AVAILABLE:
         raise RuntimeError('SQLAlchemy is not installed; DB features are unavailable.')
-    if _metadata is None or _blocked_table is None:
+    if _metadata is None or _blocked_table is None or _props_table is None:
         _metadata = MetaData()
-        # Use CURRENT_TIMESTAMP via SQLAlchemy to stay portable across backends
+        # Blocked addresses table
         _blocked_table = Table(
             'blocked_addresses',
             _metadata,
@@ -127,13 +129,24 @@ def _ensure_sa_schema_loaded() -> None:
                 onupdate=func.current_timestamp(),  # type: ignore[attr-defined]
             ),
         )
-        # Rely on the unique constraint on pattern for indexing across backends.
-        # Some DB2 environments raise a warning-as-error when attempting to
-        # create a duplicate non-unique index over an existing unique index.
-
+        # Properties table (CRIS_PROPS)
+        _props_table = Table(
+            'cris_props',
+            _metadata,
+            # DB2 has strict limits on indexed key length; 255 is safe across backends
+            Column('key', String(255), primary_key=True),
+            Column('value', String(1024), nullable=True),
+            Column(
+                'update_ts',
+                DateTime,
+                server_default=func.current_timestamp(),
+                onupdate=func.current_timestamp(),
+            ),
+        )
         # Publish public references
-        global blocked_table, metadata
+        global blocked_table, metadata, props_table
         blocked_table = _blocked_table
+        props_table = _props_table
         metadata = _metadata
 
 
@@ -186,6 +199,14 @@ def init_db(engine: SAEngine) -> None:  # type: ignore[override]
         table_exists = False
     if not table_exists:
         _metadata.create_all(engine)
+    else:
+        # Ensure auxiliary tables (e.g., cris_props) exist even if blocked_addresses already exists
+        try:
+            if _props_table is not None:
+                _props_table.create(engine, checkfirst=True)  # type: ignore[attr-defined]
+        except Exception as exc:
+            # Best-effort; missing props table will be handled gracefully by getters
+            logging.debug('Could not ensure props table exists: %s', exc)
     # Lightweight migration: ensure 'test_mode' column exists and is NOT NULL DEFAULT 1
     try:
         insp = _inspect(engine) if _inspect is not None else None  # type: ignore
@@ -238,6 +259,38 @@ def fetch_entries(engine: SAEngine) -> list[BlockEntry]:  # type: ignore[overrid
         except TypeError:
             rows = []
         return [BlockEntry(pattern=row[0], is_regex=row[1], test_mode=bool(row[2])) for row in rows]
+
+
+def get_props_table() -> Table:
+    _ensure_sa_schema_loaded()
+    if props_table is None:
+        raise RuntimeError('props table not initialized')
+    return props_table
+
+
+def get_prop(engine: SAEngine, key: str, default: Optional[str] = None) -> Optional[str]:
+    _ensure_sa_schema_loaded()
+    pt = get_props_table()
+    try:
+        with engine.connect() as conn:
+            res = conn.execute(select(pt.c.value).where(pt.c.key == key)).scalar()
+            return res if res is not None else default
+    except Exception:
+        return default
+
+
+def set_prop(engine: SAEngine, key: str, value: Optional[str]) -> None:
+    _ensure_sa_schema_loaded()
+    pt = get_props_table()
+    with engine.begin() as conn:
+        # Upsert portable: try update, if rowcount==0 then insert
+        rc = conn.execute(pt.update().where(pt.c.key == key).values(value=value)).rowcount or 0
+        if rc == 0:
+            try:
+                conn.execute(pt.insert().values(key=key, value=value))
+            except Exception:
+                # Race-safe second update
+                conn.execute(pt.update().where(pt.c.key == key).values(value=value))
 
 
 def get_change_marker(engine: SAEngine) -> Optional[tuple[str, int]]:
@@ -324,21 +377,58 @@ def write_map_files(entries: list[BlockEntry]) -> None:
 
 
 def reload_postfix() -> None:
-    """Run postmap and reload Postfix to pick up changes."""
+    """Run postmap and reload Postfix to pick up changes.
+
+    Be tolerant of early container startup states where Postfix may not yet be
+    ready. Downgrade noisy errors to warnings and retry on next loop.
+    """
     literal_path = os.path.join(POSTFIX_DIR, 'blocked_recipients')
     test_literal_path = os.path.join(POSTFIX_DIR, 'blocked_recipients_test')
     try:
         logging.info('Running postmap on %s and %s', literal_path, test_literal_path)
         rc1 = subprocess.run(['/usr/sbin/postmap', literal_path], check=False).returncode  # nosec B603
         rc1b = subprocess.run(['/usr/sbin/postmap', test_literal_path], check=False).returncode  # nosec B603
-        logging.info('Reloading postfix')
-        rc2 = subprocess.run(['/usr/sbin/postfix', 'reload'], check=False).returncode  # nosec B603
-        if rc1 != 0 or rc1b != 0 or rc2 != 0:
-            logging.error(
-                'Postfix commands failed: postmap=%s postmap_test=%s reload=%s', rc1, rc1b, rc2
-            )
+        # Consider empty files benign: postmap may return non-zero in some builds
+        try:
+            size1 = os.path.getsize(literal_path)
+            size2 = os.path.getsize(test_literal_path)
+        except Exception:
+            size1 = size2 = -1
+        # Only attempt reload if postfix master appears to be running
+        try:
+            status_rc = subprocess.run(['/usr/sbin/postfix', 'status'], check=False).returncode  # nosec B603
+        except Exception:
+            status_rc = 1
+        if status_rc == 0:
+            logging.info('Reloading postfix')
+            rc2 = subprocess.run(['/usr/sbin/postfix', 'reload'], check=False).returncode  # nosec B603
+        else:
+            rc2 = None
+            logging.debug('Postfix master not running yet; skipping reload')
+        # Log at WARNING instead of ERROR for transient/non-critical states
+        failed = [
+            str(x)
+            for x in (rc1, rc1b, rc2 if rc2 is not None else 0)
+            if isinstance(x, int) and x != 0
+        ]
+        if failed:
+            if (size1 == 0 or size2 == 0) and status_rc != 0:
+                logging.warning(
+                    'Postfix commands had non-zero return codes (postmap/literals or reload) but environment not ready yet: '
+                    'postmap=%s postmap_test=%s reload=%s',
+                    rc1,
+                    rc1b,
+                    rc2,
+                )
+            else:
+                logging.warning(
+                    'Postfix commands had non-zero return codes: postmap=%s postmap_test=%s reload=%s',
+                    rc1,
+                    rc1b,
+                    rc2,
+                )
     except Exception as exc:
-        logging.error('Failed to reload postfix: %s', exc)
+        logging.warning('Failed to reload postfix (transient): %s', exc)
 
 
 # One-time capability check flags
@@ -397,7 +487,9 @@ def monitor_loop() -> None:
     while True:
         try:
             if engine is None:
+                logging.debug('Creating SQLAlchemy engine in blocker.monitor_loop')
                 engine = get_engine()
+            logging.debug('Initializing DB schema in blocker.monitor_loop')
             init_db(engine)
             logging.info('Database schema ready.')
             break
@@ -420,18 +512,44 @@ def monitor_loop() -> None:
             )
     last_marker: Optional[tuple[str, int]] = None
     last_hash = None
+    last_blocker_level: Optional[str] = None
     while True:
         try:
+            logging.debug('Blocker loop heartbeat start (last_marker=%s)', last_marker)
+            # Apply dynamic blocker log level from props
+            try:
+                level_str = get_prop(engine, 'log.level.blocker', None)
+                if level_str is not None and level_str != last_blocker_level:
+                    lvl = None
+                    try:
+                        lvl = int(level_str)
+                    except Exception:
+                        lvl = getattr(logging, str(level_str).upper(), None)
+                    if isinstance(lvl, int):
+                        logging.getLogger().setLevel(lvl)
+                        for h in list(logging.getLogger().handlers):
+                            try:
+                                h.setLevel(lvl)
+                            except Exception as exc:
+                                logging.debug('Failed to set handler level: %s', exc)
+                        logging.info('Blocker log level changed via props to %s', level_str)
+                        last_blocker_level = level_str
+            except Exception as exc:
+                logging.debug('Failed to apply dynamic blocker log level: %s', exc)
+
             marker = get_change_marker(engine)
+            logging.debug('Change marker current=%s last=%s', marker, last_marker)
             if marker is not None and marker == last_marker:
                 # No change detected; sleep and continue
                 _refresh_event.wait(CHECK_INTERVAL)
                 # Clear the flag if it was set; loop will process next
                 if _refresh_event.is_set():
+                    logging.debug('Woke up via SIGUSR1 or timeout with no marker change')
                     _refresh_event.clear()
                 continue
             # Fetch full entries only when change is detected or marker unavailable
             entries = fetch_entries(engine)
+            logging.debug('Fetched %d entries from DB', len(entries))
             # Warn once if regex entries exist but PCRE is unavailable
             global _PCRE_REGEX_WARNED
             if (not _PCRE_AVAILABLE) and (not _PCRE_REGEX_WARNED):
@@ -448,6 +566,7 @@ def monitor_loop() -> None:
             # so switching between Test/Enforce updates the Postfix maps.
             sig = tuple(sorted((e.pattern, bool(e.is_regex), bool(e.test_mode)) for e in entries))
             current_hash = hash(sig)
+            logging.debug('Computed content hash=%s (last_hash=%s)', current_hash, last_hash)
             # Update when either marker changed or content hash changed (fallback)
             if (marker is not None and marker != last_marker) or (
                 marker is None and current_hash != last_hash
@@ -462,6 +581,7 @@ def monitor_loop() -> None:
             logging.exception('Unexpected error')
         _refresh_event.wait(CHECK_INTERVAL)
         if _refresh_event.is_set():
+            logging.debug('SIGUSR1 received or timer elapsed; continuing loop')
             _refresh_event.clear()
 
 

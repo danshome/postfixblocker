@@ -55,7 +55,7 @@ except ModuleNotFoundError:  # pragma: no cover
 DB_URL = os.environ.get('BLOCKER_DB_URL', 'postgresql://blocker:blocker@localhost:5433/blocker')
 
 SMTP_HOST = os.environ.get('SMTP_HOST', 'localhost')
-SMTP_PORT = int(os.environ.get('SMTP_PORT', '1025'))
+SMTP_PORT = int(os.environ.get('SMTP_PORT', '1026'))
 MAILHOG_HOST = os.environ.get('MAILHOG_HOST', 'localhost')
 MAILHOG_PORT = int(os.environ.get('MAILHOG_PORT', '8025'))
 

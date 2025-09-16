@@ -8,6 +8,20 @@ interface Entry { id: number; pattern: string; is_regex: boolean; }
 describe('AppComponent', () => {
   let httpMock: HttpTestingController;
 
+  function flushInitialLogs() {
+    const logs = httpMock.match(req => req.method === 'GET' && (req.url.startsWith('/logs/refresh/') || req.url.startsWith('/logs/level/') || req.url.startsWith('/logs/tail')));
+    for (const r of logs) {
+      const url = r.request.url;
+      if (url.startsWith('/logs/refresh/')) {
+        r.flush({ name: 'api', interval_ms: 0, lines: 200 });
+      } else if (url.startsWith('/logs/level/')) {
+        r.flush({ service: 'api', level: null });
+      } else if (url.startsWith('/logs/tail')) {
+        r.flush({ name: 'api', path: './logs/api.log', content: 'initial log content', missing: false });
+      }
+    }
+  }
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       // Import standalone component and testing HttpClient
@@ -17,12 +31,17 @@ describe('AppComponent', () => {
   });
 
   afterEach(() => {
+    // Drain any pending log-level/refresh requests before verification
+    flushInitialLogs();
     httpMock.verify();
   });
 
   it('loads entries on init', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges(); // triggers ngOnInit -> load()
+
+    // Respond to initial logs settings requests triggered by ngOnInit
+    flushInitialLogs();
 
     const req = httpMock.expectOne(r => r.method === 'GET' && r.url.startsWith('/addresses'));
     const data: Entry[] = [
@@ -39,6 +58,9 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const comp = fixture.componentInstance;
     fixture.detectChanges();
+
+    // Respond to initial logs settings requests triggered by ngOnInit
+    flushInitialLogs();
 
     // Initial GET
     httpMock.expectOne(r => r.method === 'GET' && r.url.startsWith('/addresses')).flush([]);
@@ -69,6 +91,9 @@ describe('AppComponent', () => {
     const comp = fixture.componentInstance;
     fixture.detectChanges();
 
+    // Respond to initial logs settings requests triggered by ngOnInit
+    flushInitialLogs();
+
     // Initial GET
     httpMock.expectOne(r => r.method === 'GET' && r.url.startsWith('/addresses')).flush([
       { id: 5, pattern: 'x@y.com', is_regex: false },
@@ -89,6 +114,9 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const comp = fixture.componentInstance;
     fixture.detectChanges();
+
+    // Respond to initial logs settings requests triggered by ngOnInit
+    flushInitialLogs();
 
     // Initial GET
     httpMock.expectOne(r => r.method === 'GET' && r.url.startsWith('/addresses')).flush([]);
@@ -127,6 +155,9 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const comp = fixture.componentInstance;
     fixture.detectChanges();
+
+    // Respond to initial logs settings requests triggered by ngOnInit
+    flushInitialLogs();
 
     // Initial GET with two entries
     httpMock.expectOne(r => r.method === 'GET' && r.url.startsWith('/addresses')).flush([

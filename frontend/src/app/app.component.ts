@@ -14,6 +14,8 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatSelectModule } from '@angular/material/select';
 import { HostListener } from '@angular/core';
 
 interface Entry { id: number; pattern: string; is_regex: boolean; test_mode?: boolean; }
@@ -35,6 +37,8 @@ interface Entry { id: number; pattern: string; is_regex: boolean; test_mode?: bo
     MatPaginatorModule,
     MatTableModule,
     MatSortModule,
+    MatTabsModule,
+    MatSelectModule,
   ],
   templateUrl: './app.component.html'
 })
@@ -71,10 +75,81 @@ export class AppComponent implements OnInit {
   // Default test mode for new entries
   defaultTestMode = true;
 
+  // Logs tab state
+  logTab: 'api' | 'blocker' | 'postfix' = 'api';
+  logContent = '';
+  logLinesOptions = [100, 200, 500, 1000];
+  logLines = 200;
+  // 0=off, 1000, 5000, 10000, 30000
+  refreshOptions = [0, 1000, 5000, 10000, 30000];
+  refreshMs = 0;
+  levels = ['DEBUG','INFO','WARNING','ERROR','CRITICAL'];
+  currentLevel = '';
+  private logTimer: any = null;
+
   constructor(private http: HttpClient) {}
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.load();
+    await this.loadLogSettings('api');
+    this.fetchTail();
+    this.maybeStartLogTimer();
+  }
+
+  async onLogTabChange(name: 'api'|'blocker'|'postfix') {
+    this.logTab = name;
+    this.stopLogTimer();
+    await this.loadLogSettings(name);
+    this.fetchTail();
+    this.maybeStartLogTimer();
+  }
+
+  private stopLogTimer() {
+    if (this.logTimer) {
+      clearInterval(this.logTimer);
+      this.logTimer = null;
+    }
+  }
+
+  private maybeStartLogTimer() {
+    this.stopLogTimer();
+    if (this.refreshMs && this.refreshMs > 0) {
+      this.logTimer = setInterval(() => this.fetchTail(), this.refreshMs);
+    }
+  }
+
+  async loadLogSettings(name: 'api'|'blocker'|'postfix') {
+    try {
+      const r = await firstValueFrom(this.http.get<any>(`/logs/refresh/${name}`));
+      this.refreshMs = r.interval_ms ?? 0;
+      this.logLines = r.lines ?? 200;
+    } catch { /* ignore */ }
+    try {
+      const l = await firstValueFrom(this.http.get<any>(`/logs/level/${name}`));
+      this.currentLevel = l.level || '';
+    } catch { this.currentLevel = ''; }
+  }
+
+  async saveRefresh() {
+    const name = this.logTab;
+    try {
+      await firstValueFrom(this.http.put(`/logs/refresh/${name}`, { interval_ms: this.refreshMs, lines: this.logLines }));
+      this.maybeStartLogTimer();
+    } catch {}
+  }
+
+  async saveLevel() {
+    const name = this.logTab;
+    try {
+      await firstValueFrom(this.http.put(`/logs/level/${name}`, { level: this.currentLevel }));
+    } catch {}
+  }
+
+  fetchTail() {
+    const name = this.logTab;
+    this.http.get<any>(`/logs/tail`, { params: { name, lines: String(this.logLines) }}).subscribe(resp => {
+      this.logContent = resp.content || '';
+    }, _ => { this.logContent = ''; });
   }
 
   load(): void {

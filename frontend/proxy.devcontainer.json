@@ -3,6 +3,11 @@
     "target": "http://host.docker.internal:5001",
     "secure": false,
     "changeOrigin": true
+  },
+  "/logs": {
+    "target": "http://host.docker.internal:5001",
+    "secure": false,
+    "changeOrigin": true
   }
 }
 

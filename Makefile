@@ -56,10 +56,13 @@ help:
 	@echo "  make format            Run formatters (ruff + ESLint --fix)"
 	@echo "  make docker-rebuild    docker compose build --no-cache"
 
-ci: ci-start install lint build compose-up test-python-all test-frontend test-frontend-e2e ci-end compose-down
+ci: ci-start install lint build compose-up test-python-all test-frontend test-frontend-e2e ci-end
 
 ci-start:
 	$(call log_step,CI start)
+	@mkdir -p logs
+	@$(MAKE) clean-logs
+	@touch logs/postfix.maillog logs/postfix_db2.maillog logs/postfix.api.log logs/postfix.blocker.log logs/postfix_db2.api.log logs/postfix_db2.blocker.log
 
 ci-end:
 	$(call log_step,CI end)
@@ -93,7 +96,7 @@ clean-frontend:
 	rm -rf $(FRONTEND_DIR)/node_modules $(FRONTEND_DIR)/dist $(FRONTEND_DIR)/.angular $(FRONTEND_DIR)/test-results
 
 clean-logs:
-	rm -f logs/*.log
+	rm -rf logs/*.*
 
 # Linting / formatting
 lint: lint-python lint-frontend
@@ -132,27 +135,27 @@ test: test-python-unit test-frontend
 
 test-python-all: venv
 	$(call log_step,Python tests (unit + backend + e2e in one run))
-	@$(PYTEST) || true
+	@$(PYTEST)
 
 test-python-unit: venv
 	$(call log_step,Python unit tests)
-	@$(PYTEST) -m unit || true
+	@$(PYTEST) -m unit
 
 test-python-backend: venv
 	$(call log_step,Python backend tests (docker compose))
-	@PYTEST_COMPOSE_ALWAYS=1 $(PYTEST) -m backend || true
+	@PYTEST_COMPOSE_ALWAYS=1 $(PYTEST) -m backend
 
 test-python-e2e: venv
 	$(call log_step,Python E2E tests (docker compose))
-	@PYTEST_COMPOSE_ALWAYS=1 $(PYTEST) -m e2e || true
+	@PYTEST_COMPOSE_ALWAYS=1 $(PYTEST) -m e2e
 
 test-frontend:
 	$(call log_step,Frontend unit tests (Karma))
-	@cd $(FRONTEND_DIR) && CI=1 $(NPM) test --silent -- --watch=false || true
+	@cd $(FRONTEND_DIR) && CI=1 $(NPM) test --silent -- --watch=false
 
 test-frontend-e2e:
 	$(call log_step,Frontend E2E tests (Playwright))
-	@$(NPM_RUN) e2e || true
+	@$(NPM_RUN) e2e
 
 # Meta target to run backend and frontend E2E suites and ensure stack is up
 e2e: compose-up test-python-backend test-python-e2e test-frontend-e2e

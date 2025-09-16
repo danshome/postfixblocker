@@ -9,10 +9,21 @@ from sqlalchemy import func, inspect, select
 from sqlalchemy.exc import IntegrityError
 
 # Support running both as part of the 'app' package and as a standalone script in the container
+# Import as a module once to avoid mypy redefinition errors when falling back
 try:
-    from .blocker import get_blocked_table, get_engine, init_db  # type: ignore
+    from . import blocker as _blocker  # type: ignore
 except Exception:  # pragma: no cover - fallback when executed as a script
-    from blocker import get_blocked_table, get_engine, init_db  # type: ignore
+    import importlib
+
+    _blocker = importlib.import_module('blocker')  # type: ignore
+
+# Re-export the required callables (runtime attributes; not for static typing)
+get_blocked_table = _blocker.get_blocked_table  # type: ignore[attr-defined]
+get_engine = _blocker.get_engine  # type: ignore[attr-defined]
+init_db = _blocker.init_db  # type: ignore[attr-defined]
+get_props_table = _blocker.get_props_table  # type: ignore[attr-defined]
+get_prop = _blocker.get_prop  # type: ignore[attr-defined]
+set_prop = _blocker.set_prop  # type: ignore[attr-defined]
 
 if TYPE_CHECKING:
     pass
@@ -90,6 +101,11 @@ def _init_logging() -> None:
         logging.getLevelName(app.logger.level),
         log_path or 'none',
     )
+    app.logger.debug(
+        'API logger handlers=%s root_handlers=%s',
+        [type(h).__name__ for h in app.logger.handlers],
+        [type(h).__name__ for h in root.handlers],
+    )
 
 
 @app.before_request
@@ -147,9 +163,12 @@ def ensure_db_ready() -> bool:
         return True
     try:
         if engine is None:
+            app.logger.debug('Creating SQLAlchemy engine for DB URL from blocker.get_engine()')
             engine = get_engine()
+        app.logger.debug('Initializing database schema via init_db')
         init_db(engine)
         _db_ready = True
+        app.logger.debug('Database schema ready (ensure_db_ready)')
         return True
     except Exception as exc:  # pragma: no cover - depends on external DB readiness
         # Keep API alive; callers can retry later
@@ -183,8 +202,10 @@ def list_addresses():
                 # Some DB2 drivers may return None from fetchall() on empty results;
                 # iterating the Result is robust across backends.
                 rows = list(conn.execute(select(bt)))
-            except Exception:
+            except Exception as exc:
+                app.logger.debug('Unpaged list query failed: %s', exc)
                 rows = []
+        app.logger.debug('List (unpaged) returned %d rows', len(rows))
         return jsonify([row_to_dict(r) for r in rows])
 
     # Defaults
@@ -277,6 +298,9 @@ def add_address():
     test_mode = bool(data.get(KEY_TEST_MODE, True))
     if not pattern:
         abort(400, 'pattern is required')
+    app.logger.debug(
+        'Add address request: pattern=%s is_regex=%s test_mode=%s', pattern, is_regex, test_mode
+    )
     eng = cast(Any, engine)
     with eng.connect() as conn:
         try:
@@ -293,6 +317,7 @@ def add_address():
                 app.logger.debug('Column inspection failed; proceeding without test_mode: %s', exc)
             conn.execute(bt.insert().values(**values))
             conn.commit()
+            app.logger.debug('Inserted address row: %s', values)
         except IntegrityError:
             abort(409, 'pattern already exists')
     try:
@@ -309,8 +334,9 @@ def delete_address(entry_id):
     eng = cast(Any, engine)
     with eng.connect() as conn:
         bt = get_blocked_table()
-        conn.execute(bt.delete().where(bt.c.id == entry_id))
+        rc = conn.execute(bt.delete().where(bt.c.id == entry_id)).rowcount
         conn.commit()
+        app.logger.debug('Delete address id=%s rowcount=%s', entry_id, rc)
     try:
         _notify_blocker_refresh()
     finally:
@@ -347,6 +373,7 @@ def update_address(entry_id: int):
             if res.rowcount == 0:
                 abort(404)
             conn.commit()
+            app.logger.debug('Update address id=%s updates=%s', entry_id, updates)
         except IntegrityError:
             abort(409, 'pattern already exists')
     try:
@@ -373,6 +400,223 @@ def _notify_blocker_refresh() -> None:
         os.kill(pid, signal.SIGUSR1)
     except Exception as exc:  # pragma: no cover - optional/ephemeral
         app.logger.debug('Blocker signal notify failed: %s', exc)
+
+
+# ----- Logs/Props helpers -----
+LOG_KEYS = {
+    'api': 'log.level.api',
+    'blocker': 'log.level.blocker',
+    'postfix': 'log.level.postfix',
+}
+REFRESH_KEYS = {
+    'api': 'log.refresh.api',
+    'blocker': 'log.refresh.blocker',
+    'postfix': 'log.refresh.postfix',
+}
+LINES_KEYS = {
+    'api': 'log.lines.api',
+    'blocker': 'log.lines.blocker',
+    'postfix': 'log.lines.postfix',
+}
+
+
+def _coerce_level(val: str) -> int:
+    try:
+        return int(val)
+    except Exception:
+        return int(getattr(logging, val.upper(), logging.INFO))
+
+
+def _set_api_log_level(level_s: str) -> None:
+    lvl = _coerce_level(level_s)
+    app.logger.setLevel(lvl)
+    root = logging.getLogger()
+    root.setLevel(lvl)
+    for h in list(app.logger.handlers) + list(root.handlers):
+        try:
+            h.setLevel(lvl)
+        except Exception as exc:
+            app.logger.debug('Failed to set handler level: %s', exc)
+    app.logger.info('API log level changed via props to %s', level_s)
+
+
+def _postfix_mail_log_path() -> str:
+    """Return the system mail log path for Postfix.
+
+    Prefer /var/log/maillog, but fall back to /var/log/mail.log on
+    distributions that use that filename (e.g., RHEL/Rocky). We only
+    READ logs; we never write to these files.
+    """
+    preferred = '/var/log/maillog'
+    fallback = '/var/log/mail.log'
+    try:
+        if os.path.exists(preferred) and os.path.getsize(preferred) > 0:
+            return preferred
+        if os.path.exists(fallback) and os.path.getsize(fallback) > 0:
+            return fallback
+    except Exception as exc:
+        app.logger.debug('Unable to stat mail log paths: %s', exc)
+    return preferred
+
+
+def _update_postfix_log_level(level_s: str) -> None:
+    """Apply a UI log level to Postfix config safely.
+
+    Postfix expects a numeric value for debug_peer_level. Map common UI levels
+    to numeric values per requirement: INFO=2, DEBUG=4, anything else=1. Numeric
+    strings are accepted and clamped to [1, 4]. We also ensure debug_peer_list
+    is set so verbosity applies to all peers in this environment.
+    """
+
+    # Map UI level to a numeric value for Postfix debug_peer_level
+    def _map_level(s: str) -> int:
+        s_up = (s or '').strip().upper()
+        # Numeric strings: clamp to [1, 4]
+        try:
+            n = int(s_up)
+            return max(1, min(n, 4))
+        except Exception as exc:
+            try:
+                app.logger.debug('Invalid numeric postfix level: %s (%s)', s_up, exc)
+            except Exception:
+                # logging may not be initialized in some import-time contexts
+                ...
+        if s_up == 'DEBUG':
+            return 4
+        if s_up == 'INFO':
+            return 2
+        # Anything else (WARNING, ERROR, CRITICAL, etc.)
+        return 1
+
+    lvl_num = _map_level(level_s)
+
+    main_cf = os.environ.get('POSTFIX_MAIN_CF', '/etc/postfix/main.cf')
+    try:
+        lines = []
+        if os.path.exists(main_cf):
+            with open(main_cf, encoding='utf-8') as f:
+                lines = f.read().splitlines()
+        new_lines = []
+        found_level = False
+        found_list = False
+        for line in lines:
+            s = line.strip()
+            if s.startswith('debug_peer_level'):
+                new_lines.append(f'debug_peer_level = {lvl_num}')
+                found_level = True
+            elif s.startswith('debug_peer_list'):
+                # Route debug verbosity to all peers so tests can observe differences
+                new_lines.append('debug_peer_list = 0.0.0.0/0')
+                found_list = True
+            else:
+                new_lines.append(line)
+        if not found_level:
+            new_lines.append(f'debug_peer_level = {lvl_num}')
+        if not found_list:
+            new_lines.append('debug_peer_list = 0.0.0.0/0')
+        with open(main_cf, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(new_lines) + '\n')
+        app.logger.debug(
+            'Updated postfix main.cf debug_peer_level=%s (from %s); debug_peer_list=0.0.0.0/0',
+            lvl_num,
+            level_s,
+        )
+        # Reload postfix
+        try:
+            import subprocess  # nosec B404
+
+            subprocess.run(['/usr/sbin/postfix', 'reload'], check=False)  # nosec B603
+        except Exception as exc:
+            app.logger.warning('Postfix reload failed: %s', exc)
+    except Exception as exc:
+        app.logger.warning('Failed to update postfix main.cf: %s', exc)
+
+
+@app.route('/logs/level/<service>', methods=['GET', 'PUT'])
+def log_level(service: str):
+    if service not in LOG_KEYS:
+        abort(404)
+    if not ensure_db_ready():
+        return jsonify({KEY_ERROR: ERR_DB_NOT_READY}), 503
+    eng = cast(Any, engine)
+    key = LOG_KEYS[service]
+    if request.method == 'GET':
+        val = get_prop(eng, key, None)
+        app.logger.debug('Get log level service=%s level=%s', service, val)
+        return jsonify({'service': service, 'level': val})
+    data = request.get_json(force=True) or {}
+    level_s = str(data.get('level') or '').strip()
+    if not level_s:
+        abort(400, 'level is required')
+    app.logger.debug('Set log level service=%s level=%s', service, level_s)
+    set_prop(eng, key, level_s)
+    if service == 'api':
+        _set_api_log_level(level_s)
+    elif service == 'postfix':
+        _update_postfix_log_level(level_s)
+    return jsonify({KEY_STATUS: STATUS_OK})
+
+
+@app.route('/logs/tail', methods=['GET'])
+def tail_log():
+    name = (request.args.get('name') or '').strip().lower()
+    try:
+        lines = max(min(int(request.args.get('lines', '200')), 2000), 1)
+    except Exception:
+        lines = 200
+    if name not in ('api', 'blocker', 'postfix'):
+        abort(400, 'unknown log name')
+    # Resolve path
+    if name == 'api':
+        path = os.environ.get('API_LOG_FILE') or './logs/api.log'
+    elif name == 'blocker':
+        path = os.environ.get('BLOCKER_LOG_FILE') or './logs/blocker.log'
+    else:
+        path = _postfix_mail_log_path()
+    app.logger.debug('Tail request name=%s lines=%s path=%s', name, lines, path)
+    if not os.path.exists(path):
+        return jsonify({'name': name, 'path': path, 'content': '', 'missing': True})
+    try:
+        content = _tail_file(path, lines)
+    except Exception as exc:
+        app.logger.debug('Tail read failed: %s', exc)
+        content = ''
+    return jsonify({'name': name, 'path': path, 'content': content, 'missing': False})
+
+
+def _tail_file(path: str, lines: int) -> str:
+    # Deterministic and simple: read text and slice last N lines.
+    # Adequate for typical log sizes in this app and robust across platforms.
+    try:
+        with open(path, encoding='utf-8', errors='replace') as f:
+            all_lines = f.read().splitlines()
+    except UnicodeDecodeError:
+        # Fallback to binary decode
+        with open(path, 'rb') as f:
+            all_lines = f.read().decode('utf-8', errors='replace').splitlines()
+    return '\n'.join(all_lines[-lines:])
+
+
+@app.route('/logs/refresh/<name>', methods=['GET', 'PUT'])
+def refresh_interval(name: str):
+    name = name.lower()
+    if name not in REFRESH_KEYS:
+        abort(404)
+    if not ensure_db_ready():
+        return jsonify({KEY_ERROR: ERR_DB_NOT_READY}), 503
+    eng = cast(Any, engine)
+    if request.method == 'GET':
+        ms = int(get_prop(eng, REFRESH_KEYS[name], '0') or '0')
+        lines = int(get_prop(eng, LINES_KEYS[name], '200') or '200')
+        app.logger.debug('Get refresh settings name=%s interval_ms=%s lines=%s', name, ms, lines)
+        return jsonify({'name': name, 'interval_ms': ms, 'lines': lines})
+    data = request.get_json(force=True) or {}
+    ms_s = str(int(data.get('interval_ms', 0)))
+    lines_s = str(int(data.get('lines', 200)))
+    app.logger.debug('Set refresh settings name=%s interval_ms=%s lines=%s', name, ms_s, lines_s)
+    set_prop(eng, REFRESH_KEYS[name], ms_s)
+    set_prop(eng, LINES_KEYS[name], lines_s)
+    return jsonify({KEY_STATUS: STATUS_OK})
 
 
 if __name__ == '__main__':
