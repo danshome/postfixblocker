@@ -50,7 +50,8 @@ def log_level(service: str):
 def tail_log():
     name = (request.args.get('name') or '').strip().lower()
     try:
-        lines = max(min(int(request.args.get('lines', '200')), 2000), 1)
+        # Allow larger tails for heavy postfix logs; cap at 8000
+        lines = max(min(int(request.args.get('lines', '200')), 8000), 1)
     except Exception:
         lines = 200
     if name not in ('api', 'blocker', 'postfix'):

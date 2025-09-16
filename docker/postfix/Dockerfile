@@ -38,6 +38,8 @@ RUN ARCH=$(uname -m); \
 
 COPY postfix_blocker /opt/postfix_blocker
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# Ensure mail.* is logged to /var/log/maillog regardless of severity
+COPY docker/postfix/rsyslog-postfix.conf /etc/rsyslog.d/99-postfix.conf
 
 RUN mkdir -p /var/log/postfix-blocker /var/run/postfix-blocker
 
