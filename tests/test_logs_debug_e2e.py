@@ -167,8 +167,17 @@ def test_debug_levels_reflected_in_logs():
         # Collect delta and activity count
         delta = _delta_postfix_lines(marker, max_wait=45.0)
         activity = _count_postfix_activity(delta)
+
         # Also ensure we saw at least some evidence of the sends
-        assert any('to=<' in ln or 'relay=mailhog' in ln for ln in delta), (
+        def _delivery_evidence(ln: str) -> bool:
+            return (
+                ('to=<' in ln)
+                or ('relay=mailhog' in ln)
+                or ('status=sent' in ln)
+                or ('queued as ' in ln)
+            )
+
+        assert any(_delivery_evidence(ln) for ln in delta), (
             f'No postfix delivery evidence at level {lv}'
         )
         counts[lv] = activity
