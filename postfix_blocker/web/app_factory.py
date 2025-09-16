@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
+from typing import Any, Final
 
 from flask import Flask, g, request
 
@@ -11,9 +11,9 @@ from ..db.migrations import init_db as _init_db
 from ..logging_setup import configure_logging
 
 # Types for app.config keys
-_CFG_ENGINE = 'db_engine'
-_CFG_READY = 'db_ready'
-_CFG_ENSURE = 'ensure_db_ready'
+_CFG_ENGINE: Final[str] = 'db_engine'
+_CFG_READY: Final[str] = 'db_ready'
+_CFG_ENSURE: Final[str] = 'ensure_db_ready'
 
 
 def create_app(config: Any | None = None) -> Flask:

@@ -2,8 +2,9 @@
 
 ## Project Structure & Module Organization
 - `postfix_blocker/` – Python services
-  - `api.py` (Flask REST API for managing the block list)
-  - `blocker.py` (writes Postfix maps, runs postmap/reload)
+  - `api.py` (thin entrypoint exposing Flask app via web/app_factory)
+  - `services/blocker_service.py` (blocker loop: writes Postfix maps and runs postmap/reload)
+  - `blocker.py` (thin runner to start blocker_service; no legacy re-exports)
 - `frontend/` – Angular 20 UI (Material, Karma, Playwright)
 - `docker/` – Postfix image and supervisord config
 - `tests/` – Pytest suites: unit, backend (DB), and e2e

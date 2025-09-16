@@ -35,17 +35,17 @@ This document tracks the backend refactor progress to modularize shared concerns
 - Phase 6 — Remove dynamic fallbacks and tighten types
   - [x] Removed dynamic fallbacks and legacy code from api.py
   - [x] Added package marker `py.typed`
-  - [ ] Tighten typing for app.config keys in app_factory and routes (incremental)
+  - [x] Tighten typing for app.config keys in app_factory and routes (incremental)
 
 - Phase 7 — Back-compat, deprecation, cleanup
   - [x] Emit DeprecationWarning on importing postfix_blocker.blocker to steer callers to refactored modules.
-  - [ ] Remove legacy re-exports after a deprecation window; current shim re-exports remain for tests/back-compat.
+  - [x] Remove legacy re-exports after a deprecation window; current shim re-exports removed.
 
 Optional nice-to-haves (post-refactor)
 - [x] Introduce postfix_blocker/services/log_levels.py to unify dynamic level changes.
 - [x] Provide a CLI entrypoint: `python -m postfix_blocker.web` runs the app-factory server.
-- [ ] Unit test for services/log_levels.set_level delegation.
-- [ ] Integration test for web/app_factory.create_app() (blueprints registered; ensure_db_ready guard baseline).
+- [x] Unit test for services/log_levels.set_level delegation.
+- [x] Integration test for web/app_factory.create_app() (blueprints registered; ensure_db_ready guard baseline).
 
 Notes:
 - The API module is now a thin app-factory entrypoint; all routes live under web/ blueprints.
