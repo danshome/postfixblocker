@@ -539,15 +539,7 @@ def monitor_loop() -> None:
 
             marker = get_change_marker(engine)
             logging.debug('Change marker current=%s last=%s', marker, last_marker)
-            if marker is not None and marker == last_marker:
-                # No change detected; sleep and continue
-                _refresh_event.wait(CHECK_INTERVAL)
-                # Clear the flag if it was set; loop will process next
-                if _refresh_event.is_set():
-                    logging.debug('Woke up via SIGUSR1 or timeout with no marker change')
-                    _refresh_event.clear()
-                continue
-            # Fetch full entries only when change is detected or marker unavailable
+            # Always fetch entries; we'll decide to update based on either marker or content hash
             entries = fetch_entries(engine)
             logging.debug('Fetched %d entries from DB', len(entries))
             # Warn once if regex entries exist but PCRE is unavailable
@@ -567,10 +559,10 @@ def monitor_loop() -> None:
             sig = tuple(sorted((e.pattern, bool(e.is_regex), bool(e.test_mode)) for e in entries))
             current_hash = hash(sig)
             logging.debug('Computed content hash=%s (last_hash=%s)', current_hash, last_hash)
-            # Update when either marker changed or content hash changed (fallback)
-            if (marker is not None and marker != last_marker) or (
-                marker is None and current_hash != last_hash
-            ):
+            # Update when either marker changed OR content hash changed
+            # Using both ensures changes to fields like test_mode are applied even
+            # if updated_at/count marker remains unchanged (e.g., no DB trigger)
+            if (marker is not None and marker != last_marker) or (current_hash != last_hash):
                 write_map_files(entries)
                 reload_postfix()
                 last_hash = current_hash
