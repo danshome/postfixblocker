@@ -86,3 +86,12 @@ tag_regex = "^(?:v)?(?P<version>\\d+\\.\\d+\\.\\d+)$"
 git_describe_command = "git describe --dirty --tags --long --match 'v[0-9]*.[0-9]*.[0-9]*' --match '[0-9]*.[0-9]*.[0-9]*'"
 # If no valid tag is found, fall back to a safe base version
 fallback_version = "0.0.0"
+
+
+[project.optional-dependencies]
+# Install with: pip install -e .[test]
+# Ensures pytest is available in environments that do not use requirements*.txt or Makefile
+test = [
+  "pytest>=7.0",
+  "pytest-cov>=4.0",
+]

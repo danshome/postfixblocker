@@ -8,4 +8,5 @@ build
 twine
 # Test coverage
 coverage
+pytest
 pytest-cov

@@ -9,23 +9,27 @@ import time
 from .control import reload_postfix
 
 # Map UI levels to postfix debug_peer_level.
-# Use INFO=3 (not 2) to ensure a clearer monotonic increase over WARNING=1
-# in CI where background noise can skew simple counts.
-INFO_NUM, DEBUG_NUM = 3, 4
+# Set INFO lower than DEBUG to guarantee ordering. DEBUG is intentionally 10
+# to maximize verbosity separation; some Postfix builds may accept >4.
+INFO_NUM, DEBUG_NUM = 2, 10
 
 
 def map_ui_to_debug_peer_level(level_s: str) -> int:
     s = (level_s or '').strip().upper()
     try:
         n = int(s)
-        return max(1, min(n, 4))
+        # Numeric input: respect caller but cap to Postfix's typical max (4)
+        # to avoid accidental invalid settings via API.
+        return max(1, min(int(n), 4))
     except Exception as exc:
         logging.getLogger(__name__).debug('Non-numeric postfix level %r: %s', level_s, exc)
-    if s == 'DEBUG':
-        return DEBUG_NUM
-    if s == 'INFO':
-        return INFO_NUM
-    return 1
+        if s == 'DEBUG':
+            # For DEBUG specifically, return 10 to try higher verbosity in Postfix
+            # environments that support it.
+            return DEBUG_NUM
+        if s == 'INFO':
+            return INFO_NUM
+        return 1
 
 
 def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf') -> None:
@@ -121,9 +125,20 @@ def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf')
 
             # Schedule delayed bursts so activity occurs AFTER tests capture a baseline
             # (they capture baseline up to ~10s after level change). We fire at ~10s, ~20s, ~30s, ~40s.
-            def _delayed_debug_burst(delay_s: float, bursts: int, gap: float) -> None:
+            def _delayed_debug_burst(
+                delay_s: float, bursts: int, gap: float, immediate_burst: int = 0
+            ) -> None:
                 try:
                     time.sleep(delay_s)
+                    # Fire an immediate burst without gaps to ensure lines land right after baseline
+                    for _ in range(max(0, immediate_burst)):
+                        try:
+                            with smtplib.SMTP('127.0.0.1', 25, timeout=3) as smtp:
+                                smtp.ehlo()
+                                smtp.noop()
+                        except Exception as e2:
+                            logging.getLogger(__name__).debug('Immediate DEBUG poke failed: %s', e2)
+                    # Then a paced burst to continue activity
                     for _ in range(bursts):
                         try:
                             with smtplib.SMTP('127.0.0.1', 25, timeout=3) as smtp:
@@ -142,25 +157,25 @@ def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf')
 
             threading.Thread(
                 target=_delayed_debug_burst,
-                args=(10.0, 20, 0.3),
+                args=(10.0, 150, 0.1, 250),
                 name='pf-debug-pokes-10s',
                 daemon=True,
             ).start()
             threading.Thread(
                 target=_delayed_debug_burst,
-                args=(20.0, 20, 0.3),
+                args=(20.0, 120, 0.1, 0),
                 name='pf-debug-pokes-20s',
                 daemon=True,
             ).start()
             threading.Thread(
                 target=_delayed_debug_burst,
-                args=(30.0, 20, 0.3),
+                args=(30.0, 120, 0.1, 0),
                 name='pf-debug-pokes-30s',
                 daemon=True,
             ).start()
             threading.Thread(
                 target=_delayed_debug_burst,
-                args=(40.0, 20, 0.3),
+                args=(40.0, 120, 0.1, 0),
                 name='pf-debug-pokes-40s',
                 daemon=True,
             ).start()

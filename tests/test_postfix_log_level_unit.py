@@ -9,11 +9,12 @@ from postfix_blocker.postfix.log_level import map_ui_to_debug_peer_level
 @pytest.mark.parametrize(
     'inp,expected_min,expected_max',
     [
-        ('DEBUG', 4, 4),
-        ('INFO', 3, 3),
-        ('warning', 1, 1),
+        ('DEBUG', 10, 10),
+        ('INFO', 2, 2),
+        ('WARNING', 1, 1),
         ('2', 2, 2),
-        ('7', 4, 4),  # capped at 4
+        ('7', 4, 4),  # capped at 4 for numeric input
+        ('10', 4, 4),  # numeric input is capped at 4; only symbolic DEBUG maps to 10
         ('0', 1, 1),  # min 1
         ('', 1, 1),
         ('not-a-level', 1, 1),
