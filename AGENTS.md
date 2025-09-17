@@ -1,5 +1,7 @@
 # Repository Guidelines
 
+**ALWAYS** run `make ci` before changes, and after any changes.
+
 ## Project Structure & Module Organization
 - `postfix_blocker/` – Python services
   - `api.py` (thin entrypoint exposing Flask app via web/app_factory)

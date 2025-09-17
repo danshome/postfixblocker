@@ -27,6 +27,25 @@ def map_ui_to_debug_peer_level(level_s: str) -> int:
 
 def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf') -> None:
     lvl = map_ui_to_debug_peer_level(level_s)
+    # Derive TLS loglevels to reinforce monotonic verbosity in CI.
+    # Map WARNING->0, INFO->1, DEBUG->4; for numeric levels, 4→4, 3→1, else 0.
+    s = (level_s or '').strip().upper()
+    if s == 'DEBUG':
+        tls_lvl = 4
+    elif s == 'INFO':
+        tls_lvl = 1
+    else:
+        try:
+            n = int(s)
+            if n >= 4:
+                tls_lvl = 4
+            elif n >= 3:
+                tls_lvl = 1
+            else:
+                tls_lvl = 0
+        except Exception:
+            tls_lvl = 0
+
     lines: list[str] = []
     if os.path.exists(main_cf):
         with open(main_cf, encoding='utf-8') as f:
@@ -34,23 +53,38 @@ def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf')
     out: list[str] = []
     found_lvl = False
     found_list = False
+    found_smtp_tls = False
+    found_smtpd_tls = False
     for line in lines:
-        s = line.strip()
-        if s.startswith('debug_peer_level'):
+        sline = line.strip()
+        if sline.startswith('debug_peer_level'):
             out.append(f'debug_peer_level = {lvl}')
             found_lvl = True
-        elif s.startswith('debug_peer_list'):
+        elif sline.startswith('debug_peer_list'):
             out.append('debug_peer_list = 0.0.0.0/0')
             found_list = True
+        elif sline.startswith('smtp_tls_loglevel'):
+            out.append(f'smtp_tls_loglevel = {tls_lvl}')
+            found_smtp_tls = True
+        elif sline.startswith('smtpd_tls_loglevel'):
+            out.append(f'smtpd_tls_loglevel = {tls_lvl}')
+            found_smtpd_tls = True
         else:
             out.append(line)
     if not found_lvl:
         out.append(f'debug_peer_level = {lvl}')
     if not found_list:
         out.append('debug_peer_list = 0.0.0.0/0')
+    if not found_smtp_tls:
+        out.append(f'smtp_tls_loglevel = {tls_lvl}')
+    if not found_smtpd_tls:
+        out.append(f'smtpd_tls_loglevel = {tls_lvl}')
+
     with open(main_cf, 'w', encoding='utf-8') as f:
         f.write('\n'.join(out) + '\n')
-    logging.getLogger(__name__).debug('Updated main.cf debug_peer_level=%s from %s', lvl, level_s)
+    logging.getLogger(__name__).debug(
+        'Updated main.cf debug_peer_level=%s tls_loglevel=%s from %s', lvl, tls_lvl, level_s
+    )
     try:
         reload_postfix()
     except Exception as exc:
