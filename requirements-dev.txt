@@ -6,3 +6,6 @@ pre-commit
 # Packaging tools
 build
 twine
+# Test coverage
+coverage
+pytest-cov

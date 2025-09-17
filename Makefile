@@ -135,8 +135,8 @@ build-frontend:
 test: test-python-unit test-frontend
 
 test-python-all: venv
-	$(call log_step,Python tests (unit + backend + e2e in one run))
-	@$(PYTEST)
+	$(call log_step,Python tests (unit + backend + e2e with coverage))
+	@$(PYTEST) --cov=postfix_blocker --cov-report=xml
 
 test-python-unit: venv
 	$(call log_step,Python unit tests)
