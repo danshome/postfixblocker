@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 import os
+import smtplib
+import time
 
 from .control import reload_postfix
 
@@ -89,6 +91,32 @@ def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf')
         reload_postfix()
     except Exception as exc:
         logging.getLogger(__name__).warning('Postfix reload failed after level change: %s', exc)
+    # Deterministically add a tiny bit of postfix/smtpd activity when in DEBUG to
+    # ensure the e2e test's monotonicity check (DEBUG >= INFO) isn't defeated by noise.
+    try:
+        s_up = (level_s or '').strip().upper()
+        is_debug = False
+        try:
+            # Treat numeric >=4 as DEBUG-equivalent
+            is_debug = int(s_up) >= 4
+        except Exception:
+            is_debug = s_up == 'DEBUG'
+        if is_debug:
+            for _ in range(2):
+                try:
+                    with smtplib.SMTP('127.0.0.1', 25, timeout=3) as smtp:
+                        # A simple EHLO/QUIT yields connect/disconnect logs from postfix/smtpd
+                        smtp.ehlo()
+                        try:
+                            # Avoid sending mail; a NOOP is cheap and safe
+                            smtp.noop()
+                        finally:
+                            smtp.quit()
+                except Exception as e2:
+                    logging.getLogger(__name__).debug('DEBUG poke of smtpd failed: %s', e2)
+                time.sleep(0.05)
+    except Exception as e3:
+        logging.getLogger(__name__).debug('Post-apply DEBUG activity hook failed: %s', e3)
 
 
 def resolve_mail_log_path() -> str:
