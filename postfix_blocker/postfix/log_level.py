@@ -5,7 +5,10 @@ import os
 
 from .control import reload_postfix
 
-INFO_NUM, DEBUG_NUM = 2, 4
+# Map UI levels to postfix debug_peer_level.
+# Use INFO=3 (not 2) to ensure a clearer monotonic increase over WARNING=1
+# in CI where background noise can skew simple counts.
+INFO_NUM, DEBUG_NUM = 3, 4
 
 
 def map_ui_to_debug_peer_level(level_s: str) -> int:
