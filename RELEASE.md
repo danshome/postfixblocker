@@ -8,6 +8,7 @@ and publishing to PyPI. It assumes you have maintainer access to the repository.
 
 - Use SemVer tags `vX.Y.Z`.
 - Generate the changelog from history: `make changelog` (or set `AUTO_CHANGELOG=1` with `make release` to auto-generate and commit it during the release).
+- In GitHub Actions, the Release workflow first runs `make ci` (full lint/build/tests) and aborts if anything fails.
 - Run `make release` — tags first, pushes the current branch and tag to `origin`, builds artifacts, and (if `gh` is installed) creates a GitHub Release. If no existing v* tags are present, it creates an initial tag `v0.0.0`.
 - Publish to PyPI with `make publish-pypi`.
 
@@ -98,8 +99,22 @@ python -c "import postfix_blocker as p; print(p.__version__)"  # should print $V
 - `make version` — print the version setuptools-scm would compute right now
 - `make changelog` — generate CHANGELOG.md from Git history (Conventional Commits aware)
 - `make dist` — clean and build sdist+wheel and run `twine check`
-- `make release` — create/verify a SemVer Git tag first (creates `v0.0.0` if no tags exist), optionally generate and commit the changelog when `AUTO_CHANGELOG=1`, push the current branch and tag to `origin`, build artifacts and (if `gh` is installed) create a GitHub Release and attach artifacts
+- `make release` — create/verify a SemVer Git tag first (creates `v0.0.0` if no tags exist), optionally generate and commit the changelog when `AUTO_CHANGELOG=1`, push the current branch and tag to `origin`, build artifacts and (if `gh` is installed) create a GitHub Release and attach artifacts. You can override the version with `NEW_VERSION=X.Y.Z`.
 - `make publish-pypi` — upload `dist/*` to PyPI via `twine`
+
+## One-click Release in GitHub Actions
+
+You can cut a release from the GitHub UI without a local environment:
+
+1. Go to Actions → Release → Run workflow
+2. Enter the version (e.g., `0.0.1`) and run
+3. The workflow will:
+   - create/annotate tag `vX.Y.Z`
+   - auto-generate and commit CHANGELOG.md
+   - push the branch and tag
+   - build sdist+wheel and attach them to a GitHub Release
+
+Requirements: the repo must allow the default `GITHUB_TOKEN` to push to the default branch and create releases (we set `permissions: contents: write`).
 
 ## TestPyPI (optional)
 

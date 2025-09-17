@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'SemVer version to release (e.g., 0.0.1)'
+        required: true
+        type: string
+
+permissions:
+  contents: write  # needed to push tags and create GitHub Releases
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository (main branch)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Configure Git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Install Playwright browsers and system dependencies
+        working-directory: frontend
+        run: npx playwright install --with-deps
+
+      - name: Preflight CI (make ci)
+        env:
+          TEST_PG_URL: postgresql://blocker:blocker@localhost:5433/blocker
+          TEST_DB2_URL: ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER
+          BACKEND_WAIT_TIMEOUT_PG: '180'
+          BACKEND_WAIT_TIMEOUT_DB2: '900'
+          SMTP_PORT_PG: '1025'
+          SMTP_PORT_DB2: '1026'
+          MAILHOG_HOST: 'localhost'
+          MAILHOG_PORT: '8025'
+        run: |
+          make ci
+
+      - name: Create tag, build, push, and create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTO_CHANGELOG: '1'
+        run: |
+          make release NEW_VERSION="${{ inputs.version }}"
