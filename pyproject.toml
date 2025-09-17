@@ -37,7 +37,7 @@ build-backend = "setuptools.build_meta"
 name = "postfix-blocker"
 description = "Postfix blocker service and Flask API to manage blocklists and control Postfix maps."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.9.21"
 license = { file = "LICENSE" }
 authors = [{ name = "Dan McLaughlin" }]
 classifiers = [

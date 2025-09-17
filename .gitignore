@@ -20,3 +20,4 @@ frontend/.angular/
 
 # Logs
 logs/
+/venv/
