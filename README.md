@@ -418,3 +418,37 @@ GitHub Actions workflow is provided at `.github/workflows/ci.yml` with three job
 - Create it via Database tool window or edit `.idea/dataSources.local.xml`.
 - Connection details: host `localhost`, port `5433`, db `blocker`, user `blocker`.
 - Passwords are stored locally; when prompted, enter `blocker`. If adding manually, leave password blank and let PyCharm store it via Keychain/Keyring.
+
+
+
+## DB2 initialization: persist data without rebuilding every time
+
+The official `ibmcom/db2` image initializes the DB2 instance and creates the database on the first run. To avoid doing that heavy initialization on every start, you must persist `/database` across container restarts.
+
+What we use by default:
+- In `docker-compose.yml`, the `db2` service now uses a named Docker volume:
+  - `db2data:/database`
+- This avoids cross‑OS permission issues that can happen with bind mounts (e.g., `useradd: cannot create directory /database/config/db2inst1`).
+- Data persists across restarts. To reset it:
+  - `docker compose stop` (to stop containers without removing them)
+  - `docker volume rm $(docker compose ls -q | xargs -I {} echo {}_db2data || true)` (or inspect `docker volume ls` and remove the `db2data` volume for this project)
+
+If you prefer a host directory (advanced):
+- You can switch the mapping to `./db2data:/database`, but make sure permissions are correct on the host. A safe setup is:
+  - `rm -rf ./db2data && mkdir -p ./db2data/config`
+  - `chmod -R 777 ./db2data` (or `chown -R $(id -u):$(id -g) ./db2data` and ensure Docker can write)
+  - Do not commit `db2data/` into Git; add it to `.gitignore`.
+- If you previously used a bind mount and see `d---------` directories inside `db2data/config` (zero permissions), delete the folder or fix the permissions before starting DB2 again.
+
+### Can we bake a pre-initialized DB2 image?
+
+You generally shouldn’t try to run the full DB2 engine during `docker build`; the official image performs initialization at container runtime. If you need a reusable pre-initialized image for CI, you can create one manually and push it to a registry:
+
+1. Start DB2 once so it initializes the instance and database:
+   - `docker compose up -d db2`
+   - Wait until `docker compose ps` shows `healthy`.
+2. Commit the initialized container into a new image (replace `<id>` with the container ID):
+   - `docker commit <id> your-registry/postfixblocker-db2:preinit`
+3. Push it to your registry and update `docker-compose.yml`'s `db2` service to use `image: your-registry/postfixblocker-db2:preinit` (you can remove the volume mapping if you want the image’s baked data). Accept the license in your environment as required by IBM’s terms.
+
+This approach can reduce CI startup time. For local development, the default named volume (`db2data`) is simpler and avoids host permission pitfalls.

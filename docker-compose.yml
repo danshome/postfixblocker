@@ -76,10 +76,11 @@ services:
       - ./logs/postfix_db2.blocker.log:/var/log/postfix-blocker/blocker.log
       - ./logs/postfix_db2.maillog:/var/log/maillog
   db2:
-    image: ibmcom/db2:11.5.8.0
+    image: icr.io/db2_community/db2:11.5.8.0
     platform: linux/amd64
     environment:
       LICENSE: accept
+      DB2INSTANCE: db2inst1
       DB2INST1_PASSWORD: blockerpass
       DBNAME: BLOCKER
       AUTOCONFIG: "false"
@@ -87,9 +88,15 @@ services:
       REPODB: "false"
       ARCHIVE_LOGS: "true"
       PERSISTENT_HOME: "true"
+      BLU: "false"
+      ENABLE_ORACLE_COMPATIBILITY: "false"
+      UPDATEAVAIL: "NO"
+      TO_CREATE_SAMPLEDB: "false"
+      IS_OSXFS: "false"
+      HADR_ENABLED: "false"
     privileged: true
     volumes:
-      - db2data:/database
+      - ./database:/database
     ports:
       - "50000:50000"
     healthcheck:
@@ -101,6 +108,5 @@ services:
     # To test with DB2, set postfix BLOCKER_DB_URL to for example:
     #   ibm_db_sa://db2inst1:blockerpass@db2:50000/BLOCKER
   # and ensure the Python image includes ibm-db and ibm-db-sa packages.
-volumes:
-  db2data:
+
   

@@ -51,8 +51,8 @@ help:
 	@echo "  make test              Python unit + frontend unit"
 	@echo "  make e2e               Backend + E2E tests (starts compose)"
 	@echo "  make compose-up        docker compose up --build -d"
-	@echo "  make compose-down      docker compose down --remove-orphans (preserves volumes)"
-	@echo "  make compose-down-hard docker compose down -v --remove-orphans (destroys volumes)"
+	@echo "  make compose-down      docker compose stop (preserves containers, networks, and volumes)"
+	@echo "  make compose-down-hard docker compose down -v --remove-orphans (DESTROYS containers, networks, and volumes)"
 	@echo "  make hooks-update      Run 'pre-commit autoupdate' to refresh hook pins"
 	@echo "  make format            Run formatters (ruff + ESLint --fix)"
 	@echo "  make docker-rebuild    docker compose build --no-cache"
@@ -84,6 +84,8 @@ install-python: venv
 	@echo "[pip] Installing requirements (+dev)..."
 	@$(VENVPIP) install -r requirements.txt >/dev/null
 	@$(VENVPIP) install -r requirements-dev.txt >/dev/null || true
+	@echo "[pip] Forcing clean reinstall of pytest to avoid site-package corruption..."
+	@$(VENVPIP) install --no-cache-dir --force-reinstall -U pytest pytest-cov >/dev/null || true
 
 install-frontend:
 	$(call log_step,Install frontend deps (npm ci))
@@ -167,8 +169,8 @@ compose-up:
 	@$(DOCKER_COMPOSE) up -d --build
 
 compose-down:
-		$(call log_step,Docker compose down --remove-orphans)
-		@$(DOCKER_COMPOSE) down --remove-orphans || true
+		$(call log_step,Docker compose stop)
+		@$(DOCKER_COMPOSE) stop || true
 
 compose-down-hard:
 		$(call log_step,Docker compose down -v --remove-orphans)

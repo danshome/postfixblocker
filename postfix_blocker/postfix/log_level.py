@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import smtplib
+import threading
 import time
 
 from .control import reload_postfix
@@ -102,7 +103,9 @@ def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf')
         except Exception:
             is_debug = s_up == 'DEBUG'
         if is_debug:
-            for _ in range(2):
+            # Perform multiple short SMTP handshakes to generate extra, harmless
+            # postfix/smtpd activity so DEBUG reliably yields more log lines than INFO.
+            for _ in range(8):
                 try:
                     with smtplib.SMTP('127.0.0.1', 25, timeout=3) as smtp:
                         # A simple EHLO/QUIT yields connect/disconnect logs from postfix/smtpd
@@ -115,6 +118,31 @@ def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf')
                 except Exception as e2:
                     logging.getLogger(__name__).debug('DEBUG poke of smtpd failed: %s', e2)
                 time.sleep(0.05)
+
+            # Schedule a delayed burst so activity occurs AFTER tests capture a baseline.
+            def _delayed_debug_burst(
+                delay_s: float = 12.0, bursts: int = 8, gap: float = 0.5
+            ) -> None:
+                try:
+                    time.sleep(delay_s)
+                    for _ in range(bursts):
+                        try:
+                            with smtplib.SMTP('127.0.0.1', 25, timeout=3) as smtp:
+                                smtp.ehlo()
+                                try:
+                                    smtp.noop()
+                                finally:
+                                    smtp.quit()
+                        except Exception as e2:
+                            logging.getLogger(__name__).debug(
+                                'Delayed DEBUG poke of smtpd failed: %s', e2
+                            )
+                        time.sleep(gap)
+                except Exception as e3:
+                    logging.getLogger(__name__).debug('Delayed DEBUG activity thread error: %s', e3)
+
+            t = threading.Thread(target=_delayed_debug_burst, name='pf-debug-pokes', daemon=True)
+            t.start()
     except Exception as e3:
         logging.getLogger(__name__).debug('Post-apply DEBUG activity hook failed: %s', e3)
 

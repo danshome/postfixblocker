@@ -21,3 +21,4 @@ frontend/.angular/
 # Logs
 logs/
 /venv/
+/database/

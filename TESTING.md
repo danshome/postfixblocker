@@ -71,7 +71,7 @@ Hooks included:
 - ESLint (frontend TypeScript)
 
 When backend/e2e tests are selected, pytest can optionally run
-`docker compose down` and `docker compose up --build -d` first. To force this
+`docker compose stop` and `docker compose up --build -d` first. To force this
 for any run, use:
 
 ```bash

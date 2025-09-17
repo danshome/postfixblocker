@@ -26,7 +26,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         '--compose-rebuild',
         action='store_true',
         default=False,
-        help="Run 'docker compose down' then 'docker compose up --build -d' before tests",
+        help="Run 'docker compose stop' then 'docker compose up --build -d' before tests",
     )
     group.addoption(
         '--no-compose',
@@ -95,8 +95,8 @@ def compose_stack(pytestconfig: pytest.Config) -> None:
 
     if force:
         print('[compose] Forced rebuild requested...', flush=True)
-        print('[compose] Bringing stack down...', flush=True)
-        run([*compose, 'down', '-v', '--remove-orphans'])
+        print('[compose] Stopping stack...', flush=True)
+        run([*compose, 'stop'])
         print('[compose] Building and starting stack...', flush=True)
         run([*compose, 'up', '-d', '--build'])
     else:
