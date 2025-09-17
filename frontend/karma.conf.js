@@ -8,6 +8,7 @@ module.exports = function (config) {
   }
   // Enforce coverage thresholds; can override via env FE_COV_MIN or COVERAGE_MIN_FE
   const FE_MIN = parseInt(process.env.FE_COV_MIN || process.env.COVERAGE_MIN_FE || '80', 10) || 0;
+  const FE_BRANCH_MIN = parseInt(process.env.FE_BRANCH_MIN || process.env.COVERAGE_MIN_FE_BRANCH || String(FE_MIN), 10) || 0;
   config.set({
     basePath: '',
     frameworks: ['jasmine', '@angular-devkit/build-angular'],
@@ -31,7 +32,7 @@ module.exports = function (config) {
           statements: FE_MIN,
           lines: FE_MIN,
           functions: FE_MIN,
-          branches: FE_MIN,
+          branches: FE_BRANCH_MIN,
         },
       },
     },

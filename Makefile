@@ -23,6 +23,8 @@ DOCKER_COMPOSE ?= docker compose
 PY_COV_MIN ?= 80
 # Minimum frontend (Karma) coverage percentage (statements/lines/functions).
 FE_COV_MIN ?= 80
+# Minimum frontend branch coverage percentage (branches only; used by Karma via FE_BRANCH_MIN)
+FE_COV_MIN_BRANCH ?= 60
 
 # Convenience command aliases
 RUFF := $(VENVPY) -m ruff
@@ -160,7 +162,7 @@ test-python-e2e: venv
 
 test-frontend:
 	$(call log_step,Frontend unit tests (Karma))
-	@cd $(FRONTEND_DIR) && CI=1 FE_COV_MIN=$(FE_COV_MIN) $(NPM) test --silent -- --watch=false
+	@cd $(FRONTEND_DIR) && CI=1 FE_COV_MIN=$(FE_COV_MIN) FE_BRANCH_MIN=$(FE_COV_MIN_BRANCH) $(NPM) test --silent -- --watch=false
 
 test-frontend-e2e:
 	$(call log_step,Frontend E2E tests (Playwright))
