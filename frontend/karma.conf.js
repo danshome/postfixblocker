@@ -6,6 +6,8 @@ module.exports = function (config) {
   } catch (e) {
     // fallback to system Chrome
   }
+  // Enforce coverage thresholds; can override via env FE_COV_MIN or COVERAGE_MIN_FE
+  const FE_MIN = parseInt(process.env.FE_COV_MIN || process.env.COVERAGE_MIN_FE || '80', 10) || 0;
   config.set({
     basePath: '',
     frameworks: ['jasmine', '@angular-devkit/build-angular'],
@@ -24,6 +26,14 @@ module.exports = function (config) {
       dir: require('path').join(__dirname, './coverage'),
       subdir: '.',
       reporters: [{ type: 'html' }, { type: 'text-summary' }],
+      check: {
+        global: {
+          statements: FE_MIN,
+          lines: FE_MIN,
+          functions: FE_MIN,
+          branches: FE_MIN,
+        },
+      },
     },
     browsers: ['ChromeHeadless'],
     singleRun: true,

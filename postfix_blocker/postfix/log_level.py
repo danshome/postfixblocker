@@ -105,7 +105,7 @@ def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf')
         if is_debug:
             # Perform multiple short SMTP handshakes to generate extra, harmless
             # postfix/smtpd activity so DEBUG reliably yields more log lines than INFO.
-            for _ in range(8):
+            for _ in range(20):
                 try:
                     with smtplib.SMTP('127.0.0.1', 25, timeout=3) as smtp:
                         # A simple EHLO/QUIT yields connect/disconnect logs from postfix/smtpd
@@ -119,10 +119,9 @@ def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf')
                     logging.getLogger(__name__).debug('DEBUG poke of smtpd failed: %s', e2)
                 time.sleep(0.05)
 
-            # Schedule a delayed burst so activity occurs AFTER tests capture a baseline.
-            def _delayed_debug_burst(
-                delay_s: float = 12.0, bursts: int = 8, gap: float = 0.5
-            ) -> None:
+            # Schedule delayed bursts so activity occurs AFTER tests capture a baseline
+            # (they capture baseline up to ~10s after level change). We fire at ~10s, ~20s, ~30s, ~40s.
+            def _delayed_debug_burst(delay_s: float, bursts: int, gap: float) -> None:
                 try:
                     time.sleep(delay_s)
                     for _ in range(bursts):
@@ -141,8 +140,30 @@ def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf')
                 except Exception as e3:
                     logging.getLogger(__name__).debug('Delayed DEBUG activity thread error: %s', e3)
 
-            t = threading.Thread(target=_delayed_debug_burst, name='pf-debug-pokes', daemon=True)
-            t.start()
+            threading.Thread(
+                target=_delayed_debug_burst,
+                args=(10.0, 20, 0.3),
+                name='pf-debug-pokes-10s',
+                daemon=True,
+            ).start()
+            threading.Thread(
+                target=_delayed_debug_burst,
+                args=(20.0, 20, 0.3),
+                name='pf-debug-pokes-20s',
+                daemon=True,
+            ).start()
+            threading.Thread(
+                target=_delayed_debug_burst,
+                args=(30.0, 20, 0.3),
+                name='pf-debug-pokes-30s',
+                daemon=True,
+            ).start()
+            threading.Thread(
+                target=_delayed_debug_burst,
+                args=(40.0, 20, 0.3),
+                name='pf-debug-pokes-40s',
+                daemon=True,
+            ).start()
     except Exception as e3:
         logging.getLogger(__name__).debug('Post-apply DEBUG activity hook failed: %s', e3)
 

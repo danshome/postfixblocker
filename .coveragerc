@@ -1,0 +1,17 @@
+[run]
+source = postfix_blocker
+parallel = True
+# Omit container-only integration code that host-side pytest cannot cover.
+omit =
+    postfix_blocker/postfix/log_level.py
+    postfix_blocker/postfix/control.py
+    postfix_blocker/web/*.py
+    postfix_blocker/blocker.py
+    postfix_blocker/api.py
+
+[report]
+# Common patterns to exclude from coverage metrics
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:
+    if __name__ == '__main__':

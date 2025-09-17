@@ -12,7 +12,10 @@ in CI.
 - Backend: exercises DB interactions for PostgreSQL and DB2
 - E2E: full stack including Postfix and MailHog
 
-Target coverage: TODO (e.g., 80% lines)
+Target coverage (enforced by make ci):
+- Python (unit+backend+e2e combined): 80% lines minimum (configurable via PY_COV_MIN).
+- Frontend unit (Karma): 80% minimum for statements, lines, functions, and branches (configurable via FE_COV_MIN).
+- Frontend e2e (Playwright): code coverage is not collected by default; see README for options to instrument if desired.
 
 ## Running Tests
 

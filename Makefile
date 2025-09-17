@@ -18,6 +18,12 @@ PIP ?= pip3
 NPM ?= npm
 DOCKER_COMPOSE ?= docker compose
 
+# Coverage thresholds (can be overridden via environment)
+# Minimum Python coverage percentage (lines):
+PY_COV_MIN ?= 80
+# Minimum frontend (Karma) coverage percentage (statements/lines/functions).
+FE_COV_MIN ?= 80
+
 # Convenience command aliases
 RUFF := $(VENVPY) -m ruff
 MYPY := $(VENVPY) -m mypy
@@ -138,7 +144,7 @@ test: test-python-unit test-frontend
 
 test-python-all: venv
 	$(call log_step,Python tests (unit + backend + e2e with coverage))
-	@$(PYTEST) --cov=postfix_blocker --cov-report=xml
+	@$(PYTEST) --cov=postfix_blocker --cov-report=xml --cov-fail-under=$(PY_COV_MIN)
 
 test-python-unit: venv
 	$(call log_step,Python unit tests)
@@ -154,7 +160,7 @@ test-python-e2e: venv
 
 test-frontend:
 	$(call log_step,Frontend unit tests (Karma))
-	@cd $(FRONTEND_DIR) && CI=1 $(NPM) test --silent -- --watch=false
+	@cd $(FRONTEND_DIR) && CI=1 FE_COV_MIN=$(FE_COV_MIN) $(NPM) test --silent -- --watch=false
 
 test-frontend-e2e:
 	$(call log_step,Frontend E2E tests (Playwright))
