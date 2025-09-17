@@ -352,8 +352,9 @@ def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf')
                 except Exception as e2:
                     logging.getLogger(__name__).debug('INFO activity task failed: %s', e2)
 
-            _submit_throttled(_info_burst_after, 12.0, 2, 0.3, current_gen)
-            _submit_throttled(_info_burst_after, 24.0, 2, 0.3, current_gen)
+            _submit_throttled(_info_burst_after, 12.0, 3, 0.3, current_gen)
+            _submit_throttled(_info_burst_after, 24.0, 3, 0.3, current_gen)
+            _submit_throttled(_info_burst_after, 36.0, 2, 0.3, current_gen)
     except Exception as e4:
         logging.getLogger(__name__).debug('Post-apply INFO activity hook failed: %s', e4)
 

@@ -13,28 +13,41 @@ def init_db(engine: Engine) -> None:
 
     - Ensure both blocked_addresses and cris_props exist.
     - Ensure test_mode column exists with NOT NULL default.
+
+    Notes:
+    - Some dialects (e.g., DB2) can misreport table existence via Inspector.
+      To avoid spurious CREATE TABLE errors (SQL0601N), we attempt creation
+      unconditionally and ignore "already exists" errors in a portable way.
     """
     _ensure_loaded()
     insp = inspect(engine)
 
-    # Create tables if missing
-    # blocked_addresses
-    try:
-        has_blocked = insp.has_table('blocked_addresses')
-    except Exception:
-        has_blocked = False
-    if not has_blocked:
-        # create_all via metadata referenced by get_blocked_table
-        bt = get_blocked_table()
-        bt.metadata.create_all(engine)  # type: ignore[attr-defined]
-    # cris_props
-    try:
-        has_props = insp.has_table('cris_props')
-    except Exception:
-        has_props = False
-    if not has_props:
-        pt = get_props_table()
-        pt.create(engine, checkfirst=True)
+    # Create or verify tables with a robust, idempotent approach
+    bt = get_blocked_table()
+    pt = get_props_table()
+
+    def _safe_create(table) -> None:
+        try:
+            # Force create without pre-checks; swallow "already exists" errors
+            table.create(engine, checkfirst=False)
+        except Exception as exc:  # pragma: no cover - dialect/driver specific
+            msg = str(exc).lower()
+            # Common patterns across backends for existing table
+            if (
+                ('already exists' in msg)
+                or ('sql0601n' in msg)
+                or ('object to be created is identical to the existing name' in msg)
+            ):
+                return
+            # As a fallback, try create with checkfirst (may succeed on some dialects)
+            try:
+                table.create(engine, checkfirst=True)
+                return
+            except Exception:
+                raise
+
+    _safe_create(bt)
+    _safe_create(pt)
 
     # Migration: ensure test_mode exists
     try:
