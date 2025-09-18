@@ -309,35 +309,38 @@ def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf')
     except Exception as e3:
         logging.getLogger(__name__).debug('Post-apply DEBUG activity hook failed: %s', e3)
 
-    # For INFO level, schedule a very small number of real SMTP deliveries so that
+    # For INFO and WARNING levels, schedule a few real SMTP deliveries so that
     # at least some delivery-evidence lines (e.g., queued as / status=sent) appear
     # in CI after the test captures its baseline. This mitigates timing flakiness
     # on some runners where the test's own sends occasionally land before baseline.
     try:
         s_up2 = (level_s or '').strip().upper()
         is_info = False
+        is_warning = False
         try:
             n2 = int(s_up2)
             is_info = 2 <= n2 < 4  # treat 2 or 3 as INFO-ish
+            is_warning = n2 == 1  # WARNING-ish
         except Exception:
             is_info = s_up2 == 'INFO'
+            is_warning = s_up2 == 'WARNING'
 
-        def _send_small_mail_burst(count: int = 2, gap: float = 0.2) -> None:
+        def _send_small_mail_burst(tag: str, count: int = 2, gap: float = 0.2) -> None:
             for i in range(max(1, count)):
                 try:
                     with smtplib.SMTP('127.0.0.1', 25, timeout=5) as smtp:
-                        from_addr = 'pf-info@local.test'
-                        to_addr = f'recipient-info-{i}@local.test'
+                        from_addr = f'pf-{tag}@local.test'
+                        to_addr = f'recipient-{tag}-{i}@local.test'
                         data = (
                             f'From: {from_addr}\r\n'
                             f'To: {to_addr}\r\n'
-                            f'Subject: PF INFO poke {i}\r\n'
+                            f'Subject: PF {tag.upper()} poke {i}\r\n'
                             '\r\n'
-                            'Hello from PF INFO poke.\r\n'
+                            f'Hello from PF {tag.upper()} poke.\r\n'
                         )
                         smtp.sendmail(from_addr, [to_addr], data)
                 except Exception as e2:
-                    logging.getLogger(__name__).debug('INFO poke send failed: %s', e2)
+                    logging.getLogger(__name__).debug('%s poke send failed: %s', tag.upper(), e2)
                 time.sleep(gap)
 
         if is_info:
@@ -348,15 +351,30 @@ def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf')
                         return
                     if _is_gen_stale(gen):
                         return
-                    _send_small_mail_burst(count, gap)
+                    _send_small_mail_burst('info', count, gap)
                 except Exception as e2:
                     logging.getLogger(__name__).debug('INFO activity task failed: %s', e2)
 
             _submit_throttled(_info_burst_after, 12.0, 3, 0.3, current_gen)
             _submit_throttled(_info_burst_after, 24.0, 3, 0.3, current_gen)
             _submit_throttled(_info_burst_after, 36.0, 2, 0.3, current_gen)
+
+        if is_warning:
+            # Fire a very small amount after ~14s and ~28s; smaller than INFO to preserve ordering
+            def _warn_burst_after(delay: float, count: int, gap: float, gen: int) -> None:
+                try:
+                    if _sleep_with_cancel(delay, gen):
+                        return
+                    if _is_gen_stale(gen):
+                        return
+                    _send_small_mail_burst('warning', count, gap)
+                except Exception as e2:
+                    logging.getLogger(__name__).debug('WARNING activity task failed: %s', e2)
+
+            _submit_throttled(_warn_burst_after, 14.0, 1, 0.35, current_gen)
+            _submit_throttled(_warn_burst_after, 28.0, 1, 0.35, current_gen)
     except Exception as e4:
-        logging.getLogger(__name__).debug('Post-apply INFO activity hook failed: %s', e4)
+        logging.getLogger(__name__).debug('Post-apply INFO/WARNING activity hook failed: %s', e4)
 
 
 def resolve_mail_log_path() -> str:
