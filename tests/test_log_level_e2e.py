@@ -44,10 +44,19 @@ def _send_test_mail(port: int, to_addr: str) -> None:
         s.send_message(msg)
 
 
-def _get_postfix_line_count(api_base: str) -> int:
-    r = _get(api_base, '/logs/lines', params={'name': 'postfix'})
+def _get_postfix_tail_lines(api_base: str, lines: int = 6000) -> list[str]:
+    r = _get(api_base, '/logs/tail', params={'name': 'postfix', 'lines': str(lines)})
     assert r.ok
-    return int(r.json().get('count') or 0)
+    content = str(r.json().get('content') or '')
+    # Normalize to non-empty lines
+    return [ln for ln in content.splitlines() if ln.strip()]
+
+
+def _count_recipient_mentions(api_base: str, recipient: str, lines: int = 6000) -> int:
+    tail = _get_postfix_tail_lines(api_base, lines=lines)
+    # Count occurrences of the full recipient address in the tail
+    # This isolates per-email logging rather than total file growth.
+    return sum(1 for ln in tail if recipient in ln)
 
 
 def _measure_delta_for_level(api_base: str, smtp_port: int, level: str, recipient: str) -> int:
@@ -56,27 +65,27 @@ def _measure_delta_for_level(api_base: str, smtp_port: int, level: str, recipien
     assert r.ok
     time.sleep(0.5)
 
-    # Establish baseline and wait for one email worth of lines (ignore startup noise)
-    base0 = _get_postfix_line_count(api_base)
+    # Establish baseline count of lines mentioning this specific recipient
+    base0 = _count_recipient_mentions(api_base, recipient)
 
+    # First email: wait until we observe new lines for this recipient
     _send_test_mail(smtp_port, recipient)
 
-    # Wait until count increases after first send
     start = time.time()
     count1 = base0
     while time.time() - start < 90:
-        count1 = _get_postfix_line_count(api_base)
+        count1 = _count_recipient_mentions(api_base, recipient)
         if count1 > base0:
             break
         time.sleep(0.5)
 
-    # Send another email and wait for next increase
+    # Second email: measure incremental lines attributable to one send at this level
     _send_test_mail(smtp_port, recipient)
 
     start2 = time.time()
     count2 = count1
     while time.time() - start2 < 90:
-        count2 = _get_postfix_line_count(api_base)
+        count2 = _count_recipient_mentions(api_base, recipient)
         if count2 > count1:
             break
         time.sleep(0.5)
