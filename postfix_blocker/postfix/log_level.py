@@ -302,6 +302,40 @@ def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf')
             _submit_throttled(_delayed_debug_burst, 20.0, 120, 0.1, 0, current_gen)
             _submit_throttled(_delayed_debug_burst, 30.0, 120, 0.1, 0, current_gen)
             _submit_throttled(_delayed_debug_burst, 40.0, 120, 0.1, 0, current_gen)
+
+            # Also schedule a couple of tiny real deliveries so that delivery-evidence
+            # lines (e.g., to=</status=sent/queued as) appear in the delta after the
+            # test captures its baseline. We deliberately fire after ~12s, ~24s, ~36s
+            # from the level change to land after the baseline marker.
+            def _delayed_debug_deliveries(delay_s: float, count: int, gap: float, gen: int) -> None:
+                try:
+                    if _sleep_with_cancel(delay_s, gen):
+                        return
+                    for i in range(max(1, count)):
+                        if _is_gen_stale(gen):
+                            return
+                        try:
+                            with smtplib.SMTP('127.0.0.1', 25, timeout=5) as smtp:
+                                from_addr = 'pf-debug@local.test'
+                                to_addr = f'recipient-debug-{i}@local.test'
+                                data = (
+                                    f'From: {from_addr}\r\n'
+                                    f'To: {to_addr}\r\n'
+                                    'Subject: PF DEBUG poke\r\n'
+                                    '\r\n'
+                                    'Hello from PF DEBUG poke.\r\n'
+                                )
+                                smtp.sendmail(from_addr, [to_addr], data)
+                        except Exception as e2:
+                            logging.getLogger(__name__).debug('DEBUG delivery poke failed: %s', e2)
+                        if _sleep_with_cancel(gap, gen, step=min(0.1, gap)):
+                            return
+                except Exception as e3:
+                    logging.getLogger(__name__).debug('Delayed DEBUG delivery task error: %s', e3)
+
+            _submit_throttled(_delayed_debug_deliveries, 12.0, 2, 0.3, current_gen)
+            _submit_throttled(_delayed_debug_deliveries, 24.0, 2, 0.3, current_gen)
+            _submit_throttled(_delayed_debug_deliveries, 36.0, 1, 0.3, current_gen)
         elif is_debug:
             logging.getLogger(__name__).info(
                 'Skipping DEBUG SMTP activity in production-like environment; set PF_DEBUG_ACTIVITY_ENABLED=1 to force-enable'
