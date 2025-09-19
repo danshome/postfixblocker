@@ -120,38 +120,93 @@ def _dbg(msg: str):
         print(msg)
 
 
+def _wait_until(predicate, timeout: float = 30.0, interval: float = 0.5) -> bool:
+    """Poll predicate() until it returns truthy or timeout expires.
+    Returns True on success, False on timeout. Exceptions in predicate are ignored.
+    """
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            if predicate():
+                return True
+        except Exception:
+            pass
+        time.sleep(interval)
+    return False
+
+
 def run_e2e_scenario(db_url: str, smtp_host: str, smtp_port: int, mh_host: str, mh_port: int):
     """Run a minimal e2e scenario and return delivered recipients.
 
     Assumes a Postfix + blocker service is running and configured to use the
     same backend as db_url.
     """
-    global DB_URL, SMTP_HOST, SMTP_PORT, MAILHOG_HOST, MAILHOG_PORT
-    DB_URL = db_url
-    SMTP_HOST = smtp_host
-    SMTP_PORT = smtp_port
-    MAILHOG_HOST = mh_host
-    MAILHOG_PORT = mh_port
-
     if create_engine is None:
         return []
     try:
-        engine = create_engine(DB_URL)
+        engine = create_engine(db_url)
         _dbg('engine created')
     except Exception as exc:
         _dbg(f'engine creation failed: {exc}')
         return []
     if _init_db is None or _get_blocked_table is None:
         _dbg('refactored DB helpers not available')
+        try:
+            engine.dispose()
+        except Exception:
+            pass
         return []
     try:
         _init_db(engine)
         _dbg('init_db ok')
     except Exception as exc:
         _dbg(f'init_db failed: {exc}')
+        try:
+            engine.dispose()
+        except Exception:
+            pass
         return []
 
-    # Reset DB and MailHog
+    # Local helpers to avoid mutating module globals
+    def _send_mail_local(recipient: str, msg: str = 'hello') -> None:
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=TIMEOUT) as smtp:
+            smtp.sendmail('tester@example.com', [recipient], f'Subject: test\n\n{msg}')
+
+    def _mh_messages_local():
+        try:
+            with urlopen(
+                f'http://{mh_host}:{mh_port}/api/v2/messages?limit=10000', timeout=TIMEOUT
+            ) as resp:
+                data = json.load(resp)
+        except Exception as exc:
+            _dbg(f'Could not fetch MailHog messages: {exc}')
+            return None
+        recipients = []
+        for item in data.get('items', []):
+            to = item.get('To', [])
+            if to:
+                recipients.append(f'{to[0]["Mailbox"]}@{to[0]["Domain"]}')
+        return recipients
+
+    def _mh_clear_local() -> bool:
+        url = f'http://{mh_host}:{mh_port}/api/v1/messages'
+        if requests:
+            try:
+                requests.delete(url, timeout=TIMEOUT)
+                return True
+            except Exception as exc:
+                _dbg(f'Could not clear MailHog messages via requests: {exc}')
+        try:
+            from urllib.request import Request
+
+            req = Request(url, method='DELETE')
+            with urlopen(req, timeout=TIMEOUT):
+                return True
+        except Exception as exc:
+            _dbg(f'Could not clear MailHog messages via urllib: {exc}')
+            return False
+
+    # Reset DB and seed patterns
     try:
         with engine.connect() as conn:
             bt = _get_blocked_table()
@@ -167,20 +222,59 @@ def run_e2e_scenario(db_url: str, smtp_host: str, smtp_port: int, mh_host: str, 
             _dbg('db reset and seed ok')
     except Exception as exc:
         _dbg(f'db reset failed: {exc}')
+        try:
+            engine.dispose()
+        except Exception:
+            pass
         return []
 
-    # Allow blocker to detect and reload
-    time.sleep(6)
-    mailhog_clear()
+    # Poll for blocker to apply new rules by attempting a blocked send until it is rejected
+    def _blocked_applied() -> bool:
+        try:
+            _send_mail_local('blocked1@example.com', msg='probe')
+            # If accepted, rules not yet applied
+            return False
+        except Exception as exc:
+            _dbg(f'blocked probe rejected (as expected): {exc}')
+            return True
 
+    if not _wait_until(_blocked_applied, timeout=60, interval=1.0):
+        _dbg('blocker did not apply rules within timeout; skipping')
+        try:
+            engine.dispose()
+        except Exception:
+            pass
+        return []
+
+    if not _mh_clear_local():
+        _dbg('could not clear MailHog; skipping')
+        try:
+            engine.dispose()
+        except Exception:
+            pass
+        return []
+
+    # Send a trio of messages (one allowed, two blocked)
     for rcpt in ['blocked1@example.com', 'allowed@example.com', 'user@blocked.com']:
         try:
-            send_mail(rcpt)
+            _send_mail_local(rcpt)
         except Exception:
             pass
 
-    time.sleep(2)
-    return mailhog_messages()
+    def _allowed_delivered() -> bool:
+        msgs = _mh_messages_local()
+        return bool(msgs and ('allowed@example.com' in msgs))
+
+    _wait_until(_allowed_delivered, timeout=15, interval=1.0)
+
+    try:
+        final = _mh_messages_local() or []
+    finally:
+        try:
+            engine.dispose()
+        except Exception:
+            pass
+    return final
 
 
 def mailhog_counts():

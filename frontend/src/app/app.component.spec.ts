@@ -569,6 +569,8 @@ describe('AppComponent', () => {
     }
     tick();
     expect(comp.currentLevel).toBe('');
+    // Ensure any timers are stopped to prevent interval leakage across tests
+    comp.stopLogTimer();
   }));
 
   it('commitEdit no-op when empty or unchanged', () => {
@@ -609,6 +611,8 @@ describe('AppComponent', () => {
     put.flush('boom', { status: 500, statusText: 'Server Error' });
 
     tick(200);
+    // Ensure any timers are stopped to prevent interval leakage across tests
+    comp.stopLogTimer();
   }));
 
   it('onSortChange with empty direction returns early', () => {

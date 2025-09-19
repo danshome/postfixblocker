@@ -26,13 +26,13 @@ def test_configure_logging_sets_level_and_file_handler(monkeypatch):
         configure_logging(service='api', level_env='X_LEVEL', file_env='X_FILE', default='INFO')
 
         assert root.level == logging.DEBUG
-        # A RotatingFileHandler pointing at our file should be present
-        files = [
-            getattr(h, 'baseFilename', None)
-            for h in root.handlers
-            if isinstance(h, RotatingFileHandler)
-        ]
-        assert log_path in files
+        # A RotatingFileHandler pointing at our file should be present and properly configured
+        file_handlers = [h for h in root.handlers if isinstance(h, RotatingFileHandler)]
+        assert any(getattr(h, 'baseFilename', None) == log_path for h in file_handlers)
+        # Strengthen assertions: verify rotation config
+        target = next(h for h in file_handlers if getattr(h, 'baseFilename', None) == log_path)
+        assert getattr(target, 'maxBytes', None) == 10 * 1024 * 1024
+        assert getattr(target, 'backupCount', None) == 5
 
 
 @pytest.mark.unit

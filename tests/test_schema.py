@@ -14,6 +14,6 @@ def test_blocked_table_schema():
 
     # Properties table
     pt = get_props_table()
-    assert pt.name in ('cris_props', 'CRIS_PROPS')
+    assert pt.name.lower() == 'cris_props'
     pcols = set(c.name.lower() for c in pt.columns)
     assert {'key', 'value', 'update_ts'}.issubset(pcols)

@@ -1,4 +1,6 @@
+import json
 import os
+from urllib.request import urlopen
 
 import pytest
 
@@ -49,7 +51,23 @@ def test_e2e_both_backends(target):
     )
 
     if not delivered:  # backend/service not available; skip rather than fail
-        pytest.skip(f'E2E target {target["name"]} unavailable')
+        # Gather some quick diagnostics to aid triage
+        diag = {
+            'db_url': target['db_url'],
+            'smtp': f'{target["smtp_host"]}:{target["smtp_port"]}',
+            'mailhog': f'{target["mh_host"]}:{target["mh_port"]}',
+            'mh_count': 'n/a',
+        }
+        try:
+            with urlopen(
+                f'http://{target["mh_host"]}:{target["mh_port"]}/api/v2/messages?limit=100',
+                timeout=5,
+            ) as resp:
+                data = json.load(resp)
+                diag['mh_count'] = len(data.get('items', []))
+        except Exception:
+            pass
+        pytest.skip(f'E2E target {target["name"]} unavailable; diag={diag}')
 
     assert 'allowed@example.com' in delivered
     assert 'blocked1@example.com' not in delivered

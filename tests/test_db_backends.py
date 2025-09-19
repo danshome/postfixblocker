@@ -35,31 +35,38 @@ def _default_urls():
 
 def _smoke_db(url: str) -> None:
     engine = create_engine(url)  # type: ignore[misc]
-    init_db(engine)
-    bt = get_blocked_table()
-    with engine.connect() as conn:
-        # Clean slate
-        conn.execute(bt.delete())
-        # Insert two rows
-        conn.execute(
-            bt.insert(),
-            [
-                {'pattern': 'unit1@example.com', 'is_regex': False},
-                {'pattern': '.*@unit.test', 'is_regex': True},
-            ],
-        )
-        conn.commit()
+    try:
+        init_db(engine)
+        bt = get_blocked_table()
+        with engine.connect() as conn:
+            # Clean slate
+            conn.execute(bt.delete())
+            # Insert two rows
+            conn.execute(
+                bt.insert(),
+                [
+                    {'pattern': 'unit1@example.com', 'is_regex': False},
+                    {'pattern': '.*@unit.test', 'is_regex': True},
+                ],
+            )
+            conn.commit()
 
-    # Read back directly via SQLAlchemy (no legacy shim)
-    from sqlalchemy import select  # type: ignore
+        # Read back directly via SQLAlchemy (no legacy shim)
+        from sqlalchemy import select  # type: ignore
 
-    with engine.connect() as conn:
-        rows = list(conn.execute(select(bt.c.pattern, bt.c.is_regex)))
-    pats = sorted((r[0], r[1]) for r in rows)
-    assert pats == [('.*@unit.test', True), ('unit1@example.com', False)]
+        with engine.connect() as conn:
+            rows = list(conn.execute(select(bt.c.pattern, bt.c.is_regex)))
+        pats = sorted((r[0], r[1]) for r in rows)
+        assert pats == [('.*@unit.test', True), ('unit1@example.com', False)]
+    finally:
+        try:
+            engine.dispose()
+        except Exception:
+            pass
 
 
 @pytest.mark.backend
+@pytest.mark.slow
 @pytest.mark.skipif(create_engine is None, reason='SQLAlchemy not installed')
 @pytest.mark.parametrize('backend', ['pg', 'db2'])
 def test_backends_smoke(backend: str):

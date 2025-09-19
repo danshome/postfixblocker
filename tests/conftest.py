@@ -19,6 +19,37 @@ try:
 except Exception:  # pragma: no cover
     requests = None  # type: ignore
 
+# Ensure tests touching logging don't leak global state across the suite
+import logging
+from logging import Logger
+
+
+@pytest.fixture(autouse=True)
+def _restore_root_logger() -> None:
+    root: Logger = logging.getLogger()
+    old_level = root.level
+    old_handlers = list(root.handlers)
+    try:
+        yield
+    finally:
+        try:
+            root.setLevel(old_level)
+        except Exception:
+            pass
+        # Remove any handlers added during the test and restore originals
+        for h in list(root.handlers):
+            if h not in old_handlers:
+                try:
+                    root.removeHandler(h)
+                except Exception:
+                    pass
+        for h in old_handlers:
+            if h not in root.handlers:
+                try:
+                    root.addHandler(h)
+                except Exception:
+                    pass
+
 
 def pytest_addoption(parser: pytest.Parser) -> None:
     group = parser.getgroup('compose')
