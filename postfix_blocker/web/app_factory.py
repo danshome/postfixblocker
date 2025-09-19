@@ -17,6 +17,22 @@ _CFG_ENSURE: Final[str] = 'ensure_db_ready'
 
 
 def create_app(config: Any | None = None) -> Flask:
+    """Create and configure the Flask API application.
+
+    Features:
+      - Initializes per-service logging for the API process using
+        logging_setup.configure_logging (level/file via env).
+      - Lazily initializes the database engine and schema on first access via
+        ensure_db_ready() stored in app.config.
+      - Registers the address and logs blueprints providing REST endpoints.
+      - Installs simple request/response logging hooks for observability.
+
+    Args:
+        config: Optional object/dict with overrides for Flask app.config.
+
+    Returns:
+        A configured Flask application instance.
+    """
     app = Flask(__name__)
 
     # Initialize logging for API (file/level via env)

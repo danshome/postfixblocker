@@ -452,3 +452,40 @@ You generally shouldn’t try to run the full DB2 engine during `docker build`; 
 3. Push it to your registry and update `docker-compose.yml`'s `db2` service to use `image: your-registry/postfixblocker-db2:preinit` (you can remove the volume mapping if you want the image’s baked data). Accept the license in your environment as required by IBM’s terms.
 
 This approach can reduce CI startup time. For local development, the default named volume (`db2data`) is simpler and avoids host permission pitfalls.
+
+
+
+## Logging endpoints (API)
+
+The API exposes several endpoints to inspect and control logging:
+
+- GET /logs/tail?name={api|blocker|postfix}&lines=N
+  Returns the last N lines of the selected log. Response JSON: { name, path, content, missing }.
+
+- GET /logs/lines?name={api|blocker|postfix}
+  Returns the current line count for the selected log. Response JSON: { name, path, count, missing }.
+
+- GET/PUT /logs/level/{service}
+  Get or set the log level for a service. Services: api, blocker, postfix.
+  PUT body JSON: { "level": "WARNING|INFO|DEBUG|<number>" }.
+  For service=api the in-process logger level is updated. For service=postfix,
+  the relevant Postfix settings are written to main.cf and Postfix is reloaded.
+
+- GET/PUT /logs/refresh/{name}
+  Get or set UI refresh cadence and tail size. GET returns { name, interval_ms, lines }.
+  PUT body JSON: { "interval_ms": number, "lines": number }.
+
+### Postfix log level mapping
+
+Postfix has a numeric `debug_peer_level`. The UI/API map to Postfix as follows:
+
+- WARNING -> 1 (least verbose)
+- INFO -> 2
+- DEBUG -> 10 (for higher verbosity on builds that accept >4)
+- Numeric strings are capped to 4 and floored to 1 (e.g., "7" -> 4, "0" -> 1)
+
+TLS log verbosity is derived as:
+- WARNING -> 0, INFO -> 1, DEBUG -> 4
+- Numeric: >=4 -> 4, >=3 -> 1, else 0
+
+The mail log path is resolved at runtime. You can override with env var `MAIL_LOG_FILE`.

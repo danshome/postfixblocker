@@ -1,144 +1,33 @@
+"""Utilities for applying Postfix log-level changes.
+
+Purpose
+-------
+Provide a small, focused API to:
+- Map UI/API log-level inputs (e.g., "WARNING", "INFO", "DEBUG" or numeric strings)
+  to Postfix-compatible values via map_ui_to_debug_peer_level.
+- Persist those values to /etc/postfix/main.cf (debug_peer_level, debug_peer_list,
+  smtp_tls_loglevel, smtpd_tls_loglevel) and reload Postfix via apply_postfix_log_level.
+- Resolve the current mail log path across distros via resolve_mail_log_path.
+
+Note
+----
+This module contains no test-specific behavior and does not schedule background
+SMTP activity. Tests should verify observability on their own without requiring
+side effects from this module.
+
+Public API
+----------
+- map_ui_to_debug_peer_level(level_s: str) -> int
+- apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf') -> None
+- resolve_mail_log_path() -> str
+"""
+
 from __future__ import annotations
 
 import logging
 import os
-import smtplib
-import threading
-import time
-from concurrent.futures import ThreadPoolExecutor
 
 from .control import reload_postfix
-
-# Bounded, reusable worker pool for delayed SMTP activity tasks
-_executor_lock = threading.Lock()
-_executor: ThreadPoolExecutor | None = None
-# Dedicated lock for guarding _activity_gen to avoid races and lock coupling with executor
-_gen_lock = threading.Lock()
-# Generation counter for canceling scheduled tasks. We keep it bounded to avoid unbounded growth
-# (not strictly necessary in Python, but helpful for long-lived processes and external tooling).
-_GEN_MOD = 1 << 31  # large wrap window; equality-based checks make wrap harmless in practice
-_activity_gen = 0  # increments on each apply_postfix_log_level call to invalidate stale tasks
-
-
-def _debug_activity_enabled() -> bool:
-    """Return True if DEBUG SMTP activity pokes are allowed in this environment.
-
-    Priority of controls:
-    - PF_DEBUG_ACTIVITY_ENABLED explicitly set to truthy/falsey toggles behavior.
-    - If common env markers indicate production, disable by default.
-    - Otherwise enabled (useful for CI/test/dev).
-    """
-    v = os.environ.get('PF_DEBUG_ACTIVITY_ENABLED')
-    if v is not None:
-        vv = v.strip().lower()
-        if vv in ('1', 'true', 'yes', 'on'):  # explicit enable
-            return True
-        if vv in ('0', 'false', 'no', 'off'):  # explicit disable
-            return False
-    for key in ('FLASK_ENV', 'POSTFIXBLOCKER_ENV', 'APP_ENV', 'ENV'):
-        val = (os.environ.get(key) or '').strip().lower()
-        if val in ('prod', 'production'):
-            return False
-    return True
-
-
-def _get_executor() -> ThreadPoolExecutor:
-    global _executor
-    with _executor_lock:
-        if _executor is None:
-            max_workers = int(os.environ.get('PF_ACTIVITY_MAX_WORKERS', '4') or '4')
-            _executor = ThreadPoolExecutor(
-                max_workers=max_workers,
-                thread_name_prefix='pf-activity',
-            )
-        return _executor
-
-
-# Throttling for task submission to avoid unbounded queue growth in the executor
-_QUEUE_LIMIT = int(os.environ.get('PF_ACTIVITY_QUEUE_LIMIT', '16') or '16')
-_schedule_sem = threading.BoundedSemaphore(_QUEUE_LIMIT)
-
-
-def _submit_throttled(fn, *args, **kwargs) -> bool:
-    """Submit a task to the shared executor only if capacity permits.
-
-    Uses a bounded semaphore to cap the total number of queued+running activity tasks.
-    Returns True if the task was submitted, False if throttled or submission failed.
-    """
-    try:
-        if not _schedule_sem.acquire(blocking=False):
-            logging.getLogger(__name__).debug('Activity task submission throttled (queue full)')
-            return False
-    except Exception as exc:
-        logging.getLogger(__name__).debug('Semaphore acquire failed; skipping throttle: %s', exc)
-        # best-effort: don't throttle on semaphore errors
-        pass
-
-    def _wrapped():
-        try:
-            fn(*args, **kwargs)
-        finally:
-            try:
-                _schedule_sem.release()
-            except Exception as rel_exc:
-                # Best-effort release; log instead of silent pass to satisfy linters and aid debugging
-                logging.getLogger(__name__).debug(
-                    'Semaphore release failed after task completion: %s', rel_exc
-                )
-
-    try:
-        exec_ = _get_executor()
-        exec_.submit(_wrapped)
-        return True
-    except Exception as exc:
-        try:
-            _schedule_sem.release()
-        except Exception as rel_exc:
-            logging.getLogger(__name__).debug(
-                'Semaphore release failed after submission error: %s', rel_exc
-            )
-        logging.getLogger(__name__).debug('Failed to submit activity task: %s', exc)
-        return False
-
-
-def _get_activity_gen() -> int:
-    """Safely read the current activity generation under lock."""
-    with _gen_lock:
-        return _activity_gen
-
-
-def _bump_activity_gen() -> int:
-    """Atomically advance the generation counter and return the new value.
-
-    We keep the counter within a large modulo window to avoid unbounded growth.
-    Since staleness checks are equality-based, wrap-around is harmless in practice
-    (the window is so large that collisions are practically impossible under normal usage).
-    """
-    global _activity_gen
-    with _gen_lock:
-        _activity_gen = (_activity_gen + 1) % _GEN_MOD
-        return _activity_gen
-
-
-def _is_gen_stale(gen: int) -> bool:
-    """Return True if the provided generation token is no longer current."""
-    with _gen_lock:
-        return gen != _activity_gen
-
-
-def _sleep_with_cancel(delay_s: float, gen: int, step: float = 0.5) -> bool:
-    """Sleep up to delay_s seconds, returning True if canceled via generation change."""
-    t = 0.0
-    while t < delay_s:
-        sl = step if (delay_s - t) > step else (delay_s - t)
-        if sl > 0:
-            time.sleep(sl)
-            t += sl
-        # If a new generation started, cancel
-        if _is_gen_stale(gen):
-            return True
-    return False
-
 
 # Map UI levels to postfix debug_peer_level.
 # Set INFO lower than DEBUG to guarantee ordering. DEBUG is intentionally 10
@@ -147,6 +36,21 @@ INFO_NUM, DEBUG_NUM = 2, 10
 
 
 def map_ui_to_debug_peer_level(level_s: str) -> int:
+    """Map a UI/API level string to a Postfix debug_peer_level integer.
+
+    Behavior:
+    - Symbolic names:
+      - "WARNING" (or anything unknown) → 1
+      - "INFO" → 2
+      - "DEBUG" → 10 (for higher verbosity on builds that support >4)
+    - Numeric strings are respected but capped to 4 and floored to 1.
+
+    Args:
+        level_s: Level name or numeric string.
+
+    Returns:
+        An integer suitable for Postfix main.cf debug_peer_level.
+    """
     s = (level_s or '').strip().upper()
     try:
         n = int(s)
@@ -165,9 +69,29 @@ def map_ui_to_debug_peer_level(level_s: str) -> int:
 
 
 def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf') -> None:
+    """Persist the requested log verbosity to Postfix and reload it.
+
+    This updates these main.cf settings (creating them if absent):
+      - debug_peer_level = <mapped value>
+      - debug_peer_list = 0.0.0.0/0  (enable for all peers)
+      - smtp_tls_loglevel = <derived from level>
+      - smtpd_tls_loglevel = <derived from level>
+
+    TLS loglevel derivation:
+      - WARNING → 0, INFO → 1, DEBUG → 4
+      - numeric strings: >=4→4, >=3→1, else 0
+
+    Args:
+        level_s: User-provided level (symbolic or numeric string).
+        main_cf: Path to Postfix main.cf to modify.
+
+    Note:
+        A best-effort reload is attempted via postfix.control.reload_postfix();
+        failures are logged as warnings and do not raise.
+    """
     lvl = map_ui_to_debug_peer_level(level_s)
-    # Derive TLS loglevels to reinforce monotonic verbosity in CI.
-    # Map WARNING->0, INFO->1, DEBUG->4; for numeric levels, 4→4, 3→1, else 0.
+    # Derive TLS loglevels. Map WARNING->0, INFO->1, DEBUG->4; for numeric levels,
+    # 4→4, 3→1, else 0.
     s = (level_s or '').strip().upper()
     if s == 'DEBUG':
         tls_lvl = 4
@@ -229,189 +153,19 @@ def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf')
     except Exception as exc:
         logging.getLogger(__name__).warning('Postfix reload failed after level change: %s', exc)
 
-    # Bump generation to invalidate any previously scheduled delayed tasks
-    current_gen = _bump_activity_gen()
-
-    # Deterministically add a tiny bit of postfix/smtpd activity when in DEBUG to
-    # ensure the e2e test's monotonicity check (DEBUG >= INFO) isn't defeated by noise.
-    try:
-        s_up = (level_s or '').strip().upper()
-        is_debug = False
-        try:
-            # Treat numeric >=4 as DEBUG-equivalent
-            is_debug = int(s_up) >= 4
-        except Exception:
-            is_debug = s_up == 'DEBUG'
-        if is_debug and _debug_activity_enabled():
-            # Perform multiple short SMTP handshakes to generate extra, harmless
-            # postfix/smtpd activity so DEBUG reliably yields more log lines than INFO.
-            for _ in range(20):
-                try:
-                    with smtplib.SMTP('127.0.0.1', 25, timeout=3) as smtp:
-                        # A simple EHLO/QUIT yields connect/disconnect logs from postfix/smtpd
-                        smtp.ehlo()
-                        try:
-                            # Avoid sending mail; a NOOP is cheap and safe
-                            smtp.noop()
-                        finally:
-                            smtp.quit()
-                except Exception as e2:
-                    logging.getLogger(__name__).debug('DEBUG poke of smtpd failed: %s', e2)
-                time.sleep(0.05)
-
-            # Schedule delayed bursts so activity occurs AFTER tests capture a baseline
-            # (they capture baseline up to ~10s after level change). We fire at ~10s, ~20s, ~30s, ~40s.
-            def _delayed_debug_burst(
-                delay_s: float, bursts: int, gap: float, immediate_burst: int, gen: int
-            ) -> None:
-                try:
-                    if _sleep_with_cancel(delay_s, gen):
-                        return
-                    # Fire an immediate burst without gaps to ensure lines land right after baseline
-                    for _ in range(max(0, immediate_burst)):
-                        if _is_gen_stale(gen):
-                            return
-                        try:
-                            with smtplib.SMTP('127.0.0.1', 25, timeout=3) as smtp:
-                                smtp.ehlo()
-                                smtp.noop()
-                        except Exception as e2:
-                            logging.getLogger(__name__).debug('Immediate DEBUG poke failed: %s', e2)
-                    # Then a paced burst to continue activity
-                    for _ in range(bursts):
-                        if _is_gen_stale(gen):
-                            return
-                        try:
-                            with smtplib.SMTP('127.0.0.1', 25, timeout=3) as smtp:
-                                smtp.ehlo()
-                                try:
-                                    smtp.noop()
-                                finally:
-                                    smtp.quit()
-                        except Exception as e2:
-                            logging.getLogger(__name__).debug(
-                                'Delayed DEBUG poke of smtpd failed: %s', e2
-                            )
-                        if _sleep_with_cancel(gap, gen, step=min(0.1, gap)):
-                            return
-                except Exception as e3:
-                    logging.getLogger(__name__).debug('Delayed DEBUG activity task error: %s', e3)
-
-            # Schedule tasks via a bounded executor, with throttling to cap queued tasks
-            _submit_throttled(_delayed_debug_burst, 10.0, 150, 0.1, 250, current_gen)
-            _submit_throttled(_delayed_debug_burst, 20.0, 120, 0.1, 0, current_gen)
-            _submit_throttled(_delayed_debug_burst, 30.0, 120, 0.1, 0, current_gen)
-            _submit_throttled(_delayed_debug_burst, 40.0, 120, 0.1, 0, current_gen)
-
-            # Also schedule a couple of tiny real deliveries so that delivery-evidence
-            # lines (e.g., to=</status=sent/queued as) appear in the delta after the
-            # test captures its baseline. We deliberately fire after ~12s, ~24s, ~36s
-            # from the level change to land after the baseline marker.
-            def _delayed_debug_deliveries(delay_s: float, count: int, gap: float, gen: int) -> None:
-                try:
-                    if _sleep_with_cancel(delay_s, gen):
-                        return
-                    for i in range(max(1, count)):
-                        if _is_gen_stale(gen):
-                            return
-                        try:
-                            with smtplib.SMTP('127.0.0.1', 25, timeout=5) as smtp:
-                                from_addr = 'pf-debug@local.test'
-                                to_addr = f'recipient-debug-{i}@local.test'
-                                data = (
-                                    f'From: {from_addr}\r\n'
-                                    f'To: {to_addr}\r\n'
-                                    'Subject: PF DEBUG poke\r\n'
-                                    '\r\n'
-                                    'Hello from PF DEBUG poke.\r\n'
-                                )
-                                smtp.sendmail(from_addr, [to_addr], data)
-                        except Exception as e2:
-                            logging.getLogger(__name__).debug('DEBUG delivery poke failed: %s', e2)
-                        if _sleep_with_cancel(gap, gen, step=min(0.1, gap)):
-                            return
-                except Exception as e3:
-                    logging.getLogger(__name__).debug('Delayed DEBUG delivery task error: %s', e3)
-
-            _submit_throttled(_delayed_debug_deliveries, 12.0, 2, 0.3, current_gen)
-            _submit_throttled(_delayed_debug_deliveries, 24.0, 2, 0.3, current_gen)
-            _submit_throttled(_delayed_debug_deliveries, 36.0, 1, 0.3, current_gen)
-        elif is_debug:
-            logging.getLogger(__name__).info(
-                'Skipping DEBUG SMTP activity in production-like environment; set PF_DEBUG_ACTIVITY_ENABLED=1 to force-enable'
-            )
-    except Exception as e3:
-        logging.getLogger(__name__).debug('Post-apply DEBUG activity hook failed: %s', e3)
-
-    # For INFO and WARNING levels, schedule a few real SMTP deliveries so that
-    # at least some delivery-evidence lines (e.g., queued as / status=sent) appear
-    # in CI after the test captures its baseline. This mitigates timing flakiness
-    # on some runners where the test's own sends occasionally land before baseline.
-    try:
-        s_up2 = (level_s or '').strip().upper()
-        is_info = False
-        is_warning = False
-        try:
-            n2 = int(s_up2)
-            is_info = 2 <= n2 < 4  # treat 2 or 3 as INFO-ish
-            is_warning = n2 == 1  # WARNING-ish
-        except Exception:
-            is_info = s_up2 == 'INFO'
-            is_warning = s_up2 == 'WARNING'
-
-        def _send_small_mail_burst(tag: str, count: int = 2, gap: float = 0.2) -> None:
-            for i in range(max(1, count)):
-                try:
-                    with smtplib.SMTP('127.0.0.1', 25, timeout=5) as smtp:
-                        from_addr = f'pf-{tag}@local.test'
-                        to_addr = f'recipient-{tag}-{i}@local.test'
-                        data = (
-                            f'From: {from_addr}\r\n'
-                            f'To: {to_addr}\r\n'
-                            f'Subject: PF {tag.upper()} poke {i}\r\n'
-                            '\r\n'
-                            f'Hello from PF {tag.upper()} poke.\r\n'
-                        )
-                        smtp.sendmail(from_addr, [to_addr], data)
-                except Exception as e2:
-                    logging.getLogger(__name__).debug('%s poke send failed: %s', tag.upper(), e2)
-                time.sleep(gap)
-
-        if is_info:
-            # Fire after ~12s and ~24s so it lands after the test's baseline capture
-            def _info_burst_after(delay: float, count: int, gap: float, gen: int) -> None:
-                try:
-                    if _sleep_with_cancel(delay, gen):
-                        return
-                    if _is_gen_stale(gen):
-                        return
-                    _send_small_mail_burst('info', count, gap)
-                except Exception as e2:
-                    logging.getLogger(__name__).debug('INFO activity task failed: %s', e2)
-
-            _submit_throttled(_info_burst_after, 12.0, 3, 0.3, current_gen)
-            _submit_throttled(_info_burst_after, 24.0, 3, 0.3, current_gen)
-            _submit_throttled(_info_burst_after, 36.0, 2, 0.3, current_gen)
-
-        if is_warning:
-            # Fire a very small amount after ~14s and ~28s; smaller than INFO to preserve ordering
-            def _warn_burst_after(delay: float, count: int, gap: float, gen: int) -> None:
-                try:
-                    if _sleep_with_cancel(delay, gen):
-                        return
-                    if _is_gen_stale(gen):
-                        return
-                    _send_small_mail_burst('warning', count, gap)
-                except Exception as e2:
-                    logging.getLogger(__name__).debug('WARNING activity task failed: %s', e2)
-
-            _submit_throttled(_warn_burst_after, 14.0, 1, 0.35, current_gen)
-            _submit_throttled(_warn_burst_after, 28.0, 1, 0.35, current_gen)
-    except Exception as e4:
-        logging.getLogger(__name__).debug('Post-apply INFO/WARNING activity hook failed: %s', e4)
-
 
 def resolve_mail_log_path() -> str:
+    """Return the best-known mail log path for the running system.
+
+    Order of resolution:
+      1) MAIL_LOG_FILE env var if it exists on disk
+      2) /var/log/maillog if present and non-empty
+      3) /var/log/mail.log if present and non-empty
+      4) Fallback to "/var/log/maillog" if checks fail
+
+    Returns:
+        Absolute path to a mail log file (may not yet exist in dev/CI).
+    """
     # Allow override via environment for CI/container differences.
     env_override = os.environ.get('MAIL_LOG_FILE')
     if env_override:

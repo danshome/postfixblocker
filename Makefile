@@ -31,7 +31,7 @@ RUFF := $(VENVPY) -m ruff
 MYPY := $(VENVPY) -m mypy
 BANDIT := $(VENVPY) -m bandit
 PYTEST := $(VENVPY) -m pytest
-NPM_RUN = cd $(FRONTEND_DIR) && $(NPM) run
+NPM_RUN = cd $(FRONTEND_DIR) && env -u NO_COLOR $(NPM) run
 
 # Locations
 PY_SRC_DIR := postfix_blocker
@@ -98,7 +98,7 @@ install-python: venv
 install-frontend:
 	$(call log_step,Install frontend deps (npm ci))
 	@echo "[npm] Installing frontend deps (ci)..."
-	@cd $(FRONTEND_DIR) && $(NPM) ci
+	@cd $(FRONTEND_DIR) && env -u NO_COLOR $(NPM) ci
 
 clean-venv:
 	rm -rf $(VENV)
@@ -162,7 +162,7 @@ test-python-e2e: venv
 
 test-frontend:
 	$(call log_step,Frontend unit tests (Karma))
-	@cd $(FRONTEND_DIR) && CI=1 FE_COV_MIN=$(FE_COV_MIN) FE_BRANCH_MIN=$(FE_COV_MIN_BRANCH) $(NPM) test --silent -- --watch=false
+	@cd $(FRONTEND_DIR) && CI=1 FE_COV_MIN=$(FE_COV_MIN) FE_BRANCH_MIN=$(FE_COV_MIN_BRANCH) env -u NO_COLOR $(NPM) test --silent -- --watch=false
 
 test-frontend-e2e:
 	$(call log_step,Frontend E2E tests (Playwright))

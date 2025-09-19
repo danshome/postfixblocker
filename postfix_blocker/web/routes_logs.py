@@ -21,6 +21,19 @@ STATUS_OK = 'ok'
 
 @bp.route('/logs/level/<service>', methods=['GET', 'PUT'])
 def log_level(service: str):
+    """Get or set the log level for a service (api|blocker|postfix).
+
+    Methods:
+      - GET:  Returns current level: {"service": <name>, "level": <str|None>}
+      - PUT:  Body JSON {"level": "WARNING|INFO|DEBUG|<number>"} persists the level.
+              For service=api the in-process logger is updated.
+              For service=postfix, Postfix main.cf is updated and Postfix reloaded.
+
+    Errors:
+      - 404 if service is not one of LOG_KEYS (api, blocker, postfix)
+      - 503 if the database is not ready
+      - 400 if level is missing on PUT
+    """
     if service not in LOG_KEYS:
         abort(404)
     ensure_db_ready = current_app.config.get('ensure_db_ready')
@@ -48,6 +61,14 @@ def log_level(service: str):
 
 @bp.route('/logs/tail', methods=['GET'])
 def tail_log():
+    """Return the last N lines of a known log file.
+
+    Query params:
+      - name: one of api, blocker, postfix
+      - lines: integer (default 200), capped at 8000
+
+    Response JSON: { name, path, content, missing }
+    """
     name = (request.args.get('name') or '').strip().lower()
     try:
         # Allow larger tails for heavy postfix logs; cap at 8000
@@ -81,8 +102,59 @@ def tail_log():
     return jsonify({'name': name, 'path': path, 'content': content, 'missing': False})
 
 
+@bp.route('/logs/lines', methods=['GET'])
+def lines_count():
+    """Return the line count for a known log name (api|blocker|postfix).
+
+    Query params:
+      - name: one of api, blocker, postfix
+
+    Response JSON: { name, path, count, missing }
+    """
+    name = (request.args.get('name') or '').strip().lower()
+    if name not in ('api', 'blocker', 'postfix'):
+        abort(400, 'unknown log name')
+    if name == 'api':
+        path = (
+            current_app.config.get('API_LOG_FILE')
+            or os.environ.get('API_LOG_FILE')
+            or './logs/api.log'
+        )
+    elif name == 'blocker':
+        path = (
+            current_app.config.get('BLOCKER_LOG_FILE')
+            or os.environ.get('BLOCKER_LOG_FILE')
+            or './logs/blocker.log'
+        )
+    else:
+        path = resolve_mail_log_path()
+    logging.getLogger('api').debug('Lines count request name=%s path=%s', name, path)
+    if not os.path.exists(path):
+        return jsonify({'name': name, 'path': path, 'count': 0, 'missing': True})
+    count = 0
+    try:
+        with open(path, encoding='utf-8', errors='replace') as f:
+            for _ in f:
+                count += 1
+    except Exception as exc:
+        logging.getLogger('api').debug('Lines count read failed: %s', exc)
+        count = 0
+    return jsonify({'name': name, 'path': path, 'count': count, 'missing': False})
+
+
 @bp.route('/logs/refresh/<name>', methods=['GET', 'PUT'])
 def refresh_interval(name: str):
+    """Get or set UI refresh settings for a log view.
+
+    Path param:
+      - name: one of api, blocker, postfix
+
+    Methods:
+      - GET: returns { name, interval_ms, lines }
+      - PUT: body JSON { interval_ms: number, lines: number } persists values
+
+    Returns 404 if name is invalid; 503 if DB is not ready.
+    """
     name = name.lower()
     if name not in REFRESH_KEYS:
         abort(404)
