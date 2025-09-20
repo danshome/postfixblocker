@@ -43,8 +43,8 @@ def _ensure_loaded() -> None:
     _props_table = Table(
         'cris_props',
         _metadata,
-        Column('key', String(1024), primary_key=True),
-        Column('value', String(1024)),
+        Column('key', String(1024), primary_key=True, quote=False),
+        Column('value', String(1024), quote=False),
         Column(
             'update_ts',
             DateTime,

@@ -159,6 +159,37 @@ Note for DB2: The `ibm-db` wheels typically include the required client
 libraries. If installation fails, consult IBM documentation for installing the
 IBM Data Server Driver and setting `IBM_DB_HOME`.
 
+DB2 page size requirement for CRIS_PROPS
+---------------------------------------
+The production schema uses a 1024 OCTETS PRIMARY KEY on CRISOP.CRIS_PROPS.
+On Db2 LUW, the index key length is constrained by the tablespace page size.
+To avoid SQL0613N (key too long), you must use a 32K tablespace (or at least 8K/16K
+depending on your environment) for the table and its primary key index.
+
+We provide `sql/db2_init.sql` which:
+- Creates a 32K bufferpool and a 32K automatic storage tablespace.
+- Creates the application tables in that tablespace.
+- Creates CRISOP.CRIS_PROPS with its PK index in the 32K tablespace.
+
+Run this script against a clean database as a user with sufficient privileges:
+
+```bash
+# From a Db2 CLP-enabled shell
+db2 connect to BLOCKER user db2inst1 using 'password'
+db2 -tvf sql/db2_init.sql
+```
+
+If your environment already has CRISOP schema and tablespaces,
+you can adapt the script names or pre-create the 32K tablespace and run only the
+CREATE TABLE statements with `IN <your_32k_ts> INDEX IN <your_32k_ts>`.
+
+If your DB URL does not specify a schema, set the current schema so unqualified
+references resolve to CRISOP (optional but recommended):
+
+```bash
+export BLOCKER_DB_URL="ibm_db_sa://db2inst1:password@db2:50000/BLOCKER?currentSchema=CRISOP"
+```
+
 ### 3) Configure environment
 
 Create a `.env` file for the services:
