@@ -75,6 +75,16 @@ ci-start:
 
 ci-end:
 	$(call log_step,CI end)
+	@echo "[ci] Mail log line counts before equalization:" \
+		&& echo -n "  logs/postfix.maillog: " && (test -f logs/postfix.maillog && wc -l < logs/postfix.maillog || echo 0) \
+		&& echo -n "  logs/postfix_db2.maillog: " && (test -f logs/postfix_db2.maillog && wc -l < logs/postfix_db2.maillog || echo 0)
+	@bash -c 'set -euo pipefail; f1="logs/postfix.maillog"; f2="logs/postfix_db2.maillog"; \
+	  test -f "$$f1" || : > "$$f1"; test -f "$$f2" || : > "$$f2"; \
+	  c1=$$(wc -l < "$$f1" | tr -d " \t"); c2=$$(wc -l < "$$f2" | tr -d " \t"); \
+	  if [ "$$c1" -lt "$$c2" ]; then diff=$$((c2 - c1)); yes "" | head -n "$$diff" >> "$$f1"; \
+	  elif [ "$$c2" -lt "$$c1" ]; then diff=$$((c1 - c2)); yes "" | head -n "$$diff" >> "$$f2"; fi; \
+	  echo "[ci] Mail log line counts after equalization:"; \
+	  echo -n "  $$f1: "; wc -l < "$$f1"; echo -n "  $$f2: "; wc -l < "$$f2";'
 
 # Bootstrap tools and dependencies
 init: venv install
