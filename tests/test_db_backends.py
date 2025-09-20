@@ -9,15 +9,17 @@ Set one or both of the following to enable:
 """
 
 import os
+import time
 
 import pytest
 
 try:  # pragma: no cover - optional integration
     from sqlalchemy import create_engine
-    from sqlalchemy.exc import OperationalError
+    from sqlalchemy.exc import OperationalError, ProgrammingError
 except Exception:  # pragma: no cover - SQLAlchemy not installed
     create_engine = None  # type: ignore
     OperationalError = Exception  # type: ignore
+    ProgrammingError = Exception  # type: ignore
 
 from postfix_blocker.db.migrations import init_db
 from postfix_blocker.db.schema import get_blocked_table
@@ -54,10 +56,30 @@ def _smoke_db(url: str) -> None:
         # Read back directly via SQLAlchemy (no legacy shim)
         from sqlalchemy import select  # type: ignore
 
-        with engine.connect() as conn:
-            rows = list(conn.execute(select(bt.c.pattern, bt.c.is_regex)))
-        pats = sorted((r[0], r[1]) for r in rows)
-        assert pats == [('.*@unit.test', True), ('unit1@example.com', False)]
+        # DB2 can experience transient lock timeouts under concurrent writes. Retry a few times.
+        last_exc: Exception | None = None
+        for attempt in range(1, 8):
+            try:
+                with engine.connect() as conn:
+                    rows = list(conn.execute(select(bt.c.pattern, bt.c.is_regex)))
+                pats = sorted((r[0], r[1]) for r in rows)
+                assert pats == [('.*@unit.test', True), ('unit1@example.com', False)]
+                last_exc = None
+                break
+            except (
+                OperationalError,
+                ProgrammingError,
+            ) as exc:  # pragma: no cover - timing dependent
+                last_exc = exc
+                msg = str(exc)
+                if (
+                    'SQL0911N' in msg or 'deadlock' in msg.lower() or 'timeout' in msg.lower()
+                ) and attempt < 7:
+                    time.sleep(1.0)
+                    continue
+                raise
+        if last_exc:
+            raise last_exc
     finally:
         try:
             engine.dispose()
@@ -67,13 +89,15 @@ def _smoke_db(url: str) -> None:
 
 @pytest.mark.backend
 @pytest.mark.slow
-@pytest.mark.skipif(create_engine is None, reason='SQLAlchemy not installed')
 @pytest.mark.parametrize('backend', ['pg', 'db2'])
 def test_backends_smoke(backend: str):
+    if create_engine is None:
+        pytest.fail('SQLAlchemy not installed; backend tests require it.')
     urls = _default_urls()
     url = urls[backend]
-    # Try quick connectivity; skip if unavailable to avoid hard failures when
-    # docker services are not running in the environment.
+    # Ensure connectivity; fail if unavailable.
     if not wait_for_db_url(url):
-        pytest.skip(f'{backend} backend not available at {url}')
+        pytest.fail(
+            f'{backend} backend not available at {url}. Backend tests require the database to be available.'
+        )
     _smoke_db(url)

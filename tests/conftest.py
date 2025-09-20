@@ -90,7 +90,16 @@ def compose_stack(pytestconfig: pytest.Config) -> None:
 
     compose = _docker_compose_cmd()
     if not compose:
-        # Docker not available; do nothing.
+        import pytest
+
+        # If backend/e2e tests are selected or forced, fail fast when docker is missing
+        always = os.environ.get('PYTEST_COMPOSE_ALWAYS', '0') == '1'
+        force = pytestconfig.getoption('--compose-rebuild') or always
+        needs = getattr(pytestconfig, '_compose_needs_stack', False)
+        if force or needs:
+            pytest.fail(
+                'Docker (compose) is required to run backend/e2e tests but was not found in PATH.'
+            )
         return
 
     always = os.environ.get('PYTEST_COMPOSE_ALWAYS', '0') == '1'
@@ -121,8 +130,12 @@ def compose_stack(pytestconfig: pytest.Config) -> None:
         try:
             subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError as exc:
+            import pytest
+
             print(f'[compose] Command failed ({exc.returncode}): {" ".join(cmd)}', file=sys.stderr)
-            # Do not fail the whole test run; tests will skip if services are unavailable
+            pytest.fail(
+                f'Docker compose command failed (exit {exc.returncode}). Backend/E2E tests require the stack to be available. Command={" ".join(cmd)}'
+            )
 
     if force:
         print('[compose] Forced rebuild requested...', flush=True)
@@ -136,6 +149,12 @@ def compose_stack(pytestconfig: pytest.Config) -> None:
         else:
             print('[compose] Starting stack (no rebuild)...', flush=True)
             run([*compose, 'up', '-d', '--build'])
+
+    # After attempting to start, verify that at least one postfix service is running
+    if not stack_running():
+        import pytest
+
+        pytest.fail('Docker stack did not start successfully; required services are not running.')
 
 
 @pytest.fixture(scope='session', autouse=True)

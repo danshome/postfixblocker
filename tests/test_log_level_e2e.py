@@ -105,7 +105,9 @@ def _measure_delta_for_level(api_base: str, smtp_port: int, level: str, recipien
 )
 def test_postfix_log_level_increasing_line_counts(scenario):
     if not wait_for_api_ready(scenario['api_base']):
-        pytest.skip(f'API not ready for e2e test ({scenario["name"]})')
+        pytest.fail(
+            f'API not ready for e2e test ({scenario["name"]}). Backend/E2E tests require the API to be available.'
+        )
 
     # Use distinct recipients per level to aid diagnostics
     ts = int(time.time() * 1000)

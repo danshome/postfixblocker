@@ -12,8 +12,9 @@ from postfix_blocker.db.props import get_prop, set_prop
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(create_engine is None, reason='SQLAlchemy not installed')
 def test_props_insert_update_and_get_default():
+    if create_engine is None:
+        pytest.fail('SQLAlchemy not installed; unit DB props tests require it.')
     engine = create_engine('sqlite:///:memory:')  # type: ignore[misc]
     init_db(engine)
 

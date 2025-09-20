@@ -3,8 +3,13 @@ import pytest
 
 @pytest.mark.unit
 def test_blocked_table_schema():
-    pytest.importorskip('sqlalchemy')
-    from postfix_blocker.db.schema import get_blocked_table, get_props_table
+    try:
+        # Ensure SQLAlchemy is importable via schema module
+        from postfix_blocker.db.schema import get_blocked_table, get_props_table
+    except Exception:
+        pytest.fail(
+            'SQLAlchemy not installed or schema module import failed; required for unit tests.'
+        )
 
     # Should not raise
     tbl = get_blocked_table()

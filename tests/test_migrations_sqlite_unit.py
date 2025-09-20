@@ -13,8 +13,9 @@ from postfix_blocker.db.migrations import init_db
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(create_engine is None, reason='SQLAlchemy not installed')
 def test_init_db_sqlite_creates_tables_and_migrates_test_mode():
+    if create_engine is None:
+        pytest.fail('SQLAlchemy not installed; migrations unit tests require it.')
     # Use an on-disk DB so ALTER TABLE changes persist across connections
     engine: Engine = create_engine('sqlite:///./database/test_migrations.sqlite')  # type: ignore[misc]
 

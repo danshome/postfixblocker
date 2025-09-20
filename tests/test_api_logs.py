@@ -6,8 +6,10 @@ import pytest
 
 @pytest.mark.unit
 def test_tail_file_reads_last_lines():
-    pytest.importorskip('flask')
-    from postfix_blocker.api import _tail_file
+    try:
+        from postfix_blocker.api import _tail_file
+    except Exception:
+        pytest.fail('Flask or API module not available; required for unit tests.')
 
     # Create a temp log file with 1000 lines
     with tempfile.NamedTemporaryFile('w+b', delete=False) as tf:
@@ -31,10 +33,12 @@ def test_tail_file_reads_last_lines():
 
 @pytest.mark.unit
 def test_level_coercion():
-    pytest.importorskip('flask')
     import logging
 
-    from postfix_blocker.api import _coerce_level
+    try:
+        from postfix_blocker.api import _coerce_level
+    except Exception:
+        pytest.fail('Flask or API module not available; required for unit tests.')
 
     assert _coerce_level('10') == 10
     assert _coerce_level('DEBUG') == logging.DEBUG

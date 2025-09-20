@@ -49,7 +49,9 @@ def test_init_db_postgres_branch(monkeypatch):
     try:
         from sqlalchemy import create_engine
     except Exception:  # pragma: no cover
-        pytest.skip('SQLAlchemy not available')
+        pytest.fail(
+            'SQLAlchemy not available; required for migrations unit tests (postgres branch).'
+        )
 
     engine = create_engine('sqlite:///:memory:')
     # Force dialect name to postgres to take that branch
@@ -78,7 +80,7 @@ def test_init_db_db2_branch(monkeypatch):
     try:
         from sqlalchemy import create_engine
     except Exception:  # pragma: no cover
-        pytest.skip('SQLAlchemy not available')
+        pytest.fail('SQLAlchemy not available; required for migrations unit tests (db2 branch).')
 
     engine = create_engine('sqlite:///:memory:')
     # Force dialect name to Db2 to take that branch
