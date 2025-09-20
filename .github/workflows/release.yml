@@ -38,6 +38,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      - name: Install frontend dependencies (npm ci)
+        working-directory: frontend
+        run: npm ci
+
       - name: Install Playwright browsers and system dependencies
         working-directory: frontend
         run: npx playwright install --with-deps

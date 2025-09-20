@@ -46,8 +46,31 @@ def init_db(engine: Engine) -> None:
             except Exception:
                 raise
 
+    # Always create BLOCKED_ADDRESSES via SQLAlchemy
     _safe_create(bt)
-    _safe_create(pt)
+
+    # For DB2, create CRIS_PROPS with OCTETS semantics to cap length in bytes
+    dialect_name = (engine.dialect.name or '').lower()
+    if dialect_name in ('ibm_db_sa', 'db2'):
+        try:
+            with engine.begin() as conn:
+                conn.exec_driver_sql(
+                    'CREATE TABLE cris_props ("key" VARCHAR(1024 OCTETS) NOT NULL, "value" VARCHAR(1024 OCTETS), update_ts TIMESTAMP(6), PRIMARY KEY ("key"))'
+                )
+        except Exception as exc:  # pragma: no cover - driver specific
+            msg = str(exc).lower()
+            if (
+                ('already exists' in msg)
+                or ('sql0601n' in msg)
+                or ('object to be created is identical to the existing name' in msg)
+            ):
+                pass
+            else:
+                # If creation failed for other reasons, re-raise
+                raise
+    else:
+        # Non-DB2: create via SQLAlchemy normally
+        _safe_create(pt)
 
     # Migration: ensure test_mode exists
     try:
