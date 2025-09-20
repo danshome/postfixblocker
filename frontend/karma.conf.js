@@ -6,9 +6,26 @@ module.exports = function (config) {
   } catch (e) {
     // fallback to system Chrome
   }
+
+  const isCI = !!(process.env.CI || process.env.GITHUB_ACTIONS || process.env.CHROME_NO_SANDBOX);
+
   // Enforce coverage thresholds; can override via env FE_COV_MIN or COVERAGE_MIN_FE
   const FE_MIN = parseInt(process.env.FE_COV_MIN || process.env.COVERAGE_MIN_FE || '80', 10) || 0;
   const FE_BRANCH_MIN = parseInt(process.env.FE_BRANCH_MIN || process.env.COVERAGE_MIN_FE_BRANCH || String(FE_MIN), 10) || 0;
+
+  const customLaunchers = {
+    ChromeHeadlessNoSandbox: {
+      base: 'ChromeHeadless',
+      flags: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-gpu',
+        '--disable-dev-shm-usage',
+        '--disable-software-rasterizer',
+      ],
+    },
+  };
+
   config.set({
     basePath: '',
     frameworks: ['jasmine', '@angular-devkit/build-angular'],
@@ -36,7 +53,8 @@ module.exports = function (config) {
         },
       },
     },
-    browsers: ['ChromeHeadless'],
+    customLaunchers,
+    browsers: [isCI ? 'ChromeHeadlessNoSandbox' : 'ChromeHeadless'],
     singleRun: true,
     autoWatch: false,
   });
