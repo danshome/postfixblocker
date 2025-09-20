@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 """Properties access and keys (refactor implementation)."""
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.engine import Engine
 
 from .schema import get_props_table
@@ -38,12 +38,26 @@ def get_prop(engine: Engine, key: str, default: str | None = None) -> str | None
 def set_prop(engine: Engine, key: str, value: str | None) -> None:
     pt = get_props_table()
     with engine.begin() as conn:
-        rc = conn.execute(pt.update().where(pt.c.key == key).values(value=value)).rowcount or 0
+        # Always bump UPDATE_TS explicitly to support schemas without DB defaults/triggers
+        rc = (
+            conn.execute(
+                pt.update()
+                .where(pt.c.key == key)
+                .values(value=value, update_ts=func.current_timestamp())
+            ).rowcount
+            or 0
+        )
         if rc == 0:
             try:
-                conn.execute(pt.insert().values(key=key, value=value))
+                conn.execute(
+                    pt.insert().values(key=key, value=value, update_ts=func.current_timestamp())
+                )
             except Exception:
-                conn.execute(pt.update().where(pt.c.key == key).values(value=value))
+                conn.execute(
+                    pt.update()
+                    .where(pt.c.key == key)
+                    .values(value=value, update_ts=func.current_timestamp())
+                )
 
 
 __all__ = ['LOG_KEYS', 'REFRESH_KEYS', 'LINES_KEYS', 'get_prop', 'set_prop']
