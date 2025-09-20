@@ -1,31 +1,7 @@
 import { test, expect } from 'playwright/test';
 
-async function waitForApiReady(request: any, timeoutMs = 600_000): Promise<void> {
-  const start = Date.now();
-  // Poll until API is ready (200 OK) or timeout
-  // Playwright's request fixture shares baseURL with each project so '/addresses' proxies correctly
-  for (;;) {
-    const resp = await request.get('/addresses');
-    if (resp.ok()) return;
-    if (Date.now() - start > timeoutMs) {
-      throw new Error(`API not ready after ${timeoutMs}ms (last status=${resp.status()})`);
-    }
-    await new Promise(r => setTimeout(r, 1000));
-  }
-}
-
-test.beforeEach(async ({ request }) => {
-  // Ensure backend is up (DB ready) before proceeding
-  await waitForApiReady(request);
-  // Reset backend state via the dev-server proxy for the current project
-  const resp = await request.get('/addresses');
-  if (resp.ok()) {
-    const items = await resp.json();
-    for (const it of items as any[]) {
-      await request.delete(`/addresses/${it.id}`);
-    }
-  }
-});
+// One-time reset is handled in Playwright global-setup.ts. Avoid per-test resets
+// to ensure we can detect test-ordering or cross-test leakage issues.
 
 test('add, list, and delete entries', async ({ page }) => {
   await page.goto('/');

@@ -105,7 +105,7 @@ help:
 	@echo "  make dist                   Build sdist+wheel (uses setuptools_scm)"
 	@echo "  make dist-clean             Remove dist/build/* and egg-info"
 	@echo "  make check-dist             Twine check dist/*"
-	@echo "  make release                Auto-bump version (default: patch), tag, optional changelog, push, build artifacts, and create GitHub release (if gh present)"
+	@echo "  make release                Run make ci, auto-bump version (default: patch), generate changelog, tag, push, build artifacts, and create GitHub release (if gh present)"
 	@echo "  make publish-pypi           Upload dist/* to PyPI via twine"
 	@echo "  make changelog              Generate CHANGELOG.md from history"
 	@echo ""
@@ -124,7 +124,7 @@ help:
 	@echo ""
 	@echo "Tips: Run 'make ci' before and after changes. See TESTING.md for details."
 
-ci: ci-start install lint build compose-up test-python-all test-frontend test-frontend-e2e ci-end
+ci: ci-start install lint build compose-up test-python-all test-frontend test-frontend-e2e ci-verify-sync ci-end
 
 ci-start:
 	$(call log_step,CI start)
@@ -263,6 +263,12 @@ compose-up:
 	$(call log_step,Docker compose up --build -d)
 	@$(DOCKER_COMPOSE) up -d --build
 
+ci-verify-sync: venv
+	$(call log_step,Verify DB state sync between PG and DB2)
+	@set -e; \
+	  echo "[ci] Comparing DB states via API /test/dump..."; \
+	  $(VENVPY) scripts/compare_db_state.py
+
 compose-down:
 		$(call log_step,Docker compose stop)
 		@$(DOCKER_COMPOSE) stop || true
@@ -318,6 +324,11 @@ release: venv
 	$(call log_step,Create Git tag (tag-first), generate changelog, push, and GitHub release)
 	@set -euo pipefail; \
 	if ! command -v git >/dev/null 2>&1; then echo "[git] Git not available; aborting"; exit 1; fi; \
+	# Run full CI before tagging/releasing
+	echo "------------------------------------------------------------------"; \
+	echo "[make] Running full CI before release"; \
+	echo "------------------------------------------------------------------"; \
+	$(MAKE) ci; \
 	# Allow manual override of the version via NEW_VERSION or VERSION env vars
 	if [ -n "${NEW_VERSION-}" ]; then VERSION="${NEW_VERSION}"; TAG="v$${VERSION}"; OVERRIDDEN=1; else OVERRIDDEN=0; fi; \
 	if [ $$OVERRIDDEN -eq 0 ] && [ -n "${VERSION-}" ]; then VERSION="${VERSION}"; TAG="v$${VERSION}"; OVERRIDDEN=1; fi; \
@@ -370,34 +381,32 @@ release: venv
 	    fi; \
 	  fi; \
 	fi; \
- 			echo "[release] Version=$$VERSION Tag=$$TAG"; \
- 			if [ "${AUTO_CHANGELOG-0}" = "1" ]; then \
- 			  echo "------------------------------------------------------------------"; \
- 			  echo "[make] Generate CHANGELOG.md (AUTO_CHANGELOG=1)"; \
- 			  echo "------------------------------------------------------------------"; \
- 			  $(VENVPY) scripts/generate_changelog.py > CHANGELOG.md; \
- 			  git add CHANGELOG.md; \
- 			  git commit -m "chore(release): update changelog for $$VERSION" || true; \
- 			fi; \
- 			BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
- 			echo "------------------------------------------------------------------"; \
- 			echo "[git] Pushing $$BRANCH and tag $$TAG to origin"; \
- 			echo "------------------------------------------------------------------"; \
- 			git push -u origin "$$BRANCH"; \
- 			git push origin "$$TAG"; \
- 			echo "------------------------------------------------------------------"; \
- 			echo "[make] Build Python sdist+wheel for release $$VERSION"; \
- 			echo "------------------------------------------------------------------"; \
- 			rm -rf dist build *.egg-info; \
- 			$(VENVPIP) -q install -U build twine setuptools_scm[toml] >/dev/null; \
- 			SETUPTOOLS_SCM_PRETEND_VERSION=$$VERSION $(VENVPY) -m build; \
- 			$(VENVPY) -m twine check dist/*; \
- 			rm -rf *.egg-info; \
- 			if command -v gh >/dev/null 2>&1; then \
- 			  gh release create "$$TAG" dist/* -t "postfix-blocker $$VERSION" -n "See CHANGELOG.md for details." || true; \
- 			else \
- 			  echo "[gh] GitHub CLI not found; upload dist/* to a GitHub Release named $$TAG"; \
- 			fi
+				echo "[release] Version=$$VERSION Tag=$$TAG"; \
+			echo "------------------------------------------------------------------"; \
+			echo "[make] Generate CHANGELOG.md"; \
+			echo "------------------------------------------------------------------"; \
+			$(VENVPY) scripts/generate_changelog.py > CHANGELOG.md; \
+			git add CHANGELOG.md; \
+			git commit -m "chore(release): update changelog for $$VERSION" || true; \
+			BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
+			echo "------------------------------------------------------------------"; \
+			echo "[git] Pushing $$BRANCH and tag $$TAG to origin"; \
+			echo "------------------------------------------------------------------"; \
+			git push -u origin "$$BRANCH"; \
+			git push origin "$$TAG"; \
+			echo "------------------------------------------------------------------"; \
+			echo "[make] Build Python sdist+wheel for release $$VERSION"; \
+			echo "------------------------------------------------------------------"; \
+			rm -rf dist build *.egg-info; \
+			$(VENVPIP) -q install -U build twine setuptools_scm[toml] >/dev/null; \
+			SETUPTOOLS_SCM_PRETEND_VERSION=$$VERSION $(VENVPY) -m build; \
+			$(VENVPY) -m twine check dist/*; \
+			rm -rf *.egg-info; \
+			if command -v gh >/dev/null 2>&1; then \
+			  gh release create "$$TAG" dist/* -t "postfix-blocker $$VERSION" -n "See CHANGELOG.md for details." || true; \
+			else \
+			  echo "[gh] GitHub CLI not found; upload dist/* to a GitHub Release named $$TAG"; \
+			fi
 
 # Publish to PyPI (requires TWINE_USERNAME/TWINE_PASSWORD or TWINE_API_KEY set)
 publish-pypi: dist

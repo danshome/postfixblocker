@@ -110,4 +110,16 @@ def create_app(config: Any | None = None) -> Flask:
     app.register_blueprint(addresses_bp)
     app.register_blueprint(logs_bp)
 
+    # Test-only reset blueprint (guarded by env flag)
+    try:
+        import os as _os
+
+        if _os.environ.get('TEST_RESET_ENABLE', '0') == '1':
+            from .routes_test_reset import bp as test_reset_bp  # type: ignore
+
+            app.register_blueprint(test_reset_bp)
+    except Exception as exc:
+        # Never fail app creation due to optional test-only route
+        logging.getLogger('api').debug('Test reset blueprint not installed: %s', exc)
+
     return app

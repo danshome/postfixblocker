@@ -8,6 +8,11 @@
     "target": "http://host.docker.internal:5001",
     "secure": false,
     "changeOrigin": true
+  },
+  "/test": {
+    "target": "http://host.docker.internal:5001",
+    "secure": false,
+    "changeOrigin": true
   }
 }
 

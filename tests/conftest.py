@@ -159,16 +159,18 @@ def compose_stack(pytestconfig: pytest.Config) -> None:
 
 @pytest.fixture(scope='session', autouse=True)
 def _cleanup_api_state() -> None:
-    """Best-effort cleanup of API state before and after the test session.
+    """Reset API state before and after the test session using /test/reset.
 
-    Ensures that when DB2 runs on a persistent volume, leftover addresses from
-    prior runs don't affect tests. Uses the API to delete entries for both
-    Postgres (5001) and DB2 (5002) services if available.
+    Requires TEST_RESET_ENABLE=1 in the API containers (enabled in docker-compose).
+    Falls back to best-effort deletion via /addresses if the reset endpoint is
+    unavailable (e.g., during unit-only runs without the stack).
     """
     if not requests:
         return
 
-    def wipe(port: int) -> None:
+    from .utils_reset import reset_both  # lazy import
+
+    def wipe_legacy(port: int) -> None:
         base = f'http://127.0.0.1:{port}'
         try:
             r = requests.get(f'{base}/addresses', timeout=3)
@@ -183,10 +185,14 @@ def _cleanup_api_state() -> None:
             pass
 
     # Pre-session cleanup
-    wipe(5001)
-    wipe(5002)
+    outcomes = reset_both()
+    if not any(outcomes.values()):  # fallback if reset route unavailable
+        wipe_legacy(5001)
+        wipe_legacy(5002)
 
     # Post-session cleanup
     yield
-    wipe(5001)
-    wipe(5002)
+    outcomes = reset_both()
+    if not any(outcomes.values()):
+        wipe_legacy(5001)
+        wipe_legacy(5002)

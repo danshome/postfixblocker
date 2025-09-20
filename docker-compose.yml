@@ -44,6 +44,7 @@ services:
       BLOCKER_LOG_FILE: /var/log/postfix-blocker/blocker.log
       API_LOG_LEVEL: DEBUG
       BLOCKER_LOG_LEVEL: DEBUG
+      TEST_RESET_ENABLE: "1"
     privileged: true
     volumes:
       - ./logs/postfix.api.log:/var/log/postfix-blocker/api.log
@@ -70,6 +71,7 @@ services:
       BLOCKER_LOG_FILE: /var/log/postfix-blocker/blocker.log
       API_LOG_LEVEL: DEBUG
       BLOCKER_LOG_LEVEL: DEBUG
+      TEST_RESET_ENABLE: "1"
     privileged: true
     volumes:
       - ./logs/postfix_db2.api.log:/var/log/postfix-blocker/api.log

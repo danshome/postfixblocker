@@ -2,6 +2,9 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
+  // Run a single global reset before the entire suite starts; one-time cleanup after
+  globalSetup: './global-setup.ts',
+  globalTeardown: './global-teardown.ts',
   // DB2 can take several minutes to become available; increase test timeout
   timeout: 600_000,
   expect: { timeout: 5_000 },

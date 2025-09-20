@@ -1,17 +1,6 @@
 import { test, expect } from '@playwright/test';
 import * as net from 'net';
 
-async function waitForApiReady(request: any, timeoutMs = 600_000): Promise<void> {
-  const start = Date.now();
-  for (;;) {
-    const resp = await request.get('/addresses');
-    if (resp.ok()) return;
-    if (Date.now() - start > timeoutMs) {
-      throw new Error(`API not ready after ${timeoutMs}ms (last status=${resp.status()})`);
-    }
-    await new Promise(r => setTimeout(r, 1000));
-  }
-}
 
 function smtpSend(options: {host?: string, port: number, from: string, to: string, subject: string, body?: string, helo?: string}): Promise<{accepted: boolean, rcptRejected: boolean, transcript: string}> {
   const host = options.host || '127.0.0.1';
@@ -180,9 +169,7 @@ async function getModeButtonInRow(page: any, email: string) {
 
 
 test.describe('UI Mode toggle affects delivery (MailHog)', () => {
-  test.beforeEach(async ({ request }) => {
-    await waitForApiReady(request);
-  });
+  // One-time suite reset happens in global-setup.ts. Avoid per-test resets.
 
   test('Address in Test mode delivers to MailHog; Enforce mode is rejected', async ({ page, request }) => {
     const isDb2 = test.info().project.name.includes('db2');
@@ -294,8 +281,14 @@ test.describe('UI Mode toggle affects delivery (MailHog)', () => {
     const missing = await mailhogMissingSubject(request, subjEnf, 15_000);
     expect(missing).toBeTruthy();
 
-    // Toggle back to Test to ensure UI remains responsive (optional)
+    // Toggle back to Test to ensure UI remains responsive
     await modeBtn.click();
     await expect(modeBtn).toHaveText('Test', { timeout: 30000 });
+
+    // Cleanup: delete the created entry to leave DBs in identical baseline
+    const body = page.getByRole('rowgroup').nth(1);
+    const row = body.getByRole('row', { name: new RegExp(email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) });
+    await row.click();
+    await page.getByRole('button', { name: 'Delete Selected' }).click();
   });
 });
