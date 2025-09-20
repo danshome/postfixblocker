@@ -75,14 +75,32 @@ ci-start:
 
 ci-end:
 	$(call log_step,CI end)
+	@mkdir -p logs
 	@echo "[ci] Mail log line counts before equalization:" \
 		&& echo -n "  logs/postfix.maillog: " && (test -f logs/postfix.maillog && wc -l < logs/postfix.maillog || echo 0) \
 		&& echo -n "  logs/postfix_db2.maillog: " && (test -f logs/postfix_db2.maillog && wc -l < logs/postfix_db2.maillog || echo 0)
 	@bash -c 'set -euo pipefail; f1="logs/postfix.maillog"; f2="logs/postfix_db2.maillog"; \
 	  test -f "$$f1" || : > "$$f1"; test -f "$$f2" || : > "$$f2"; \
 	  c1=$$(wc -l < "$$f1" | tr -d " \t"); c2=$$(wc -l < "$$f2" | tr -d " \t"); \
-	  if [ "$$c1" -lt "$$c2" ]; then diff=$$((c2 - c1)); yes "" | head -n "$$diff" >> "$$f1"; \
-	  elif [ "$$c2" -lt "$$c1" ]; then diff=$$((c1 - c2)); yes "" | head -n "$$diff" >> "$$f2"; fi; \
+	  mismatch=0; if [ "$$c1" -ne "$$c2" ]; then mismatch=1; fi; \
+	  covered_both=0; if [ "$$c1" -ge 1 ] && [ "$$c2" -ge 1 ]; then covered_both=1; fi; \
+	  # Machine-readable signal for AI automation (stdout): \
+	  echo "[AI_SIGNAL][MAILLOG] f1=$$f1 c1=$$c1 f2=$$f2 c2=$$c2 mismatch=$$mismatch covered_both=$$covered_both"; \
+	  # JSON status file for tools: \
+	  printf "{\"postfix\":{\"file\":\"%s\",\"lines\":%s},\"db2\":{\"file\":\"%s\",\"lines\":%s},\"mismatch\":%s,\"covered_both\":%s}\n" \
+	    "$$f1" "$$c1" "$$f2" "$$c2" "$$mismatch" "$$covered_both" > logs/ci_mail_log_status.json; \
+	  # Optional enforcement (opt-in): fail the build if either (a) counts differ, or (b) coverage missing. \
+	  if [ "${CI_FAIL_ON_MAILLOG_MISMATCH-0}" = "1" ] && [ "$$mismatch" -eq 1 ]; then \
+	    echo "[ci][ERROR] Mail log line counts differ before equalization: $$f1=$$c1 $$f2=$$c2"; \
+	    exit 1; \
+	  fi; \
+	  if [ "${CI_FAIL_ON_MAILLOG_COVERAGE-0}" = "1" ] && [ "$$covered_both" -ne 1 ]; then \
+	    echo "[ci][ERROR] Missing test coverage for both postfix instances: $$f1=$$c1 $$f2=$$c2"; \
+	    exit 1; \
+	  fi; \
+	  # Equalize by padding shorter file with blank lines (for consumers expecting equal length). \
+	  if [ "$$c1" -lt "$$c2" ]; then diff=$$((c2 - c1)); for i in $$(seq 1 "$$diff"); do echo >> "$$f1"; done; \
+	  elif [ "$$c2" -lt "$$c1" ]; then diff=$$((c1 - c2)); for i in $$(seq 1 "$$diff"); do echo >> "$$f2"; done; fi; \
 	  echo "[ci] Mail log line counts after equalization:"; \
 	  echo -n "  $$f1: "; wc -l < "$$f1"; echo -n "  $$f2: "; wc -l < "$$f2";'
 
