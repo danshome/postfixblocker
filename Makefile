@@ -53,17 +53,76 @@ define log_step
 endef
 
 help:
-	@echo "Targets:"
-	@echo "  make ci                Lint, build, run unit+backend+e2e (Python+frontend)"
-	@echo "  make lint              Ruff + ESLint"
-	@echo "  make test              Python unit + frontend unit"
-	@echo "  make e2e               Backend + E2E tests (starts compose)"
-	@echo "  make compose-up        docker compose up --build -d"
-	@echo "  make compose-down      docker compose stop (preserves containers, networks, and volumes)"
-	@echo "  make compose-down-hard docker compose down -v --remove-orphans (DESTROYS containers, networks, and volumes)"
-	@echo "  make hooks-update      Run 'pre-commit autoupdate' to refresh hook pins"
-	@echo "  make format            Run formatters (ruff + ESLint --fix)"
-	@echo "  make docker-rebuild    docker compose build --no-cache"
+	@echo "Postfix Blocker - Make targets and options"
+	@echo ""
+	@echo "Core CI/Dev:"
+	@echo "  make ci                     Lint, build, run all tests (Python unit+backend+e2e, frontend unit+e2e)"
+	@echo "  make init                   Create venv and install backend+frontend deps"
+	@echo "  make install                Install backend+frontend deps"
+	@echo "  make install-python         Install Python deps into venv"
+	@echo "  make install-frontend       Install frontend deps (npm ci)"
+	@echo ""
+	@echo "Lint/Format:"
+	@echo "  make lint                   Ruff + mypy + bandit + ESLint"
+	@echo "  make lint-python            Ruff (format+check), mypy, bandit"
+	@echo "  make lint-frontend          ESLint --fix"
+	@echo "  make format                 Run all formatters (ruff + ESLint --fix)"
+	@echo "  make format-python          Ruff format + fix"
+	@echo "  make format-frontend        ESLint --fix"
+	@echo ""
+	@echo "Build:"
+	@echo "  make build                  Build frontend"
+	@echo "  make build-frontend         Build Angular app"
+	@echo ""
+	@echo "Tests (Python):"
+	@echo "  make test                   Python unit + frontend unit"
+	@echo "  make test-python-all        Unit + backend + e2e with coverage"
+	@echo "  make test-python-unit       Pytest -m unit"
+	@echo "  make test-python-backend    Pytest -m backend (starts compose)"
+	@echo "  make test-python-e2e        Pytest -m e2e (starts compose)"
+	@echo ""
+	@echo "Tests (Frontend):"
+	@echo "  make test-frontend          Karma unit tests (CI mode)"
+	@echo "  make test-frontend-e2e      Playwright e2e"
+	@echo ""
+	@echo "End-to-end meta:"
+	@echo "  make e2e                    Compose up, then backend e2e + frontend e2e"
+	@echo ""
+	@echo "Docker:"
+	@echo "  make compose-up             docker compose up --build -d"
+	@echo "  make compose-down           docker compose stop (preserves containers, networks, volumes)"
+	@echo "  make compose-down-hard      docker compose down -v --remove-orphans (DESTROYS containers, networks, volumes)"
+	@echo "  make docker-rebuild         docker compose build --no-cache"
+	@echo ""
+	@echo "Housekeeping:"
+	@echo "  make hooks-update           Run 'pre-commit autoupdate' to refresh hook pins"
+	@echo "  make clean-venv             Remove ./venv"
+	@echo "  make clean-frontend         Remove node_modules, dist, .angular, test-results"
+	@echo "  make clean-logs             Remove files under ./logs"
+	@echo ""
+	@echo "Packaging/Release:"
+	@echo "  make version                Print computed version via setuptools_scm"
+	@echo "  make dist                   Build sdist+wheel (uses setuptools_scm)"
+	@echo "  make dist-clean             Remove dist/build/* and egg-info"
+	@echo "  make check-dist             Twine check dist/*"
+	@echo "  make release                Auto-bump version (default: patch), tag, optional changelog, push, build artifacts, and create GitHub release (if gh present)"
+	@echo "  make publish-pypi           Upload dist/* to PyPI via twine"
+	@echo "  make changelog              Generate CHANGELOG.md from history"
+	@echo ""
+	@echo "Environment overrides:"
+	@echo "  PY_COV_MIN                  Minimum Python coverage percent (default: $(PY_COV_MIN))"
+	@echo "  FE_COV_MIN                  Frontend coverage percent (default: $(FE_COV_MIN))"
+	@echo "  FE_COV_MIN_BRANCH           Frontend branch coverage percent (default: $(FE_COV_MIN_BRANCH))"
+	@echo "  DOCKER_COMPOSE              docker compose command (default: '$(DOCKER_COMPOSE)')"
+	@echo "  NPM                         npm command (default: '$(NPM)')"
+	@echo "  PYTHON                      Python interpreter to create venv (default: '$(PYTHON)')"
+	@echo "  VENV                        Virtualenv directory (default: '$(VENV)')"
+	@echo "  CI_FAIL_ON_MAILLOG_MISMATCH Fail CI if postfix vs db2 maillog line counts differ (0/1; default: 0)"
+	@echo "  CI_FAIL_ON_MAILLOG_COVERAGE Fail CI if both maillogs not written to (0/1; default: 0)"
+	@echo "  BUMP                        SemVer bump level for 'make release': major|minor|patch (default: patch)"
+	@echo "  NEW_VERSION / VERSION       Explicit version override for 'make release' (e.g., 1.2.3)"
+	@echo ""
+	@echo "Tips: Run 'make ci' before and after changes. See TESTING.md for details."
 
 ci: ci-start install lint build compose-up test-python-all test-frontend test-frontend-e2e ci-end
 
@@ -273,7 +332,7 @@ release: venv
 	else \
 	  SEMVER_TAGS=$$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*'); \
 	  if [ -z "$$SEMVER_TAGS" ]; then \
-	    VERSION="0.0.0"; \
+	    VERSION="0.0.1"; \
 	    TAG="v$$VERSION"; \
 	    echo "[release] No existing SemVer tags; creating initial tag $$TAG"; \
 	    git tag -a "$$TAG" -m "postfix-blocker $$VERSION" || true; \
@@ -281,24 +340,36 @@ release: venv
 	    VERSION=$$($(VENVPY) -c "import setuptools_scm; print(setuptools_scm.get_version())") || { echo "[release] Failed to compute version via setuptools_scm"; exit 1; }; \
 	    if echo "$$VERSION" | grep -q 'dev'; then \
 	      LATEST_SEMVER_TAG=$$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -n1); \
-	      if [ -z "$$LATEST_SEMVER_TAG" ]; then \
-	        echo "[release] No SemVer tag found; please create 'vX.Y.Z' and re-run."; \
-	        exit 1; \
+	      BASE="$${LATEST_SEMVER_TAG#v}"; \
+	      MAJOR=$$(echo "$$BASE" | cut -d. -f1); \
+	      MINOR=$$(echo "$$BASE" | cut -d. -f2); \
+	      PATCH=$$(echo "$$BASE" | cut -d. -f3); \
+	      BUMP_LEVEL="$${BUMP:-patch}"; \
+	      case "$$BUMP_LEVEL" in \
+	        major) MAJOR=$$((MAJOR+1)); MINOR=0; PATCH=0 ;; \
+	        minor) MINOR=$$((MINOR+1)); PATCH=0 ;; \
+	        patch|*) PATCH=$$((PATCH+1)) ;; \
+	      esac; \
+	      VERSION="$$MAJOR.$$MINOR.$$PATCH"; \
+	      TAG="v$$VERSION"; \
+	      echo "[release] Auto-bumping ($$BUMP_LEVEL) from $$LATEST_SEMVER_TAG -> $$TAG"; \
+	      if git rev-parse "$$TAG" >/dev/null 2>&1; then \
+	        echo "[git][WARN] Tag $$TAG already exists; not retagging."; \
+	      else \
+	        git tag -a "$$TAG" -m "postfix-blocker $$VERSION" || true; \
+	        echo "[git] Created tag $$TAG"; \
 	      fi; \
-	      TAG="$$LATEST_SEMVER_TAG"; \
-    	   VERSION="$${TAG#v}"; \
-    	   echo "[release] Using latest SemVer tag $$TAG for release build (HEAD not at tag)"; \
-  	   else \
-    	   TAG="v$$VERSION"; \
-    	   if git rev-parse "$$TAG" >/dev/null 2>&1; then \
-    	     echo "[git] Tag $$TAG already exists"; \
-    	   else \
-    	     git tag -a "$$TAG" -m "postfix-blocker $$VERSION" || true; \
-    	     echo "[git] Created tag $$TAG"; \
-    	   fi; \
-   	   fi; \
- 	  fi; \
- 	fi; \
+	    else \
+	      TAG="v$$VERSION"; \
+	      if git rev-parse "$$TAG" >/dev/null 2>&1; then \
+	        echo "[git] Tag $$TAG already exists"; \
+	      else \
+	        git tag -a "$$TAG" -m "postfix-blocker $$VERSION" || true; \
+	        echo "[git] Created tag $$TAG"; \
+	      fi; \
+	    fi; \
+	  fi; \
+	fi; \
  			echo "[release] Version=$$VERSION Tag=$$TAG"; \
  			if [ "${AUTO_CHANGELOG-0}" = "1" ]; then \
  			  echo "------------------------------------------------------------------"; \

@@ -150,3 +150,26 @@ git tag -d vX.Y.Z
 - Wheels missing: ensure `build` is installed (Makefile installs it automatically during `make dist`).
 - `.egg-info` directory appears after build: this is expected metadata written by setuptools during sdist/wheel builds. It is not an old "egg" distribution. Our Makefile now cleans it automatically after `make dist` and inside `make release`. You can also remove it manually with `rm -rf *.egg-info`.
 - GitHub CLI errors: run `gh auth login` and ensure you have `GITHUB_TOKEN` set for CI environments.
+
+# Release Process
+
+This project uses `make release` to create version tags and build artifacts.
+
+## Automated version bump
+
+- By default, `make release` will automatically bump the version when HEAD is not already at a tag.
+- The bump level defaults to `patch`. You can override via the environment:
+  - `BUMP=major make release`
+  - `BUMP=minor make release`
+  - `BUMP=patch make release` (default)
+- To force an exact version, set `NEW_VERSION` (or `VERSION`) explicitly:
+  - `NEW_VERSION=1.4.0 make release`
+
+## How it works
+
+- If there are no existing `vX.Y.Z` tags, the initial tag `v0.0.1` is created.
+- If HEAD is not at a tag and no explicit version is provided, the latest `vX.Y.Z` tag is located and incremented according to `BUMP`.
+- If HEAD is already at a clean SemVer tag, that tag/version is used.
+- The target branch and the tag are pushed to `origin`. If GitHub CLI (`gh`) is available, a release is created with the built artifacts.
+
+See `make help` under the Packaging/Release section for a quick summary of options.
