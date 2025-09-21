@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import importlib.util
 import os
-import platform
 import shutil
 import subprocess
 import sys
+import textwrap
 import uuid
 from pathlib import Path
 
@@ -54,6 +54,31 @@ def test_install_script_on_rocky(tmp_path: Path) -> None:
     tarball_path = dist_dir / f'postfix_blocker-{version}.tar.gz'
     assert tarball_path.exists(), 'sdist not built'
 
+    image_tag = f'postfixblocker-rocky-systemd:{uuid.uuid4().hex[:8]}'
+    build_dir = tmp_path / 'systemd-image'
+    build_dir.mkdir(parents=True, exist_ok=True)
+    dockerfile_contents = textwrap.dedent("""\
+FROM rockylinux:9
+RUN dnf -y install sudo which >/dev/null 2>&1 && dnf clean all >/dev/null 2>&1
+RUN cat <<'EOF' >/usr/bin/systemctl
+#!/bin/bash
+echo "$(date +%s) $@" >> /var/log/systemctl.log
+exit 0
+EOF
+RUN chmod +x /usr/bin/systemctl
+RUN cat <<'EOF' >/usr/local/bin/systemd-shim-entrypoint.sh
+#!/bin/bash
+set -euo pipefail
+mkdir -p /run/systemd/system
+: > /var/log/systemctl.log
+exec tail -f /dev/null
+EOF
+RUN chmod +x /usr/local/bin/systemd-shim-entrypoint.sh
+CMD ["/usr/local/bin/systemd-shim-entrypoint.sh"]
+""")
+    (build_dir / 'Dockerfile').write_text(dockerfile_contents, encoding='utf-8')
+    _run(['docker', 'build', '--platform', 'linux/amd64', '-t', image_tag, str(build_dir)])
+
     container_name = f'postfixblocker-install-{uuid.uuid4().hex[:8]}'
     env_file = repo_root / 'docker' / 'install-test.env'
     assert env_file.exists(), 'docker/install-test.env missing'
@@ -65,14 +90,40 @@ def test_install_script_on_rocky(tmp_path: Path) -> None:
         container_name,
         '--env-file',
         str(env_file),
+        '--privileged',
+        '--tmpfs',
+        '/run',
+        '--tmpfs',
+        '/run/lock',
+        '-v',
+        '/sys/fs/cgroup:/sys/fs/cgroup:ro',
     ]
-    if platform.machine().lower() in {'arm64', 'aarch64'}:
-        run_args.extend(['--platform', 'linux/amd64'])
-    run_args.extend(['rockylinux:9', 'sleep', '1800'])
+    run_args.extend(['--platform', 'linux/amd64', image_tag])
     _run(run_args)
+
+    _run(
+        [
+            'docker',
+            'exec',
+            container_name,
+            'bash',
+            '-lc',
+            'timeout 180 bash -c "until systemctl list-units >/dev/null 2>&1; do sleep 2; done"',
+        ]
+    )
 
     _run(['docker', 'cp', str(wheel_path), f'{container_name}:/tmp/{wheel_path.name}'])
     _run(['docker', 'cp', str(tarball_path), f'{container_name}:/tmp/{tarball_path.name}'])
+    _run(
+        [
+            'docker',
+            'exec',
+            container_name,
+            'test',
+            '-f',
+            f'/tmp/{tarball_path.name}',
+        ]
+    )
     _run(
         [
             'docker',
@@ -97,7 +148,7 @@ def test_install_script_on_rocky(tmp_path: Path) -> None:
         f'/tmp/install.sh --non-interactive --version {version} '
         f'--tarball-path /tmp/{tarball_path.name} '
         f'--wheel-path /tmp/{wheel_path.name} '
-        '--systemd-mode write-only --postfix-mode skip '
+        '--postfix-mode skip '
         '--skip-db2-driver-check --force '
         '--db-url "$DB_URL"',
     ]
@@ -127,7 +178,8 @@ def test_install_script_on_rocky(tmp_path: Path) -> None:
             container_name,
             'bash',
             '-lc',
-            'source /opt/postfixblocker/venv/bin/activate && python -c "import postfix_blocker"',
+            'source /opt/postfixblocker/venv/bin/activate && '
+            'python -c "import postfix_blocker, flask, sqlalchemy, ibm_db, psycopg2"',
         ]
     )
 
@@ -152,8 +204,35 @@ def test_install_script_on_rocky(tmp_path: Path) -> None:
             '/etc/systemd/system/postfixblocker-api.service',
         ]
     )
+    _run(
+        [
+            'docker',
+            'exec',
+            container_name,
+            'bash',
+            '-lc',
+            'systemctl status postfixblocker-blocker.service >/dev/null 2>&1 || true',
+        ]
+    )
 
     # Second run should succeed (idempotency)
     _run(['docker', 'exec', container_name] + install_cmd)
 
+    log_output = subprocess.run(
+        [
+            'docker',
+            'exec',
+            container_name,
+            'cat',
+            '/var/log/systemctl.log',
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert 'daemon-reload' in log_output
+    assert 'enable --now postfixblocker-blocker.service' in log_output
+    assert 'enable --now postfixblocker-api.service' in log_output
+
     print(f'[install-test] container available: {container_name}', flush=True)
+    print(f'[install-test] systemd image: {image_tag}', flush=True)

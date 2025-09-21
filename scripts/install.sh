@@ -317,6 +317,12 @@ run_as_app() {
   runuser -u "$APP_USER" -- "$@"
 }
 
+systemd_available() {
+  command -v systemctl >/dev/null 2>&1 || return 1
+  [ -d /run/systemd/system ] || return 1
+  return 0
+}
+
 prepare_artifacts() {
   local download_dir="$PREFIX/downloads"
   local tag="v$VERSION"
@@ -365,6 +371,22 @@ create_virtualenv() {
   run_as_app "$venv_dir/bin/pip" install --upgrade pip setuptools wheel >/dev/null
   log "Installing postfix-blocker $VERSION"
   run_as_app "$venv_dir/bin/pip" install "$WHEEL_PATH" gunicorn >/dev/null
+  local req_base="$PREFIX/app/requirements-base.txt"
+  local req_db2="$PREFIX/app/requirements-db2.txt"
+  if [ -f "$req_base" ]; then
+    log "Validating Python requirements (base)"
+    run_as_app "$venv_dir/bin/pip" install --no-deps -r "$req_base" >/dev/null
+  fi
+  if [ -f "$req_db2" ]; then
+    if run_as_app "$venv_dir/bin/pip" show ibm-db >/dev/null 2>&1; then
+      log "DB2 driver packages already present"
+    else
+      log "Installing DB2 driver packages"
+      if ! run_as_app "$venv_dir/bin/pip" install -r "$req_db2" >/dev/null; then
+        warn "ibm-db installation failed. Install the IBM CLI driver and rerun with --skip-db2-driver-check if necessary."
+      fi
+    fi
+  fi
 }
 
 write_env_file() {
@@ -449,15 +471,18 @@ SERVICE_API
   chmod 0644 /etc/systemd/system/postfixblocker-*.service
 
   if [ "$SYSTEMD_MODE" = "enable" ]; then
-    if command -v systemctl >/dev/null 2>&1; then
+    if systemd_available; then
       log "Reloading systemd daemon"
       systemctl daemon-reload
       log "Enabling and starting postfixblocker-blocker"
-      systemctl enable --now postfixblocker-blocker.service
+      systemctl enable --now postfixblocker-blocker.service || warn "Failed to enable/start postfixblocker-blocker; inspect systemctl status"
       log "Enabling and starting postfixblocker-api"
-      systemctl enable --now postfixblocker-api.service
+      systemctl enable --now postfixblocker-api.service || warn "Failed to enable/start postfixblocker-api; inspect systemctl status"
     else
-      warn "systemctl not available; skipped enabling services."
+      local pid1
+      pid1=$(cat /proc/1/comm 2>/dev/null || echo "unknown")
+      warn "systemd not active on this host (PID 1=$pid1); wrote units but skipped enable/start"
+      warn "Re-run with --systemd-mode write-only to suppress this warning."
     fi
   else
     log "Systemd units written; operator must enable/start them manually."
