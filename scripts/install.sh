@@ -320,6 +320,10 @@ run_as_app() {
 systemd_available() {
   command -v systemctl >/dev/null 2>&1 || return 1
   [ -d /run/systemd/system ] || return 1
+  # systemctl must be able to talk to a running systemd instance
+  if ! systemctl show --property=Version >/dev/null 2>&1; then
+    return 1
+  fi
   return 0
 }
 
@@ -473,11 +477,15 @@ SERVICE_API
   if [ "$SYSTEMD_MODE" = "enable" ]; then
     if systemd_available; then
       log "Reloading systemd daemon"
-      systemctl daemon-reload
-      log "Enabling and starting postfixblocker-blocker"
-      systemctl enable --now postfixblocker-blocker.service || warn "Failed to enable/start postfixblocker-blocker; inspect systemctl status"
-      log "Enabling and starting postfixblocker-api"
-      systemctl enable --now postfixblocker-api.service || warn "Failed to enable/start postfixblocker-api; inspect systemctl status"
+      if systemctl daemon-reload; then
+        log "Enabling and starting postfixblocker-blocker"
+        systemctl enable --now postfixblocker-blocker.service || warn "Failed to enable/start postfixblocker-blocker; inspect systemctl status"
+        log "Enabling and starting postfixblocker-api"
+        systemctl enable --now postfixblocker-api.service || warn "Failed to enable/start postfixblocker-api; inspect systemctl status"
+      else
+        warn "systemctl daemon-reload failed; wrote systemd units but skipped enable/start"
+        warn "Re-run with --systemd-mode write-only to suppress this warning."
+      fi
     else
       local pid1
       pid1=$(cat /proc/1/comm 2>/dev/null || echo "unknown")

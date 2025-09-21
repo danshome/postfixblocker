@@ -91,6 +91,8 @@ CMD ["/usr/local/bin/systemd-shim-entrypoint.sh"]
         '--env-file',
         str(env_file),
         '--privileged',
+        '--cgroupns',
+        'host',
         '--tmpfs',
         '/run',
         '--tmpfs',
