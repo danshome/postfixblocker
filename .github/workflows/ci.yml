@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: write
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -47,6 +50,20 @@ jobs:
           MAILHOG_PORT: '8025'
         run: |
           make ci
+
+      - name: Generate coverage badge endpoint
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          python scripts/gen_coverage_badge.py coverage.xml badges/coverage.json
+
+      - name: Publish coverage badge to gh-pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: badges
+          keep_files: true
 
       - name: Upload coverage artefacts
         uses: actions/upload-artifact@v4
