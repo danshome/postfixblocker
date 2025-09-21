@@ -3,11 +3,11 @@
 
 <!-- BEGIN GENERATED: README:STANDARD_BLOCK -->
 
-[![Latest Release](https://img.shields.io/github/v/release/danshome/postfixblocker?display_name=tag&sort=semver)](https://github.com/danshome/postfixblocker/releases)
+[![Latest Release](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdanshome%2Fpostfixblocker%2Fgh-pages%2Fbadges%2Frelease.json&cacheSeconds=3600)](https://github.com/danshome/postfixblocker/releases)
 [![CI Status](https://github.com/danshome/postfixblocker/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/danshome/postfixblocker/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdanshome%2Fpostfixblocker%2Fgh-pages%2Fbadges%2Fcoverage.json&cacheSeconds=3600)](https://github.com/danshome/postfixblocker/actions)
 [![Python Versions](https://img.shields.io/badge/python-3.9%2B-blue.svg)](pyproject.toml)
-[![License](https://img.shields.io/github/license/danshome/postfixblocker.svg)](LICENSE)
+[![License](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdanshome%2Fpostfixblocker%2Fgh-pages%2Fbadges%2Flicense.json&cacheSeconds=86400)](LICENSE)
 
 This repository is owned by danshome and the canonical project name is
 postfix-blocker (PyPI package; GitHub repo: postfixblocker). The primary
