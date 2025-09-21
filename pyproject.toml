@@ -71,6 +71,9 @@ postfix-blocker-blocker = "postfix_blocker.blocker:main"
 [tool.setuptools]
 include-package-data = true
 
+[tool.setuptools.data-files]
+"share/postfixblocker" = ["scripts/install.sh"]
+
 [tool.setuptools.packages.find]
 include = ["postfix_blocker*"]
 
