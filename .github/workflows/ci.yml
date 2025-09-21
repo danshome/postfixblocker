@@ -51,14 +51,12 @@ jobs:
         run: |
           make ci
 
-      - name: Generate badge endpoints
+      - name: Generate coverage badge endpoint
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           python scripts/gen_coverage_badge.py coverage.xml badges/coverage.json
-          python scripts/gen_version_badge.py badges/release.json
-          python scripts/write_badge.py license MIT brightgreen badges/license.json
 
-      - name: Publish badges to gh-pages
+      - name: Publish coverage badge to gh-pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v3
         with:
