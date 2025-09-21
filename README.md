@@ -257,7 +257,7 @@ npm run e2e  # runs against DB2 (starts dev server on 4200)
 ```
 
 Notes:
-- DB2 API: use `npm run start:db2` which uses `frontend/proxy.db2.json` to proxy to `http://localhost:5002`.
+- API: use `npm run start:db2` (or `npm start`) which uses `frontend/proxy.json` to proxy to `http://localhost:5002`.
 - DB2 container can take a few minutes to initialize. If you see proxy ECONNRESET errors, wait until `curl http://localhost:5002/addresses` returns `[]` and refresh.
 
 Run e2e against DB2 only (optional):

@@ -1,0 +1,17 @@
+{
+  "/addresses": {
+    "target": "http://127.0.0.1:5002",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/logs": {
+    "target": "http://127.0.0.1:5002",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/test": {
+    "target": "http://127.0.0.1:5002",
+    "secure": false,
+    "changeOrigin": true
+  }
+}
