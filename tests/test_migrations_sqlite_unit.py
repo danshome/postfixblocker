@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 try:
@@ -16,8 +18,11 @@ from postfix_blocker.db.migrations import init_db
 def test_init_db_sqlite_creates_tables_and_migrates_test_mode():
     if create_engine is None:
         pytest.fail('SQLAlchemy not installed; migrations unit tests require it.')
+    db_dir = Path('database')
+    db_dir.mkdir(parents=True, exist_ok=True)
+    db_path = db_dir / 'test_migrations.sqlite'
     # Use an on-disk DB so ALTER TABLE changes persist across connections
-    engine: Engine = create_engine('sqlite:///./database/test_migrations.sqlite')  # type: ignore[misc]
+    engine: Engine = create_engine(f'sqlite:///{db_path}')  # type: ignore[misc]
 
     # Start with a legacy blocked_addresses table missing test_mode to exercise migration path
     with engine.begin() as conn:
@@ -72,5 +77,9 @@ def test_init_db_sqlite_creates_tables_and_migrates_test_mode():
     # Clean up
     try:
         engine.dispose()
+    except Exception:
+        pass
+    try:
+        db_path.unlink()
     except Exception:
         pass
