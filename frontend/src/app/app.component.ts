@@ -19,6 +19,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { HostListener } from '@angular/core';
 
 interface Entry { id: number; pattern: string; is_regex: boolean; test_mode?: boolean; }
+type DragMode = 'select' | 'deselect';
 
 @Component({
   selector: 'app-root',
@@ -51,7 +52,7 @@ export class AppComponent implements OnInit {
   selected = new Set<number>();
   busy = false;
   private dragActive = false;
-  private dragMode: 'select' | 'deselect' = 'select';
+  private dragMode: DragMode = 'select';
   private suppressClick = false;
   // Backend status banner flags
   backendNotReady = false;     // API reachable but DB not ready (503)
@@ -119,15 +120,23 @@ export class AppComponent implements OnInit {
   }
 
   async loadLogSettings(name: 'api'|'blocker'|'postfix') {
-    try {
-      const r = await firstValueFrom(this.http.get<any>(`/logs/refresh/${name}`));
+    const [refreshRes, levelRes] = await Promise.allSettled([
+      firstValueFrom(this.http.get<any>(`/logs/refresh/${name}`)),
+      firstValueFrom(this.http.get<any>(`/logs/level/${name}`)),
+    ]);
+
+    if (refreshRes.status === 'fulfilled') {
+      const r = refreshRes.value || {};
       this.refreshMs = r.interval_ms ?? 0;
       this.logLines = r.lines ?? 200;
-    } catch { /* ignore */ }
-    try {
-      const l = await firstValueFrom(this.http.get<any>(`/logs/level/${name}`));
+    }
+
+    if (levelRes.status === 'fulfilled') {
+      const l = levelRes.value || {};
       this.currentLevel = l.level || '';
-    } catch { this.currentLevel = ''; }
+    } else {
+      this.currentLevel = '';
+    }
   }
 
   async saveRefresh() {
@@ -354,25 +363,46 @@ export class AppComponent implements OnInit {
     });
   }
 
-  // Bulk toggle for selected IDs
-  setSelectedMode(testMode: boolean): void {
+  // Bulk toggle helpers (avoid boolean selector parameters)
+  setSelectedToTestMode(): void {
     const ids = Array.from(this.selected);
     if (ids.length === 0) return;
     this.busy = true;
     const run = async () => {
       for (const id of ids) {
-        try { await firstValueFrom(this.http.put(`/addresses/${id}`, { test_mode: testMode })); } catch (err) { this.setBackendStatusFromError(err); }
+        try { await firstValueFrom(this.http.put(`/addresses/${id}`, { test_mode: true })); } catch (err) { this.setBackendStatusFromError(err); }
       }
     };
     run().finally(() => { this.busy = false; this.load(); });
   }
 
-  // Bulk toggle for all currently loaded entries
-  setAllMode(testMode: boolean): void {
+  setSelectedToEnforceMode(): void {
+    const ids = Array.from(this.selected);
+    if (ids.length === 0) return;
+    this.busy = true;
+    const run = async () => {
+      for (const id of ids) {
+        try { await firstValueFrom(this.http.put(`/addresses/${id}`, { test_mode: false })); } catch (err) { this.setBackendStatusFromError(err); }
+      }
+    };
+    run().finally(() => { this.busy = false; this.load(); });
+  }
+
+  setAllToTestMode(): void {
     this.busy = true;
     const run = async () => {
       for (const e of this.entries) {
-        try { await firstValueFrom(this.http.put(`/addresses/${e.id}`, { test_mode: testMode })); } catch (err) { this.setBackendStatusFromError(err); }
+        try { await firstValueFrom(this.http.put(`/addresses/${e.id}`, { test_mode: true })); } catch (err) { this.setBackendStatusFromError(err); }
+      }
+    };
+    run().finally(() => { this.busy = false; this.load(); });
+  }
+
+  setAllToEnforceMode(): void {
+    this.busy = true;
+    const run = async () => {
+      for (const e of this.entries) {
+        try { await firstValueFrom(this.http.put(`/addresses/${e.id}`, { test_mode: false })); } catch (err) { this.setBackendStatusFromError(err); }
       }
     };
     run().finally(() => { this.busy = false; this.load(); });

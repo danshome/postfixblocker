@@ -22,7 +22,7 @@ def test_load_config_defaults(monkeypatch):
 
     cfg = load_config()
     assert isinstance(cfg, Config)
-    assert cfg.db_url.endswith('@db:5432/blocker')
+    assert cfg.db_url.endswith('@db2:50000/BLOCKER')
     assert cfg.check_interval == 5.0
     assert cfg.postfix_dir == '/etc/postfix'
     assert cfg.pid_file.endswith('blocker.pid')

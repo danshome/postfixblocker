@@ -14,7 +14,7 @@ Node.js 18+ (for the Angular frontend).
 
 - Key features:
   - API + background service to manage a Postfix recipient blocklist.
-  - Supports PostgreSQL and IBM DB2 11.5 via SQLAlchemy.
+  - Supports IBM DB2 11.5 via SQLAlchemy.
   - Angular web UI for CRUD operations over `/addresses`.
   - Docker Compose for local development and E2E testing.
 
@@ -46,7 +46,7 @@ docker compose up --build -d
 pytest -q
 
 # Tail API logs
-docker compose logs -f postfix
+docker compose logs -f postfix_db2
 ```
 
 ## Contents
@@ -62,17 +62,17 @@ docker compose logs -f postfix
 List addresses via API:
 
 ```bash
-curl -s http://localhost:5001/addresses | jq .
+curl -s http://localhost:5002/addresses | jq .
 ```
 
 Add and delete an address:
 
 ```bash
-curl -X POST http://localhost:5001/addresses \
+curl -X POST http://localhost:5002/addresses \
   -H 'Content-Type: application/json' \
   -d '{"pattern":"user@example.com","is_regex":false, "test_mode":true}'
 
-curl -X DELETE http://localhost:5001/addresses/1
+curl -X DELETE http://localhost:5002/addresses/1
 ```
 
 ## Project Structure
@@ -117,7 +117,7 @@ recipients.
 
 AGENTS.md contains development instructions for AI agents.
 
-The service uses SQLAlchemy and supports PostgreSQL and IBM DB2 11.5.
+The service uses SQLAlchemy and supports IBM DB2 11.5.
 For DB2 support, Python dependencies `ibm-db` and `ibm-db-sa` are required
 (already listed in `requirements.txt`).
 
@@ -131,8 +131,7 @@ For DB2 support, Python dependencies `ibm-db` and `ibm-db-sa` are required
   blocked addresses.
 * **Angular UI (`frontend`)** – Simple interface to view, add, and remove
   entries.
-* **Docker Compose environment** – Includes Postfix, PostgreSQL, IBM DB2 (optional),
-  and MailHog for local testing.
+* **Docker Compose environment** – Includes Postfix (DB2-backed) and MailHog for local testing.
 
 ### API ↔ Blocker IPC (Refresh)
 
@@ -152,14 +151,11 @@ For DB2 support, Python dependencies `ibm-db` and `ibm-db-sa` are required
 docker compose up --build
 ```
 
-The API is available on [http://localhost:5001](http://localhost:5001) and
+The API is available on [http://localhost:5002](http://localhost:5002) and
 MailHog's UI on [http://localhost:8025](http://localhost:8025).
 
-PostgreSQL listens on port `5433` on the host to avoid conflicts with any
-local installations. IBM DB2 listens on port `50000` if you enable the `db2`
-service. Two Postfix services are available:
+IBM DB2 listens on port `50000`. One Postfix service is available:
 
-- `postfix` (PostgreSQL) – SMTP on host `1025`, API on `5001`
 - `postfix_db2` (DB2) – SMTP on host `1026`, API on `5002`
 
 Note: The Docker image for `postfix` installs only the base Python
@@ -174,13 +170,10 @@ Base image choice
   than the deprecated `rockylinux:9` library image to ensure timely updates and
   security fixes.
 
-### Database backends
+### Database backend
 
-- PostgreSQL (default):
-  - Service: `db` (postgres:16)
-  - Default URL: `postgresql://blocker:blocker@localhost:5433/blocker`
-- IBM DB2 11.5 (optional):
-  - Service: `db2` (ibmcom/db2:11.5.7.0)
+- IBM DB2 11.5:
+  - Service: `db2` (icr.io/db2_community/db2:11.5.8.0)
   - Accepts license via `LICENSE=accept` env
   - Default credentials in compose: user `db2inst1`, db `BLOCKER`, password `blockerpass`
   - URL examples:
@@ -189,8 +182,7 @@ Base image choice
   - Note: DB2 container typically requires several GB of RAM and runs in
     privileged mode in the sample compose for simplicity in dev.
   - Architecture note: DB2 Python drivers are installed only on x86_64. On
-    arm64 (e.g., Apple Silicon) local builds may skip driver install and DB2
-    tests will be skipped.
+    arm64 (e.g., Apple Silicon) local builds may skip driver install.
 
 Switching the Postfix service to DB2:
 
@@ -221,7 +213,7 @@ Rebuild and restart the Postfix containers after pulling this change so the
 updated `main.cf` is applied:
 
 ```
-docker compose build postfix postfix_db2
+docker compose build postfix_db2
 docker compose up -d
 ```
 
@@ -261,14 +253,12 @@ Run with Playwright starting the dev server and proxying API calls to the Flask 
 
 ```
 cd frontend
-npm run e2e  # runs both Postgres and DB2 matrix sequentially (starts dev servers on 4200 then 4201)
+npm run e2e  # runs against DB2 (starts dev server on 4200)
 ```
 
 Notes:
-- Default Postgres API: `ng serve` uses `frontend/proxy.conf.json` to proxy `/addresses` to `http://localhost:5001`.
 - DB2 API: use `npm run start:db2` which uses `frontend/proxy.db2.json` to proxy to `http://localhost:5002`.
 - DB2 container can take a few minutes to initialize. If you see proxy ECONNRESET errors, wait until `curl http://localhost:5002/addresses` returns `[]` and refresh.
- - Ensure ports `4200` and `4201` are free before running the matrix.
 
 Run e2e against DB2 only (optional):
 
@@ -277,7 +267,7 @@ cd frontend
 npm run e2e:db2
 ```
 
-This runs only the DB2 Playwright project. The test runner starts both dev servers via the matrix web server, then targets the DB2 UI (port 4201) and API (port 5002).
+This runs the DB2 Playwright project. The test runner starts the dev server on port 4200 and proxies to the API on port 5002.
 
 ### Frontend DevContainers
 
@@ -306,7 +296,7 @@ cd frontend && npm run e2e
 
 Notes:
 - Both devcontainers forward `4200`.
-- The dev server proxies `/addresses` to the host API (default `http://localhost:5001`). Ensure `docker compose up` is running.
+- The dev server proxies `/addresses` to the host API (default `http://localhost:5002`). Ensure `docker compose up` is running.
 
 PCRE map support
 - PCRE map support is required to enforce regex rules. On RHEL/Rocky 9 it may
@@ -321,7 +311,7 @@ emails through Postfix and verifying delivery via MailHog.
 
 Prerequisites:
 - Docker stack running: `docker compose up --build`
-- Postfix exposes SMTP on host `localhost:1025`
+- Postfix exposes SMTP on host `localhost:1026`
 
 Run from the repository root so the `app` package can be imported:
 
@@ -330,16 +320,16 @@ python tests/e2e_test.py
 ```
 
 Configuration via environment variables (optional):
-- `BLOCKER_DB_URL` (default `postgresql://blocker:blocker@localhost:5433/blocker`)
-- `SMTP_HOST`/`SMTP_PORT` (defaults `localhost`/`1025`)
+- `BLOCKER_DB_URL` (default `ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER`)
+- `SMTP_HOST`/`SMTP_PORT` (defaults `localhost`/`1026`)
 - `MAILHOG_HOST`/`MAILHOG_PORT` (defaults `localhost`/`8025`)
 
 Running inside the Postfix container (useful on some hosts):
 
 ```bash
-docker compose cp tests/e2e_test.py postfix:/opt/postfix_blocker/e2e_run.py
-docker compose exec postfix env \
-  BLOCKER_DB_URL=postgresql://blocker:blocker@db:5432/blocker \
+docker compose cp tests/e2e_test.py postfix_db2:/opt/postfix_blocker/e2e_run.py
+docker compose exec postfix_db2 env \
+  BLOCKER_DB_URL=ibm_db_sa://db2inst1:blockerpass@db2:50000/BLOCKER \
   SMTP_HOST=127.0.0.1 SMTP_PORT=25 \
   MAILHOG_HOST=mailhog MAILHOG_PORT=8025 \
   python /opt/postfix_blocker/e2e_run.py
@@ -352,29 +342,19 @@ Mass traffic demo
 # From host
 python tests/e2e_test.py --mass --total 300
 
-# Inside the postfix container (recommended if host DB port is blocked)
-docker compose cp tests/e2e_test.py postfix:/opt/postfix_blocker/e2e_run.py
-docker compose exec postfix env \
-  BLOCKER_DB_URL=postgresql://blocker:blocker@db:5432/blocker \
+# Inside the postfix_db2 container (recommended if host DB port is blocked)
+docker compose cp tests/e2e_test.py postfix_db2:/opt/postfix_blocker/e2e_run.py
+docker compose exec postfix_db2 env \
+  BLOCKER_DB_URL=ibm_db_sa://db2inst1:blockerpass@db2:50000/BLOCKER \
   SMTP_HOST=127.0.0.1 SMTP_PORT=25 \
   MAILHOG_HOST=mailhog MAILHOG_PORT=8025 \
   python /opt/postfix_blocker/e2e_run.py --mass --total 300
 
-Using DB2 instead of Postgres inside the postfix container:
-
-```
-docker compose exec postfix env \
-  BLOCKER_DB_URL=ibm_db_sa://db2inst1:blockerpass@db2:50000/BLOCKER \
-  SMTP_HOST=127.0.0.1 SMTP_PORT=25 \
-  MAILHOG_HOST=mailhog MAILHOG_PORT=8025 \
-  python /opt/postfix_blocker/e2e_run.py
-```
-```
 
 Troubleshooting Postfix SMTP:
 - Ensure PCRE map support is installed in the image (we install `postfix-pcre`).
 - Disable smtpd chroot in containers: set `smtp/inet/chroot = n` (done in Dockerfile).
-- Verify SMTP is listening: `docker compose exec postfix nc -vz 127.0.0.1 25`.
+- Verify SMTP is listening: `docker compose exec postfix_db2 nc -vz 127.0.0.1 25`.
 - The dev image allows relaying from the host by setting `mynetworks = 0.0.0.0/0` for convenience. Do NOT use this setting in production; restrict `mynetworks` appropriately.
 
 The script populates the database with a couple of blocked addresses, sends
@@ -383,41 +363,34 @@ MailHog (only the allowed recipient should arrive).
 
 ## Backend tests
 
-Optional backend-specific smoke tests can be run by setting environment variables:
+Backend smoke tests can be run by setting environment variables:
 
 ```
-# PostgreSQL backend test
-TEST_PG_URL=postgresql://blocker:blocker@localhost:5433/blocker pytest -q tests/test_db_backends.py
-
-# IBM DB2 backend test
 TEST_DB2_URL=ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER pytest -q tests/test_db_backends.py
 ```
 
 ## E2E tests
 
-Pytest includes an E2E test that attempts to exercise both backends in a single run.
-It targets the two Postfix services using SMTP ports `1025` (Postgres) and `1026` (DB2):
+Pytest includes an E2E test that exercises the DB2-backed postfix service on SMTP port `1026`:
 
 ```
 pytest -q tests/test_e2e.py
 ```
-
-If any backend is not available, the corresponding parameterized test will be skipped.
 
 ## Continuous Integration
 
 GitHub Actions workflow is provided at `.github/workflows/ci.yml` with three jobs:
 
 - Unit: Runs `pytest -m unit`.
-- Backend: Starts DB backends via Docker Compose, then runs `pytest -m backend`.
-- E2E: Starts full stack (both postfix services) and runs `pytest -m e2e`.
+- Backend: Starts DB2 via Docker Compose, then runs `pytest -m backend`.
+- E2E: Starts full stack (postfix_db2) and runs `pytest -m e2e`.
 
 ## JetBrains IDEs
 
-- Use a local PyCharm data source (not shared in VCS).
+- Use a local data source for DB2 (not shared in VCS).
 - Create it via Database tool window or edit `.idea/dataSources.local.xml`.
-- Connection details: host `localhost`, port `5433`, db `blocker`, user `blocker`.
-- Passwords are stored locally; when prompted, enter `blocker`. If adding manually, leave password blank and let PyCharm store it via Keychain/Keyring.
+- Connection details: host `localhost`, port `50000`, db `BLOCKER`, user `db2inst1`.
+- Passwords are stored locally; when prompted, enter `blockerpass` (or your configured password).
 
 
 

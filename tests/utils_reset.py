@@ -1,9 +1,6 @@
-"""Shared test utilities for resetting API-backed databases.
+"""Shared test utilities for resetting the DB2-backed API.
 
 from __future__ import annotations
-
-Provides functions to reset state for the Postgres-backed API (5001) and
-DB2-backed API (5002) by calling the test-only /test/reset endpoint.
 
 These helpers are intended for use by both unit/integration tests and by
 frontend e2e (via analogous TS helpers).
@@ -17,8 +14,7 @@ except Exception:  # pragma: no cover
     requests = None  # type: ignore
 
 
-DEFAULT_BASES: tuple[str, str] = (
-    'http://127.0.0.1:5001',  # Postgres
+DEFAULT_BASES: tuple[str, ...] = (
     'http://127.0.0.1:5002',  # DB2
 )
 
@@ -43,7 +39,7 @@ def reset_via_api(base_url: str, seeds: Iterable[dict] | None = None) -> bool:
 
 
 def reset_both(bases: Iterable[str] | None = None) -> dict[str, bool]:
-    """Reset both API instances (Postgres and DB2) if available.
+    """Reset available API instances (DB2-only now).
 
     Returns a mapping of base_url -> success flag.
     """

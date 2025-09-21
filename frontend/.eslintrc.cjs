@@ -14,7 +14,7 @@ module.exports = {
     es2022: true,
     node: false,
   },
-  plugins: ['@typescript-eslint', 'sonarjs', 'import'],
+  plugins: ['@typescript-eslint', 'sonarjs', 'import', 'jest'],
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
@@ -23,12 +23,20 @@ module.exports = {
   rules: {
     'no-unused-vars': 'off',
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
-    'sonarjs/no-duplicate-string': 'off',
   },
   ignorePatterns: [
     'dist/**',
     'node_modules/**',
-    '**/*.spec.ts',
+    // Ignore unit specs under src, but keep Playwright e2e specs included
+    'src/**/*.spec.ts',
+  ],
+  overrides: [
+    {
+      files: ['e2e/**/*.ts'],
+      rules: {
+        // Enforce at least one expect() per Playwright test file/spec
+        'jest/expect-expect': 'error',
+      },
+    },
   ],
 };
-

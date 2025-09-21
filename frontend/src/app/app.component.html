@@ -34,11 +34,11 @@
       </div>
       <div class="list-actions">
         <mat-checkbox (change)="toggleSelectAll($event.checked)">Select all</mat-checkbox>
-        <button mat-stroked-button color="primary" (click)="setSelectedMode(true)" [disabled]="selected.size === 0 || busy">Selected → Test</button>
-        <button mat-stroked-button color="accent" (click)="setSelectedMode(false)" [disabled]="selected.size === 0 || busy">Selected → Enforce</button>
+        <button mat-stroked-button color="primary" (click)="setSelectedToTestMode()" [disabled]="selected.size === 0 || busy">Selected → Test</button>
+        <button mat-stroked-button color="accent" (click)="setSelectedToEnforceMode()" [disabled]="selected.size === 0 || busy">Selected → Enforce</button>
         <span style="flex:1 1 auto;"></span>
-        <button mat-button (click)="setAllMode(true)" [disabled]="entries.length === 0 || busy">All → Test</button>
-        <button mat-button (click)="setAllMode(false)" [disabled]="entries.length === 0 || busy">All → Enforce</button>
+        <button mat-button (click)="setAllToTestMode()" [disabled]="entries.length === 0 || busy">All → Test</button>
+        <button mat-button (click)="setAllToEnforceMode()" [disabled]="entries.length === 0 || busy">All → Enforce</button>
         <span style="flex:1 1 auto;"></span>
         <button mat-stroked-button color="warn" (click)="deleteSelected()" [disabled]="selected.size === 0 || busy">Delete Selected</button>
         <button mat-raised-button color="warn" (click)="deleteAll()" [disabled]="entries.length === 0 || busy">Delete All</button>

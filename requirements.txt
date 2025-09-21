@@ -2,6 +2,5 @@ pytest
 requests
 Flask
 SQLAlchemy
-psycopg2-binary
 ibm-db
 ibm-db-sa

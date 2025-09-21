@@ -172,8 +172,7 @@ test.describe('UI Mode toggle affects delivery (MailHog)', () => {
   // One-time suite reset happens in global-setup.ts. Avoid per-test resets.
 
   test('Address in Test mode delivers to MailHog; Enforce mode is rejected', async ({ page, request }) => {
-    const isDb2 = test.info().project.name.includes('db2');
-    const smtpPort = isDb2 ? 1026 : 1025;
+    const smtpPort = 1026;
 
     await page.goto('/');
 
@@ -217,7 +216,6 @@ test.describe('UI Mode toggle affects delivery (MailHog)', () => {
     await modeBtn.click();
     await expect(modeBtn).toHaveText('Enforce', { timeout: 30000 });
 
-    const isDb2Proj = test.info().project.name.includes('db2');
     const sawBlockerApply = await (async (marker: string) => {
       const startTs = Date.now();
       let linesToFetch = 500;
@@ -285,7 +283,7 @@ test.describe('UI Mode toggle affects delivery (MailHog)', () => {
     await modeBtn.click();
     await expect(modeBtn).toHaveText('Test', { timeout: 30000 });
 
-    // Cleanup: delete the created entry to leave DBs in identical baseline
+    // Cleanup: delete the created entry to leave DB in a clean baseline
     const body = page.getByRole('rowgroup').nth(1);
     const row = body.getByRole('row', { name: new RegExp(email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) });
     await row.click();

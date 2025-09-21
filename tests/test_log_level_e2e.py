@@ -6,10 +6,8 @@ from email.message import EmailMessage
 import pytest
 import requests
 
-# Default endpoints for PG and DB2 stacks; can be overridden via env
-API_BASE_PG = os.environ.get('E2E_API_BASE_PG', 'http://127.0.0.1:5001')
+# Default endpoint for the DB2 stack; can be overridden via env
 API_BASE_DB2 = os.environ.get('E2E_API_BASE_DB2', 'http://127.0.0.1:5002')
-SMTP_PORT_PG = int(os.environ.get('SMTP_PORT_PG', '1025'))
 SMTP_PORT_DB2 = int(os.environ.get('SMTP_PORT_DB2', '1026'))
 
 
@@ -95,15 +93,8 @@ def _measure_delta_for_level(api_base: str, smtp_port: int, level: str, recipien
 
 
 @pytest.mark.e2e
-@pytest.mark.parametrize(
-    'scenario',
-    [
-        {'name': 'pg', 'api_base': API_BASE_PG, 'smtp_port': SMTP_PORT_PG},
-        {'name': 'db2', 'api_base': API_BASE_DB2, 'smtp_port': SMTP_PORT_DB2},
-    ],
-    ids=lambda s: s['name'],
-)
-def test_postfix_log_level_increasing_line_counts(scenario):
+def test_postfix_log_level_increasing_line_counts():
+    scenario = {'name': 'db2', 'api_base': API_BASE_DB2, 'smtp_port': SMTP_PORT_DB2}
     if not wait_for_api_ready(scenario['api_base']):
         pytest.fail(
             f'API not ready for e2e test ({scenario["name"]}). Backend/E2E tests require the API to be available.'

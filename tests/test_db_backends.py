@@ -1,11 +1,6 @@
-"""Optional backend smoke tests for Postgres and DB2.
+"""Backend smoke test for DB2 only.
 
-These tests are skipped unless the corresponding environment variables are set
-and SQLAlchemy + the appropriate driver are installed.
-
-Set one or both of the following to enable:
-- TEST_PG_URL  (e.g. postgresql://blocker:blocker@localhost:5433/blocker)
-- TEST_DB2_URL (e.g. ibm_db_sa://db2inst1:password@localhost:50000/BLOCKER or db2+ibm_db://db2inst1:password@localhost:50000/BLOCKER)
+Requires SQLAlchemy and DB2 driver. Configure DB URL via TEST_DB2_URL.
 """
 
 import os
@@ -26,13 +21,10 @@ from postfix_blocker.db.schema import get_blocked_table
 from tests.utils_wait import wait_for_db_url
 
 
-def _default_urls():
-    return {
-        'pg': os.environ.get('TEST_PG_URL', 'postgresql://blocker:blocker@localhost:5433/blocker'),
-        'db2': os.environ.get(
-            'TEST_DB2_URL', 'ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER'
-        ),
-    }
+def _db2_url() -> str:
+    return os.environ.get(
+        'TEST_DB2_URL', 'ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER'
+    )
 
 
 def _smoke_db(url: str) -> None:
@@ -40,18 +32,34 @@ def _smoke_db(url: str) -> None:
     try:
         init_db(engine)
         bt = get_blocked_table()
-        with engine.connect() as conn:
-            # Clean slate
-            conn.execute(bt.delete())
-            # Insert two rows
-            conn.execute(
-                bt.insert(),
-                [
-                    {'pattern': 'unit1@example.com', 'is_regex': False},
-                    {'pattern': '.*@unit.test', 'is_regex': True},
-                ],
-            )
-            conn.commit()
+
+        # DB2 can throw SQL0911N on DML under concurrent load; retry a few times.
+        last_exc: Exception | None = None
+        for attempt in range(1, 8):
+            try:
+                with engine.connect() as conn:
+                    # Clean slate
+                    conn.execute(bt.delete())
+                    # Insert two rows (avoid executemany to sidestep DB2 rowcount issues)
+                    conn.execute(bt.insert().values(pattern='unit1@example.com', is_regex=False))
+                    conn.execute(bt.insert().values(pattern='.*@unit.test', is_regex=True))
+                    conn.commit()
+                last_exc = None
+                break
+            except (
+                OperationalError,
+                ProgrammingError,
+            ) as exc:  # pragma: no cover - timing dependent
+                last_exc = exc
+                msg = str(exc)
+                if (
+                    'SQL0911N' in msg or 'deadlock' in msg.lower() or 'timeout' in msg.lower()
+                ) and attempt < 7:
+                    time.sleep(1.0)
+                    continue
+                raise
+        if last_exc:
+            raise last_exc
 
         # Read back directly via SQLAlchemy (no legacy shim)
         from sqlalchemy import select  # type: ignore
@@ -89,15 +97,13 @@ def _smoke_db(url: str) -> None:
 
 @pytest.mark.backend
 @pytest.mark.slow
-@pytest.mark.parametrize('backend', ['pg', 'db2'])
-def test_backends_smoke(backend: str):
+def test_db2_smoke():
     if create_engine is None:
         pytest.fail('SQLAlchemy not installed; backend tests require it.')
-    urls = _default_urls()
-    url = urls[backend]
+    url = _db2_url()
     # Ensure connectivity; fail if unavailable.
     if not wait_for_db_url(url):
         pytest.fail(
-            f'{backend} backend not available at {url}. Backend tests require the database to be available.'
+            f'DB2 backend not available at {url}. Backend tests require the database to be available.'
         )
     _smoke_db(url)

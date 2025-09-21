@@ -1,18 +1,17 @@
 {
   "/addresses": {
-    "target": "http://host.docker.internal:5001",
+    "target": "http://host.docker.internal:5002",
     "secure": false,
     "changeOrigin": true
   },
   "/logs": {
-    "target": "http://host.docker.internal:5001",
+    "target": "http://host.docker.internal:5002",
     "secure": false,
     "changeOrigin": true
   },
   "/test": {
-    "target": "http://host.docker.internal:5001",
+    "target": "http://host.docker.internal:5002",
     "secure": false,
     "changeOrigin": true
   }
 }
-

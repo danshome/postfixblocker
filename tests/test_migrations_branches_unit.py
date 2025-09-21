@@ -45,37 +45,6 @@ class _DummyCtx(AbstractContextManager):
 
 
 @pytest.mark.unit
-def test_init_db_postgres_branch(monkeypatch):
-    try:
-        from sqlalchemy import create_engine
-    except Exception:  # pragma: no cover
-        pytest.fail(
-            'SQLAlchemy not available; required for migrations unit tests (postgres branch).'
-        )
-
-    engine = create_engine('sqlite:///:memory:')
-    # Force dialect name to postgres to take that branch
-    monkeypatch.setattr(engine.dialect, 'name', 'postgresql')
-
-    recorded: list[str] = []
-
-    # Replace engine.begin with our dummy context manager
-    def _fake_begin():
-        return _DummyCtx(recorded, fail_on=['view blocked_addresses', 'view cris_props'])
-
-    monkeypatch.setattr(engine, 'begin', _fake_begin)
-
-    # Now import and run init_db
-    from postfix_blocker.db.migrations import init_db
-
-    init_db(engine)  # should run without raising, using our fake ctx
-
-    # We should have attempted to create schema and tables
-    assert any('create schema' in s.lower() for s in recorded)
-    assert any('create table' in s.lower() for s in recorded)
-
-
-@pytest.mark.unit
 def test_init_db_db2_branch(monkeypatch):
     try:
         from sqlalchemy import create_engine

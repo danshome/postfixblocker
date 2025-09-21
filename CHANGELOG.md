@@ -34,14 +34,14 @@ This file is auto-generated from Git history. Do not edit by hand.
 - Add bulk input functionality to frontend UI
 - Add production deployment documentation for RHEL 9.5 and update Docker configurations to align with Rocky Linux 9. Ensure PCRE map support validation and enhance compatibility for non-x86_64 architectures.
 - **Tests: Add pytest setup for managing docker-compose lifecycle** Introduce `tests/conftest.py` to enable optional docker-compose lifecycle management during tests. Automatically triggered for backend/e2e tests or can be forced using `PYTEST_COMPOSE_ALWAYS=1` or `--compose-rebuild`. Update `requirements.txt` to include pytest.
-- - **Frontend resilience & e2e improvements**:   - Enhance API error handling for database initialization delays (`app/api.py`).   - Update Angular `frontend/angular.json` to fix dev-server configuration.   - Extend Playwright configuration to support multi-project (Postgres & DB2) testing matrix.   - Add `proxy.db2.json` for DB2 API proxy and update e2e commands in `package.json`.   - Ensure stable test environments by improving Playwright test setup and avoiding test flakiness.   - Remove redundant reporters in `karma.conf.js` and guard against unnecessary test reloads.
+- - **Frontend resilience & e2e improvements**:   - Enhance API error handling for database initialization delays (`app/api.py`).   - Update Angular `frontend/angular.json` to fix dev-server configuration.   - Simplify Playwright configuration to a DB2-only project.   - Add `proxy.db2.json` for DB2 API proxy and update e2e commands in `package.json`.   - Ensure stable test environments by improving Playwright test setup and avoiding test flakiness.   - Remove redundant reporters in `karma.conf.js` and guard against unnecessary test reloads.
 - Migrate Angular app to standalone bootstrap with updated AppComponent and dependencies.
 - Replace Jest with Karma for Angular test setup, update dependencies to align with Angular 20.
 - Update devcontainer setup: replace `npm ci` with `npm install` in postCreateCommand and update dependencies in `package-lock.json`.
 - Add Jest and Playwright configurations to frontend
 - Add e2e tests, unit tests, and development container configuration for frontend
 - Add e2e tests, unit tests, and development container configuration for frontend
-- Add GitHub Actions CI workflow with unit, backend, and end-to-end test jobs; update dependencies and tests for dual Postgres and DB2 support.
+- Add GitHub Actions CI workflow with unit, backend, and end-to-end test jobs; update dependencies and tests for DB2 support.
 - - Rename `tests/e2e_demo.py` to `tests/e2e_test.py` and update references. - Add `tests/test_db_backends.py` for optional backend smoke tests. - Update documentation: AGENTS.md and README.md with new test instructions and references.
 - Refactor E2E demo script with extended functionality, environment configuration, and mass mail testing. Update Docker setup for improved compatibility and logging.
 - Improve e2e demo import and docs

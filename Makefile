@@ -24,7 +24,7 @@ PY_COV_MIN ?= 80
 # Minimum frontend (Karma) coverage percentage (statements/lines/functions).
 FE_COV_MIN ?= 80
 # Minimum frontend branch coverage percentage (branches only; used by Karma via FE_BRANCH_MIN)
-FE_COV_MIN_BRANCH ?= 60
+FE_COV_MIN_BRANCH ?= 80
 
 # Convenience command aliases
 RUFF := $(VENVPY) -m ruff
@@ -117,50 +117,33 @@ help:
 	@echo "  NPM                         npm command (default: '$(NPM)')"
 	@echo "  PYTHON                      Python interpreter to create venv (default: '$(PYTHON)')"
 	@echo "  VENV                        Virtualenv directory (default: '$(VENV)')"
-	@echo "  CI_FAIL_ON_MAILLOG_MISMATCH Fail CI if postfix vs db2 maillog line counts differ (0/1; default: 0)"
-	@echo "  CI_FAIL_ON_MAILLOG_COVERAGE Fail CI if both maillogs not written to (0/1; default: 0)"
+	@echo "  CI_FAIL_ON_MAILLOG_COVERAGE Fail CI if DB2 maillog was not written to (0/1; default: 0)"
 	@echo "  BUMP                        SemVer bump level for 'make release': major|minor|patch (default: patch)"
 	@echo "  NEW_VERSION / VERSION       Explicit version override for 'make release' (e.g., 1.2.3)"
 	@echo ""
 	@echo "Tips: Run 'make ci' before and after changes. See TESTING.md for details."
 
-ci: ci-start install lint build compose-up test-python-all test-frontend test-frontend-e2e ci-verify-sync ci-end
+ci: ci-start install lint build compose-up test-python-all test-frontend test-frontend-e2e ci-end
 
 ci-start:
 	$(call log_step,CI start)
 	@mkdir -p logs
 	@$(MAKE) clean-logs
-	@touch logs/postfix.maillog logs/postfix_db2.maillog logs/postfix.api.log logs/postfix.blocker.log logs/postfix_db2.api.log logs/postfix_db2.blocker.log
+	@touch logs/postfix_db2.maillog logs/postfix_db2.api.log logs/postfix_db2.blocker.log
 
 .PHONY: ci-end
 ci-end:
 	$(call log_step,CI end)
 	@bash -euo pipefail -c '\
 	  mkdir -p logs; \
-	  f1="logs/postfix.maillog"; f2="logs/postfix_db2.maillog"; \
-	  test -f "$$f1" || : > "$$f1"; test -f "$$f2" || : > "$$f2"; \
-	  c1=$$(wc -l < "$$f1" | tr -d " \t"); \
-	  c2=$$(wc -l < "$$f2" | tr -d " \t"); \
-	  mismatch=$$([ "$$c1" -ne "$$c2" ] && echo 1 || echo 0); \
-	  covered_both=$$([ "$$c1" -ge 1 ] && [ "$$c2" -ge 1 ] && echo 1 || echo 0); \
-	  echo "[ci] Mail log line counts before equalization:"; \
-	  printf "  %s: %s\n" "$$f1" "$$c1"; \
-	  printf "  %s: %s\n" "$$f2" "$$c2"; \
-  	echo "[ci] Signals and JSON export:"; \
-	  echo "[AI_SIGNAL][MAILLOG] f1=$$f1 c1=$$c1 f2=$$f2 c2=$$c2 mismatch=$$mismatch covered_both=$$covered_both"; \
-	  printf "{\"postfix\":{\"file\":\"%s\",\"lines\":%s},\"db2\":{\"file\":\"%s\",\"lines\":%s},\"mismatch\":%s,\"covered_both\":%s}\n" \
-	    "$$f1" "$$c1" "$$f2" "$$c2" "$$mismatch" "$$covered_both" > logs/ci_mail_log_status.json; \
-	  # Optional enforcement \
-	  if [ "${CI_FAIL_ON_MAILLOG_MISMATCH-0}" = "1" ] && [ "$$mismatch" -eq 1 ]; then \
-	    echo "[ci][ERROR] Mail log line counts differ before equalization: $$f1=$$c1 $$f2=$$c2"; exit 1; fi; \
-	  if [ "${CI_FAIL_ON_MAILLOG_COVERAGE-0}" = "1" ] && [ "$$covered_both" -ne 1 ]; then \
-	    echo "[ci][ERROR] Missing test coverage for both postfix instances: $$f1=$$c1 $$f2=$$c2"; exit 1; fi; \
-	  # Equalize lengths without seq (portable) \
-	  if [ "$$c1" -lt "$$c2" ]; then diff=$$((c2 - c1)); yes "" | head -n "$$diff" >> "$$f1"; \
-	  elif [ "$$c2" -lt "$$c1" ]; then diff=$$((c1 - c2)); yes "" | head -n "$$diff" >> "$$f2"; fi; \
-	  echo "[ci] Mail log line counts after equalization:"; \
-	  echo -n "  $$f1: "; wc -l < "$$f1"; \
-	  echo -n "  $$f2: "; wc -l < "$$f2"; \
+	  f="logs/postfix_db2.maillog"; \
+	  test -f "$$f" || : > "$$f"; \
+	  c=$$(wc -l < "$$f" | tr -d " \t"); \
+	  echo "[ci] DB2 mail log line count: $$c ($$f)"; \
+	  echo "[AI_SIGNAL][MAILLOG] file=$$f lines=$$c"; \
+	  printf "{\"db2\":{\"file\":\"%s\",\"lines\":%s}}\n" "$$f" "$$c" > logs/ci_mail_log_status.json; \
+	  if [ "${CI_FAIL_ON_MAILLOG_COVERAGE-0}" = "1" ] && [ "$$c" -lt 1 ]; then \
+	    echo "[ci][ERROR] Missing test coverage for DB2 postfix instance: $$f=$$c"; exit 1; fi; \
 	'
 
 # Bootstrap tools and dependencies
@@ -263,11 +246,7 @@ compose-up:
 	$(call log_step,Docker compose up --build -d)
 	@$(DOCKER_COMPOSE) up -d --build
 
-ci-verify-sync: venv
-	$(call log_step,Verify DB state sync between PG and DB2)
-	@set -e; \
-	  echo "[ci] Comparing DB states via API /test/dump..."; \
-	  $(VENVPY) scripts/compare_db_state.py
+
 
 compose-down:
 		$(call log_step,Docker compose stop)

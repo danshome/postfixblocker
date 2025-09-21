@@ -3,13 +3,13 @@
 
 <!-- BEGIN GENERATED: FAQ:MAIN -->
 
-## Does this support DB2 and PostgreSQL?
-Yes. SQLAlchemy abstracts both backends. See `BLOCKER_DB_URL` examples in
+## Does this support DB2?
+Yes. This project now supports DB2 only. See `BLOCKER_DB_URL` examples in
 `docker-compose.yml` and [INSTALL](INSTALL.md).
 
-## Why do e2e tests sometimes skip DB2?
-DB2 can be slow to start. Tests skip when services aren’t ready. See
-`tests/utils_wait.py` and run with `E2E_DEBUG=1` for more info.
+## Why do e2e tests fail if DB2 is slow to start?
+DB2 can be slow to initialize. Ensure the DB2 container is `healthy` before running tests.
+See `tests/utils_wait.py` and run with `E2E_DEBUG=1` for more info.
 
 ## How do I reset the database?
 Use the backend smoke tests or connect with a SQL client and truncate
@@ -18,14 +18,13 @@ Use the backend smoke tests or connect with a SQL client and truncate
 ## How do I add a blocked address?
 
 ```bash
-curl -X POST http://localhost:5001/addresses \
+curl -X POST http://localhost:5002/addresses \
   -H 'Content-Type: application/json' \
   -d '{"pattern":"user@example.com","is_regex":false}'
 ```
 
-## How do I enable DB2 in the Postfix service?
-Either use the `postfix_db2` service or set `BLOCKER_DB_URL` in `postfix` to a
-DB2 URL and rebuild.
+## How do I run the Postfix service?
+Use the `postfix_db2` service (DB2-only).
 
 ## Why does the API return 503 sometimes?
 It returns `{"error":"database not ready"}` until the database is reachable
@@ -54,4 +53,3 @@ npm run e2e
 See [SUPPORT](SUPPORT.md) and {{DISCUSS_URL}}.
 
 <!-- END GENERATED: FAQ:MAIN -->
-

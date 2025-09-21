@@ -46,13 +46,10 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps
 
-      - name: Preflight CI (make ci)
+      - name: Preflight CI (make ci; DB2-only)
         env:
-          TEST_PG_URL: postgresql://blocker:blocker@localhost:5433/blocker
           TEST_DB2_URL: ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER
-          BACKEND_WAIT_TIMEOUT_PG: '180'
           BACKEND_WAIT_TIMEOUT_DB2: '900'
-          SMTP_PORT_PG: '1025'
           SMTP_PORT_DB2: '1026'
           MAILHOG_HOST: 'localhost'
           MAILHOG_PORT: '8025'

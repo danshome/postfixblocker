@@ -25,68 +25,7 @@ def init_db(engine: Engine) -> None:
     insp = inspect(engine)
     dname = (engine.dialect.name or '').lower()
 
-    # PostgreSQL: mirror sql/postgresql_init.sql exactly and keep unqualified views
-    if 'postgres' in dname:
-        with engine.begin() as conn:
-            # 0) Schema
-            conn.exec_driver_sql('CREATE SCHEMA IF NOT EXISTS crisop')
-            # 1) Table: crisop.blocked_addresses
-            conn.exec_driver_sql(
-                'CREATE TABLE IF NOT EXISTS crisop.blocked_addresses ('
-                '    id         INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,'
-                '    pattern    VARCHAR(255) NOT NULL,'
-                '    is_regex   BOOLEAN NOT NULL DEFAULT FALSE,'
-                '    test_mode  BOOLEAN NOT NULL DEFAULT TRUE,'
-                '    updated_at TIMESTAMP(6) WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP(6)'
-                ')'
-            )
-            # 2) Table: crisop.cris_props (emulate 1024 OCTETS via octet_length checks)
-            conn.exec_driver_sql(
-                'CREATE TABLE IF NOT EXISTS crisop.cris_props ('
-                '    key       VARCHAR(1024) PRIMARY KEY,'
-                '    value     VARCHAR(1024),'
-                '    update_ts TIMESTAMP(6) WITHOUT TIME ZONE,'
-                '    CONSTRAINT cris_props_key_octets CHECK (octet_length(key)  <= 1024),'
-                '    CONSTRAINT cris_props_val_octets CHECK (value IS NULL OR octet_length(value) <= 1024),'
-                '    CONSTRAINT xpkcrisprops UNIQUE (key)'
-                ')'
-            )
-            # 3) Trigger function
-            conn.exec_driver_sql(
-                'CREATE OR REPLACE FUNCTION crisop.set_updated_at()\n'
-                'RETURNS TRIGGER AS $$\n'
-                'BEGIN\n'
-                '    NEW.updated_at := CURRENT_TIMESTAMP(6);\n'
-                '    RETURN NEW;\n'
-                'END;\n'
-                '$$ LANGUAGE plpgsql;'
-            )
-            # 4) Trigger (drop if exists, then create) on crisop.blocked_addresses
-            conn.exec_driver_sql(
-                'DROP TRIGGER IF EXISTS trg_blocked_addresses_set_updated_at ON crisop.blocked_addresses;'
-            )
-            conn.exec_driver_sql(
-                'CREATE TRIGGER trg_blocked_addresses_set_updated_at '
-                'BEFORE UPDATE ON crisop.blocked_addresses '
-                'FOR EACH ROW '
-                'EXECUTE FUNCTION crisop.set_updated_at();'
-            )
-            # 5) Views to preserve unqualified access expected by the Python schema
-            try:
-                conn.exec_driver_sql(
-                    'CREATE OR REPLACE VIEW blocked_addresses AS '
-                    'SELECT id, pattern, is_regex, test_mode, updated_at FROM crisop.blocked_addresses;'
-                )
-                conn.exec_driver_sql(
-                    'CREATE OR REPLACE VIEW cris_props AS '
-                    'SELECT key, value, update_ts FROM crisop.cris_props;'
-                )
-            except Exception as exc:
-                # Views are best-effort for compatibility
-                _logging.getLogger(__name__).debug(
-                    'Postgres compatibility views not created; continuing: %s', exc
-                )
-        return
+    # Legacy alternative backend support has been removed.
 
     # Db2: mirror sql/db2_init.sql so we don't depend on a DBA
     if dname in ('ibm_db_sa', 'db2'):
@@ -286,7 +225,7 @@ def init_db(engine: Engine) -> None:
                 )
         return
 
-    # Non-Postgres/Non-Db2: Create or verify tables with a robust, idempotent approach
+    # Generic (non-Db2) fallback: Create or verify tables with a robust, idempotent approach
     bt = get_blocked_table()
     pt = get_props_table()
 
@@ -314,7 +253,7 @@ def init_db(engine: Engine) -> None:
     _safe_create(bt)
     _safe_create(pt)
 
-    # Migration: ensure test_mode exists (non-Postgres/Db2 path only)
+    # Migration: ensure test_mode exists (generic fallback path only)
     try:
         cols = insp.get_columns('blocked_addresses') or []
         existing = {c.get('name', '').lower() for c in cols}

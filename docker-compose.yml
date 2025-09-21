@@ -1,18 +1,4 @@
 services:
-  db:
-    image: postgres:16
-    environment:
-      POSTGRES_USER: blocker
-      POSTGRES_PASSWORD: blocker
-      POSTGRES_DB: blocker
-    ports:
-      - "5433:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} -h 127.0.0.1 -p 5432 || exit 1"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 10s
   mailhog:
     image: mailhog/mailhog
     platform: linux/amd64
@@ -24,32 +10,6 @@ services:
       timeout: 5s
       retries: 24
       start_period: 5s
-  postfix:
-    build:
-      context: .
-      dockerfile: docker/postfix/Dockerfile
-      args:
-        ENABLE_DB2: "0"
-    ports:
-      - "1025:25"
-      - "5001:5000"
-    depends_on:
-      db:
-        condition: service_healthy
-      mailhog:
-        condition: service_healthy
-    environment:
-      BLOCKER_DB_URL: postgresql://blocker:blocker@db:5432/blocker
-      API_LOG_FILE: /var/log/postfix-blocker/api.log
-      BLOCKER_LOG_FILE: /var/log/postfix-blocker/blocker.log
-      API_LOG_LEVEL: DEBUG
-      BLOCKER_LOG_LEVEL: DEBUG
-      TEST_RESET_ENABLE: "1"
-    privileged: true
-    volumes:
-      - ./logs/postfix.api.log:/var/log/postfix-blocker/api.log
-      - ./logs/postfix.blocker.log:/var/log/postfix-blocker/blocker.log
-      - ./logs/postfix.maillog:/var/log/maillog
   postfix_db2:
     build:
       context: .
@@ -107,8 +67,6 @@ services:
       timeout: 5s
       retries: 120
       start_period: 120s
-    # To test with DB2, set postfix BLOCKER_DB_URL to for example:
-    #   ibm_db_sa://db2inst1:blockerpass@db2:50000/BLOCKER
-  # and ensure the Python image includes ibm-db and ibm-db-sa packages.
+    # To test with DB2, ensure the Python image includes ibm-db and ibm-db-sa packages.
 
   

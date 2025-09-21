@@ -14,7 +14,8 @@ from sqlalchemy.engine import Engine
 
 
 def get_engine() -> Engine:
-    db_url = os.environ.get('BLOCKER_DB_URL', 'postgresql://blocker:blocker@db:5432/blocker')
+    # Default to DB2 connection URL.
+    db_url = os.environ.get('BLOCKER_DB_URL', 'ibm_db_sa://db2inst1:blockerpass@db2:50000/BLOCKER')
     return create_engine(
         db_url,
         pool_pre_ping=True,

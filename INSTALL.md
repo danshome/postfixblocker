@@ -23,7 +23,7 @@ cd {{PROJECT_NAME}}
 docker compose up --build -d
 
 # Verify API
-curl -s http://localhost:5001/addresses
+curl -s http://localhost:5002/addresses
 ```
 
 ## Environment Configuration
@@ -31,10 +31,10 @@ curl -s http://localhost:5001/addresses
 Create a `.env` file or export variables:
 
 ```env
-# .env.example
-BLOCKER_DB_URL=postgresql://blocker:blocker@localhost:5433/blocker
+# .env.example (DB2 only)
+BLOCKER_DB_URL=ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER
 SMTP_HOST=localhost
-SMTP_PORT=1025
+SMTP_PORT=1026
 MAILHOG_HOST=localhost
 MAILHOG_PORT=8025
 ```
@@ -144,11 +144,8 @@ git clone https://github.com/{{ORG_NAME}}/{{PROJECT_NAME}}.git .
 python3 -m venv venv
 source venv/bin/activate
 
-# Install minimal runtime deps
+# Install minimal runtime deps (DB2)
 pip install --upgrade pip
-# Option A: PostgreSQL only
-pip install -r requirements-base.txt psycopg2-binary gunicorn
-# Option B: DB2 support
 pip install -r requirements-base.txt -r requirements-db2.txt gunicorn
 
 # Validate drivers as needed
@@ -196,9 +193,8 @@ Create a `.env` file for the services:
 
 ```bash
 cat > /opt/postfixblocker/.env <<'EOF'
-# Database URL (choose one)
-#BLOCKER_DB_URL=postgresql://user:pass@db.example.com:5432/blocker
-#BLOCKER_DB_URL=ibm_db_sa://db2inst1:password@db2.example.com:50000/BLOCKER
+# Database URL (DB2)
+BLOCKER_DB_URL=ibm_db_sa://db2inst1:password@db2.example.com:50000/BLOCKER
 
 # Polling interval in seconds for the blocker
 BLOCKER_INTERVAL=5

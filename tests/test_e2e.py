@@ -8,35 +8,22 @@ from tests.e2e_test import run_e2e_scenario
 from tests.utils_wait import wait_for_db_url, wait_for_smtp
 
 
-def _targets():
-    return [
-        {
-            'name': 'pg',
-            'db_url': os.environ.get(
-                'TEST_PG_URL', 'postgresql://blocker:blocker@localhost:5433/blocker'
-            ),
-            'smtp_host': os.environ.get('SMTP_HOST', 'localhost'),
-            'smtp_port': int(os.environ.get('SMTP_PORT_PG', '1025')),
-            'mh_host': os.environ.get('MAILHOG_HOST', 'localhost'),
-            'mh_port': int(os.environ.get('MAILHOG_PORT', '8025')),
-        },
-        {
-            'name': 'db2',
-            'db_url': os.environ.get(
-                'TEST_DB2_URL',
-                'ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER',
-            ),
-            'smtp_host': os.environ.get('SMTP_HOST', 'localhost'),
-            'smtp_port': int(os.environ.get('SMTP_PORT_DB2', '1026')),
-            'mh_host': os.environ.get('MAILHOG_HOST', 'localhost'),
-            'mh_port': int(os.environ.get('MAILHOG_PORT', '8025')),
-        },
-    ]
+def _target_db2():
+    return {
+        'name': 'db2',
+        'db_url': os.environ.get(
+            'TEST_DB2_URL', 'ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER'
+        ),
+        'smtp_host': os.environ.get('SMTP_HOST', 'localhost'),
+        'smtp_port': int(os.environ.get('SMTP_PORT_DB2', '1026')),
+        'mh_host': os.environ.get('MAILHOG_HOST', 'localhost'),
+        'mh_port': int(os.environ.get('MAILHOG_PORT', '8025')),
+    }
 
 
 @pytest.mark.e2e
-@pytest.mark.parametrize('target', _targets(), ids=lambda t: t['name'])
-def test_e2e_both_backends(target):
+def test_e2e_db2():
+    target = _target_db2()
     # Ensure DB and SMTP endpoints are ready; fail if not.
     if not wait_for_db_url(target['db_url']):
         pytest.fail(

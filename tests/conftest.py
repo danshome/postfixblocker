@@ -77,8 +77,11 @@ def _docker_compose_cmd() -> list[str] | None:
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
-    # Determine if any selected tests require the docker stack
-    needs = any(('backend' in item.keywords) or ('e2e' in item.keywords) for item in items)
+    # Determine if the requested marker selection includes backend/e2e.
+    # When running unit-only (e.g., `-m unit`), avoid starting docker-compose.
+    markexpr = getattr(config.option, 'markexpr', '') or ''
+    markexpr = str(markexpr).lower()
+    needs = ('backend' in markexpr) or ('e2e' in markexpr) or (markexpr == '')
     # Store flag directly; used by the session-scoped compose fixture
     config._compose_needs_stack = needs  # type: ignore[attr-defined]
 
@@ -118,7 +121,7 @@ def compose_stack(pytestconfig: pytest.Config) -> None:
                 text=True,
             ).stdout
             services = {line.strip() for line in out.splitlines() if line.strip()}
-            return bool({'postfix', 'postfix_db2'} & services)
+            return 'postfix_db2' in services
         except Exception:
             return False
 
@@ -150,7 +153,7 @@ def compose_stack(pytestconfig: pytest.Config) -> None:
             print('[compose] Starting stack (no rebuild)...', flush=True)
             run([*compose, 'up', '-d', '--build'])
 
-    # After attempting to start, verify that at least one postfix service is running
+    # After attempting to start, verify that the postfix service is running
     if not stack_running():
         import pytest
 
@@ -187,12 +190,10 @@ def _cleanup_api_state() -> None:
     # Pre-session cleanup
     outcomes = reset_both()
     if not any(outcomes.values()):  # fallback if reset route unavailable
-        wipe_legacy(5001)
         wipe_legacy(5002)
 
     # Post-session cleanup
     yield
     outcomes = reset_both()
     if not any(outcomes.values()):
-        wipe_legacy(5001)
         wipe_legacy(5002)

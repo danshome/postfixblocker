@@ -34,9 +34,9 @@ async function postJson(url: string, body: any): Promise<boolean> {
 export default async function globalSetup() {
   // Directly target API containers (not the dev servers) to avoid any coupling
   // with the webServer startup order.
-  const bases = ['http://127.0.0.1:5001', 'http://127.0.0.1:5002'];
+  const bases = ['http://127.0.0.1:5002'];
 
-  // Wait for both APIs to become responsive
+  // Wait for the API to become responsive
   for (const base of bases) {
     await waitForOk(`${base}/addresses`).catch((e) => {
       // Let it throw — this will fail the suite early with a clear message

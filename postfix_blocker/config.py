@@ -23,7 +23,8 @@ class Config:
 def load_config(env: Mapping[str, str] | None = None) -> Config:
     e = os.environ if env is None else env
     return Config(
-        db_url=e.get('BLOCKER_DB_URL', 'postgresql://blocker:blocker@db:5432/blocker'),
+        # DB2 is the only supported backend.
+        db_url=e.get('BLOCKER_DB_URL', 'ibm_db_sa://db2inst1:blockerpass@db2:50000/BLOCKER'),
         check_interval=float(e.get('BLOCKER_INTERVAL', '5')),
         postfix_dir=e.get('POSTFIX_DIR', '/etc/postfix'),
         pid_file=e.get('BLOCKER_PID_FILE', '/var/run/postfix-blocker/blocker.pid'),

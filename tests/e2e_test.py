@@ -8,11 +8,11 @@ It can be run from the host or from within a container by configuring hosts
 and ports with the environment variables:
 
 - ``SMTP_HOST`` (default ``localhost``)
-- ``SMTP_PORT`` (default ``1025``)
+- ``SMTP_PORT`` (default ``1026``)
 - ``MAILHOG_HOST`` (default ``localhost``)
 - ``MAILHOG_PORT`` (default ``8025``)
 - ``BLOCKER_DB_URL`` (default
-  ``postgresql://blocker:blocker@localhost:5433/blocker``)
+  ``ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER``)
 """
 
 import argparse
@@ -60,7 +60,9 @@ if __name__ == '__main__':  # pragma: no cover - import shim only for script exe
             sys.path.insert(0, str(ROOT))
             from postfix_blocker import blocker  # type: ignore
 
-DB_URL = os.environ.get('BLOCKER_DB_URL', 'postgresql://blocker:blocker@localhost:5433/blocker')
+DB_URL = os.environ.get(
+    'BLOCKER_DB_URL', 'ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER'
+)
 
 SMTP_HOST = os.environ.get('SMTP_HOST', 'localhost')
 SMTP_PORT = int(os.environ.get('SMTP_PORT', '1026'))

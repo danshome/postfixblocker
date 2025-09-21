@@ -5,16 +5,15 @@
     "start": "ng serve --host 0.0.0.0",
     "start:devc": "ng serve --host 0.0.0.0 --proxy-config proxy.devcontainer.json",
     "start:db2": "ng serve --host 0.0.0.0 --proxy-config proxy.db2.json",
-    "start:matrix": "concurrently -k -s first -n pg,db2 -c blue,magenta \"npm run start\" \"npm run start:db2 -- --port 4201\"",
     "build": "ng build",
     "test": "ng test --watch=false --code-coverage",
     "test:watch": "ng test --watch",
-    "lint": "eslint \"src/**/*.{ts,tsx}\"",
-    "lint:fix": "npm run lint -- --fix",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" && eslint -c eslint.e2e.config.cjs \"e2e/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix && eslint -c eslint.e2e.config.cjs \"e2e/**/*.ts\" --fix",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
-    "e2e:db2": "playwright test --project db2-chromium",
-    "e2e:db2:ui": "playwright test --project db2-chromium --ui"
+    "e2e:db2": "playwright test",
+    "e2e:db2:ui": "playwright test --ui"
   },
   "dependencies": {
     "@angular/animations": "^20.3.0",
@@ -40,6 +39,7 @@
     "concurrently": "^9.2.1",
     "eslint": "^9.35.0",
     "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jest": "^28.6.0",
     "eslint-plugin-sonarjs": "^3.0.5",
     "jasmine-core": "~5.10.0",
     "karma": "~6.4.4",

@@ -9,7 +9,7 @@ High-level component overview and data flow for {{PROJECT_NAME}}.
 flowchart LR
   browser[Angular UI] --> api[Flask API]
   api --> service[Blocker Service]
-  service --> db[(Database: PostgreSQL/DB2)]
+  service --> db[(Database: DB2)]
   service -.-> postfix[(Postfix Maps)]
 ```
 

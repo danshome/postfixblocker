@@ -9,7 +9,7 @@ in CI.
 ## Strategy
 
 - Unit: fast, isolated; aim for high coverage of pure logic
-- Backend: exercises DB interactions for PostgreSQL and DB2
+- Backend: exercises DB interactions for DB2
 - E2E: full stack including Postfix and MailHog
 
 Target coverage (enforced by make ci):

@@ -22,9 +22,9 @@ COPY docker/postfix/main.cf /etc/postfix/main.cf
 COPY requirements-base.txt /tmp/requirements-base.txt
 RUN pip3 install --no-cache-dir -r /tmp/requirements-base.txt
 
-# Optionally install DB2 client libraries (ibm-db/ibm-db-sa). These packages
-# do not provide wheels for all architectures; make this conditional so the
-# Postgres-only image can build on arm64 (e.g., Apple Silicon) without errors.
+# Install DB2 client libraries (ibm-db/ibm-db-sa) when supported.
+# Note: Wheels are typically available only for x86_64; on other architectures
+# skip installing DB2 drivers to avoid build failures.
 ARG ENABLE_DB2=0
 COPY requirements-db2.txt /tmp/requirements-db2.txt
 # Install DB2 Python drivers only on x86_64 where wheels/support are typically available.

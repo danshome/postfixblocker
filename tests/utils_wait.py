@@ -28,10 +28,7 @@ def wait_for_db_url(url: str, total_timeout: int | None = None) -> bool:
 
     is_db2 = _is_db2_url(url)
     if total_timeout is None:
-        total_timeout = _env_int(
-            'BACKEND_WAIT_TIMEOUT_DB2' if is_db2 else 'BACKEND_WAIT_TIMEOUT_PG',
-            240 if is_db2 else 60,
-        )
+        total_timeout = _env_int('BACKEND_WAIT_TIMEOUT_DB2', 240)
 
     probe_sql = 'SELECT 1 FROM SYSIBM.SYSDUMMY1' if is_db2 else 'SELECT 1'
     deadline = time.time() + total_timeout
