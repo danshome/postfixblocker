@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, cast
+from typing import Any, Callable, cast
 
 from flask import Blueprint, abort, current_app, jsonify, request
+from flask.typing import ResponseReturnValue
 from sqlalchemy import func, inspect, select
+from sqlalchemy.engine import Connection, Engine
 
 from ..db.schema import get_blocked_table
 
@@ -24,17 +26,21 @@ KEY_TEST_MODE = 'test_mode'
 
 
 @bp.route(ROUTE_ADDRESSES, methods=['GET'])
-def list_addresses():
-    ensure_db_ready = current_app.config.get('ensure_db_ready')
-    if callable(ensure_db_ready):
+def list_addresses() -> ResponseReturnValue:
+    _raw = current_app.config.get('ensure_db_ready')
+    ensure_db_ready: Callable[[], bool] | None = (
+        cast(Callable[[], bool], _raw) if callable(_raw) else None
+    )
+    if ensure_db_ready is not None:
         if not ensure_db_ready():
             return jsonify({KEY_ERROR: ERR_DB_NOT_READY}), 503
     args = request.args
     paged = any(k in args for k in ('page', 'page_size', 'q', 'sort', 'dir'))
     bt = get_blocked_table()
-    eng = cast(Any, current_app.config.get('db_engine'))
+    eng: Engine = cast(Engine, current_app.config.get('db_engine'))
     if not paged:
         with eng.connect() as conn:
+            conn = cast(Connection, conn)
             try:
                 rows = list(conn.execute(select(bt)))
             except Exception as exc:
@@ -70,7 +76,7 @@ def list_addresses():
     if direction not in ('asc', 'desc'):
         direction = 'asc'
 
-    filters = []
+    filters: list[Any] = []
     if q:
         q_like = f'%{q.upper()}%'
         filters.append(func.upper(bt.c.pattern).like(q_like))
@@ -101,6 +107,7 @@ def list_addresses():
 
     offset = (page - 1) * page_size
     with eng.connect() as conn:
+        conn = cast(Connection, conn)
         total = conn.execute(select(func.count()).select_from(bt).where(*filters)).scalar() or 0
         stmt = select(bt).where(*filters).order_by(order_by).offset(offset).limit(page_size)
         try:
@@ -129,19 +136,23 @@ def list_addresses():
 
 
 @bp.route(ROUTE_ADDRESSES, methods=['POST'])
-def add_address():
-    ensure_db_ready = current_app.config.get('ensure_db_ready')
-    if callable(ensure_db_ready):
+def add_address() -> ResponseReturnValue:
+    _raw = current_app.config.get('ensure_db_ready')
+    ensure_db_ready: Callable[[], bool] | None = (
+        cast(Callable[[], bool], _raw) if callable(_raw) else None
+    )
+    if ensure_db_ready is not None:
         if not ensure_db_ready():
             return jsonify({KEY_ERROR: ERR_DB_NOT_READY}), 503
-    data = request.get_json(force=True)
+    data: dict[str, Any] = cast(dict[str, Any], request.get_json(force=True))
     pattern = data.get(KEY_PATTERN)
     is_regex = bool(data.get(KEY_IS_REGEX, False))
     test_mode = bool(data.get(KEY_TEST_MODE, True))
     if not pattern:
         abort(400, 'pattern is required')
-    eng = cast(Any, current_app.config.get('db_engine'))
+    eng: Engine = cast(Engine, current_app.config.get('db_engine'))
     with eng.connect() as conn:
+        conn = cast(Connection, conn)
         try:
             values = {KEY_PATTERN: pattern, KEY_IS_REGEX: is_regex}
             bt = get_blocked_table()
@@ -167,14 +178,18 @@ def add_address():
 
 
 @bp.route('/addresses/<int:entry_id>', methods=['DELETE'])
-def delete_address(entry_id: int):
-    ensure_db_ready = current_app.config.get('ensure_db_ready')
-    if callable(ensure_db_ready):
+def delete_address(entry_id: int) -> ResponseReturnValue:
+    _raw = current_app.config.get('ensure_db_ready')
+    ensure_db_ready: Callable[[], bool] | None = (
+        cast(Callable[[], bool], _raw) if callable(_raw) else None
+    )
+    if ensure_db_ready is not None:
         if not ensure_db_ready():
             return jsonify({KEY_ERROR: ERR_DB_NOT_READY}), 503
-    eng = cast(Any, current_app.config.get('db_engine'))
+    eng: Engine = cast(Engine, current_app.config.get('db_engine'))
     bt = get_blocked_table()
     with eng.connect() as conn:
+        conn = cast(Connection, conn)
         conn.execute(bt.delete().where(bt.c.id == entry_id))
         conn.commit()
     _notify_blocker_refresh()
@@ -182,13 +197,16 @@ def delete_address(entry_id: int):
 
 
 @bp.route('/addresses/<int:entry_id>', methods=['PUT', 'PATCH'])
-def update_address(entry_id: int):
-    ensure_db_ready = current_app.config.get('ensure_db_ready')
-    if callable(ensure_db_ready):
+def update_address(entry_id: int) -> ResponseReturnValue:
+    _raw = current_app.config.get('ensure_db_ready')
+    ensure_db_ready: Callable[[], bool] | None = (
+        cast(Callable[[], bool], _raw) if callable(_raw) else None
+    )
+    if ensure_db_ready is not None:
         if not ensure_db_ready():
             return jsonify({KEY_ERROR: ERR_DB_NOT_READY}), 503
-    data = request.get_json(force=True) or {}
-    updates = {}
+    data: dict[str, Any] = cast(dict[str, Any], request.get_json(force=True) or {})
+    updates: dict[str, Any] = {}
     if KEY_PATTERN in data and (data[KEY_PATTERN] or '').strip():
         updates[KEY_PATTERN] = data[KEY_PATTERN].strip()
     if KEY_IS_REGEX in data:
@@ -199,8 +217,9 @@ def update_address(entry_id: int):
         abort(400, 'no updatable fields provided')
 
     bt = get_blocked_table()
-    eng = cast(Any, current_app.config.get('db_engine'))
+    eng: Engine = cast(Engine, current_app.config.get('db_engine'))
     with eng.connect() as conn:
+        conn = cast(Connection, conn)
         try:
             res = conn.execute(bt.update().where(bt.c.id == entry_id).values(**updates))
             if res.rowcount == 0:

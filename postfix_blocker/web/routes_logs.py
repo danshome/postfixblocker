@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, cast
+from typing import Any, Callable, cast
 
 from flask import Blueprint, abort, current_app, jsonify, request
+from flask.typing import ResponseReturnValue
+from sqlalchemy.engine import Engine
 
 from ..db.props import LINES_KEYS, LOG_KEYS, REFRESH_KEYS, get_prop, set_prop
 from ..logging_setup import set_logger_level
@@ -20,7 +22,7 @@ STATUS_OK = 'ok'
 
 
 @bp.route('/logs/level/<service>', methods=['GET', 'PUT'])
-def log_level(service: str):
+def log_level(service: str) -> ResponseReturnValue:
     """Get or set the log level for a service (api|blocker|postfix).
 
     Methods:
@@ -36,17 +38,20 @@ def log_level(service: str):
     """
     if service not in LOG_KEYS:
         abort(404)
-    ensure_db_ready = current_app.config.get('ensure_db_ready')
-    if callable(ensure_db_ready):
+    _raw = current_app.config.get('ensure_db_ready')
+    ensure_db_ready: Callable[[], bool] | None = (
+        cast(Callable[[], bool], _raw) if callable(_raw) else None
+    )
+    if ensure_db_ready is not None:
         if not ensure_db_ready():
             return jsonify({KEY_ERROR: ERR_DB_NOT_READY}), 503
-    eng = cast(Any, current_app.config.get('db_engine'))
+    eng: Engine = cast(Engine, current_app.config.get('db_engine'))
     key = LOG_KEYS[service]
     if request.method == 'GET':
         val = get_prop(eng, key, None)
         logging.getLogger('api').debug('Get log level service=%s level=%s', service, val)
         return jsonify({'service': service, 'level': val})
-    data = request.get_json(force=True) or {}
+    data: dict[str, Any] = cast(dict[str, Any], request.get_json(force=True) or {})
     level_s = str(data.get('level') or '').strip()
     if not level_s:
         abort(400, 'level is required')
@@ -60,7 +65,7 @@ def log_level(service: str):
 
 
 @bp.route('/logs/tail', methods=['GET'])
-def tail_log():
+def tail_log() -> ResponseReturnValue:
     """Return the last N lines of a known log file.
 
     Query params:
@@ -69,10 +74,10 @@ def tail_log():
 
     Response JSON: { name, path, content, missing }
     """
-    name = (request.args.get('name') or '').strip().lower()
+    name: str = (request.args.get('name') or '').strip().lower()
     try:
         # Allow larger tails for heavy postfix logs; cap at 8000
-        lines = max(min(int(request.args.get('lines', '200')), 8000), 1)
+        lines: int = max(min(int(request.args.get('lines', '200')), 8000), 1)
     except Exception:
         lines = 200
     if name not in ('api', 'blocker', 'postfix'):
@@ -95,7 +100,7 @@ def tail_log():
     if not os.path.exists(path):
         return jsonify({'name': name, 'path': path, 'content': '', 'missing': True})
     try:
-        content = tail_file(path, lines)
+        content: str = tail_file(path, lines)
     except Exception as exc:
         logging.getLogger('api').debug('Tail read failed: %s', exc)
         content = ''
@@ -103,7 +108,7 @@ def tail_log():
 
 
 @bp.route('/logs/lines', methods=['GET'])
-def lines_count():
+def lines_count() -> ResponseReturnValue:
     """Return the line count for a known log name (api|blocker|postfix).
 
     Query params:
@@ -111,7 +116,7 @@ def lines_count():
 
     Response JSON: { name, path, count, missing }
     """
-    name = (request.args.get('name') or '').strip().lower()
+    name: str = (request.args.get('name') or '').strip().lower()
     if name not in ('api', 'blocker', 'postfix'):
         abort(400, 'unknown log name')
     if name == 'api':
@@ -131,7 +136,7 @@ def lines_count():
     logging.getLogger('api').debug('Lines count request name=%s path=%s', name, path)
     if not os.path.exists(path):
         return jsonify({'name': name, 'path': path, 'count': 0, 'missing': True})
-    count = 0
+    count: int = 0
     try:
         with open(path, encoding='utf-8', errors='replace') as f:
             for _ in f:
@@ -143,7 +148,7 @@ def lines_count():
 
 
 @bp.route('/logs/refresh/<name>', methods=['GET', 'PUT'])
-def refresh_interval(name: str):
+def refresh_interval(name: str) -> ResponseReturnValue:
     """Get or set UI refresh settings for a log view.
 
     Path param:
@@ -158,11 +163,14 @@ def refresh_interval(name: str):
     name = name.lower()
     if name not in REFRESH_KEYS:
         abort(404)
-    ensure_db_ready = current_app.config.get('ensure_db_ready')
-    if callable(ensure_db_ready):
+    _raw = current_app.config.get('ensure_db_ready')
+    ensure_db_ready: Callable[[], bool] | None = (
+        cast(Callable[[], bool], _raw) if callable(_raw) else None
+    )
+    if ensure_db_ready is not None:
         if not ensure_db_ready():
             return jsonify({KEY_ERROR: ERR_DB_NOT_READY}), 503
-    eng = cast(Any, current_app.config.get('db_engine'))
+    eng: Engine = cast(Engine, current_app.config.get('db_engine'))
     if request.method == 'GET':
         ms = int(get_prop(eng, REFRESH_KEYS[name], '0') or '0')
         lines = int(get_prop(eng, LINES_KEYS[name], '200') or '200')
@@ -170,9 +178,9 @@ def refresh_interval(name: str):
             'Get refresh settings name=%s interval_ms=%s lines=%s', name, ms, lines
         )
         return jsonify({'name': name, 'interval_ms': ms, 'lines': lines})
-    data = request.get_json(force=True) or {}
-    ms_s = str(int(data.get('interval_ms', 0)))
-    lines_s = str(int(data.get('lines', 200)))
+    data: dict[str, Any] = cast(dict[str, Any], request.get_json(force=True) or {})
+    ms_s: str = str(int(data.get('interval_ms', 0)))
+    lines_s: str = str(int(data.get('lines', 200)))
     logging.getLogger('api').debug(
         'Set refresh settings name=%s interval_ms=%s lines=%s', name, ms_s, lines_s
     )
