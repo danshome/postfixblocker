@@ -1,10 +1,10 @@
 """Shared test utilities for resetting the DB2-backed API.
 
-from __future__ import annotations
-
 These helpers are intended for use by both unit/integration tests and by
 frontend e2e (via analogous TS helpers).
 """
+
+from __future__ import annotations
 
 from collections.abc import Iterable
 

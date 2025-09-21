@@ -47,7 +47,12 @@ module.exports = function (config) {
     coverageReporter: {
       dir: require('path').join(__dirname, './coverage'),
       subdir: '.',
-      reporters: [{ type: 'html' }, { type: 'text-summary' }],
+      reporters: [
+        { type: 'html' },
+        { type: 'text-summary' },
+        // Provide LCOV output for CI artifact uploads
+        { type: 'lcovonly', file: 'coverage.lcov' },
+      ],
       check: {
         global: {
           statements: FE_MIN,
