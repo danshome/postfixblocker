@@ -7,7 +7,7 @@
 [![CI Status](https://github.com/danshome/postfixblocker/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/danshome/postfixblocker/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdanshome%2Fpostfixblocker%2Fgh-pages%2Fbadges%2Fcoverage.json&cacheSeconds=3600)](https://github.com/danshome/postfixblocker/actions)
 [![Python Versions](https://img.shields.io/badge/python-3.9%2B-blue.svg)](pyproject.toml)
-[![CodeQL](https://github.com/danshome/postfixblocker/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/danshome/postfixblocker/actions/workflows/github-code-scanning/codeql)
+[![CodeQL](https://github.com/danshome/postfixblocker/actions/workflows/codeql.yml/badge.svg)](https://github.com/danshome/postfixblocker/actions/workflows/codeql)
 <a href="https://github.com/danshome/postfixblocker/graphs/contributors"><img src="https://img.shields.io/github/contributors/danshome/postfixblocker?cacheSeconds=10001" alt="GitHub contributors"></a>
 <a href="https://github.com/danshome/postfixblocker/blob/master/LICENSE"><img src="https://img.shields.io/github/license/danshome/postfixblocker?cacheSeconds=3600" alt="License"></a>
 
