@@ -41,8 +41,6 @@ services:
     build:
       context: .
       dockerfile: docker/postfix-blocker-test-install/Dockerfile
-      args:
-        ENABLE_DB2: "1"
     platform: linux/amd64
     ports:
       - "1025:25"
