@@ -24,7 +24,7 @@ curl -X POST http://localhost:5002/addresses \
 ```
 
 ## How do I run the Postfix service?
-Use the `postfix_db2` service (DB2-only).
+Use the `postfix` service (DB2-only).
 
 ## Why does the API return 503 sometimes?
 It returns `{"error":"database not ready"}` until the database is reachable

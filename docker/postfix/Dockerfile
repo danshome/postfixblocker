@@ -7,6 +7,7 @@ RUN dnf -y update && \
     (dnf config-manager --set-enabled crb || true) && \
     dnf -y install postfix procps-ng postfix-pcre rsyslog supervisor python3 python3-pip which && \
     dnf -y install python3-devel gcc gcc-c++ make openssl-devel libffi-devel && \
+    dnf -y upgrade && \
     dnf clean all && rm -rf /var/cache/dnf && \
     postconf -F 'smtp/inet/chroot=n'
 

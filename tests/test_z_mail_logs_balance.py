@@ -11,7 +11,7 @@ def test_db2_mail_log_has_content():
 
     This asserts we exercised the DB2-backed postfix instance during the run.
     """
-    p = os.path.abspath('./logs/postfix_db2.maillog')
+    p = os.path.abspath('./logs/postfix.maillog')
     if not os.path.exists(p):
         # Create empty file if missing to avoid file-not-found flakiness
         open(p, 'a', encoding='utf-8').close()

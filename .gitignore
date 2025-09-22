@@ -17,6 +17,7 @@ frontend/.angular/
 # Local environment and IDE
 .env
 .idea
+docker/install-test.env
 
 # Logs
 logs/

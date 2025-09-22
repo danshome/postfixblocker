@@ -172,8 +172,8 @@ def refresh_interval(name: str) -> ResponseReturnValue:
             return jsonify({KEY_ERROR: ERR_DB_NOT_READY}), 503
     eng: Engine = cast(Engine, current_app.config.get('db_engine'))
     if request.method == 'GET':
-        ms = int(get_prop(eng, REFRESH_KEYS[name], '0') or '0')
-        lines = int(get_prop(eng, LINES_KEYS[name], '200') or '200')
+        ms = int(get_prop(eng, REFRESH_KEYS[name], '5000') or '5000')
+        lines = int(get_prop(eng, LINES_KEYS[name], '100') or '100')
         logging.getLogger('api').debug(
             'Get refresh settings name=%s interval_ms=%s lines=%s', name, ms, lines
         )

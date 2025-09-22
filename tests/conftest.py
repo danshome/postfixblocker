@@ -121,7 +121,7 @@ def compose_stack(pytestconfig: pytest.Config) -> None:
                 text=True,
             ).stdout
             services = {line.strip() for line in out.splitlines() if line.strip()}
-            return 'postfix_db2' in services
+            return 'postfix' in services
         except Exception:
             return False
 

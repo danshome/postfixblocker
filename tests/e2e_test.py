@@ -236,9 +236,19 @@ def run_e2e_scenario(db_url: str, smtp_host: str, smtp_port: int, mh_host: str, 
             _send_mail_local('blocked1@example.com', msg='probe')
             # If accepted, rules not yet applied
             return False
+        except smtplib.SMTPRecipientsRefused as exc:
+            codes = []
+            for info in exc.recipients.values():
+                try:
+                    codes.append(int(info[0]))
+                except Exception:
+                    continue
+            _dbg(f'blocked probe response codes={codes}')
+            # Treat permanent failures (5xx) as success; 4xx means maps not yet ready
+            return any(code >= 500 for code in codes)
         except Exception as exc:
-            _dbg(f'blocked probe rejected (as expected): {exc}')
-            return True
+            _dbg(f'blocked probe unexpected failure: {exc}')
+            return False
 
     if not _wait_until(_blocked_applied, timeout=60, interval=1.0):
         _dbg('blocker did not apply rules within timeout; skipping')

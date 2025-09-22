@@ -1,0 +1,18 @@
+myhostname = postfix
+mydestination =
+inet_interfaces = all
+relayhost = [mailhog]:1025
+smtp_tls_security_level = none
+
+smtpd_banner = $myhostname ESMTP Postfix
+compatibility_level = 3.6
+
+mynetworks = 0.0.0.0/0
+smtpd_relay_restrictions = permit_mynetworks, reject_unauth_destination
+
+smtpd_recipient_restrictions =
+    warn_if_reject check_recipient_access hash:/etc/postfix/blocked_recipients_test,
+    warn_if_reject check_recipient_access pcre:/etc/postfix/blocked_recipients_test.pcre,
+    check_recipient_access hash:/etc/postfix/blocked_recipients,
+    check_recipient_access pcre:/etc/postfix/blocked_recipients.pcre,
+    permit

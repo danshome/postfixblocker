@@ -13,7 +13,7 @@ from sqlalchemy.exc import OperationalError as SAOperationalError  # type: ignor
 from ..config import Config, load_config
 from ..db.engine import get_engine
 from ..db.migrations import init_db
-from ..db.props import get_prop
+from ..db.props import LOG_KEYS, get_prop
 from ..db.schema import get_blocked_table
 from ..models.entries import BlockEntry
 from ..postfix.control import has_postfix_pcre, reload_postfix
@@ -114,7 +114,7 @@ def run_forever(config: Config | None = None) -> None:
             logging.debug('Blocker loop heartbeat start (last_marker=%s)', last_marker)
             # Dynamic blocker log level from props
             try:
-                level_str = get_prop(engine, 'log.level.blocker', None)  # type: ignore[arg-type]
+                level_str = get_prop(engine, LOG_KEYS['blocker'], None)  # type: ignore[arg-type]
                 if level_str is not None and level_str != last_blocker_level:
                     try:
                         lvl = int(level_str)

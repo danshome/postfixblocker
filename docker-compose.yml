@@ -10,7 +10,7 @@ services:
       timeout: 5s
       retries: 24
       start_period: 5s
-  postfix_db2:
+  postfix:
     build:
       context: .
       dockerfile: docker/postfix/Dockerfile
@@ -34,9 +34,28 @@ services:
       TEST_RESET_ENABLE: "1"
     privileged: true
     volumes:
-      - ./logs/postfix_db2.api.log:/var/log/postfix-blocker/api.log
-      - ./logs/postfix_db2.blocker.log:/var/log/postfix-blocker/blocker.log
-      - ./logs/postfix_db2.maillog:/var/log/maillog
+      - ./logs/postfix.api.log:/var/log/postfix-blocker/api.log
+      - ./logs/postfix.blocker.log:/var/log/postfix-blocker/blocker.log
+      - ./logs/postfix.maillog:/var/log/maillog
+  postfix-blocker-test-install:
+    build:
+      context: .
+      dockerfile: docker/postfix-blocker-test-install/Dockerfile
+      args:
+        ENABLE_DB2: "1"
+    platform: linux/amd64
+    ports:
+      - "1025:25"
+      - "5001:5000"
+    privileged: true
+    cgroup_parent: docker.slice
+    cgroup: host
+    tmpfs:
+      - /run
+      - /run/lock
+      - /tmp
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
   db2:
     image: icr.io/db2_community/db2:11.5.8.0
     platform: linux/amd64

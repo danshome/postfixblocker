@@ -7,6 +7,7 @@ import logging as _logging
 from sqlalchemy import inspect
 from sqlalchemy.engine import Engine
 
+from .props import seed_default_props
 from .schema import _ensure_loaded, get_blocked_table, get_props_table  # type: ignore
 
 
@@ -223,6 +224,7 @@ def init_db(engine: Engine) -> None:
                 _logging.getLogger(__name__).debug(
                     'CREATE ALIAS CRIS_PROPS failed; continuing: %s', exc
                 )
+        seed_default_props(engine)
         return
 
     # Generic (non-Db2) fallback: Create or verify tables with a robust, idempotent approach
@@ -252,6 +254,8 @@ def init_db(engine: Engine) -> None:
     # Create tables via SQLAlchemy for other dialects
     _safe_create(bt)
     _safe_create(pt)
+
+    seed_default_props(engine)
 
     # Migration: ensure test_mode exists (generic fallback path only)
     try:

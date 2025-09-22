@@ -28,16 +28,20 @@ FORCE=0
 
 SCRIPT_NAME="postfixblocker-install"
 
+timestamp() {
+  date -u +"%Y-%m-%dT%H:%M:%SZ"
+}
+
 log() {
-  printf '[%s] %s\n' "$SCRIPT_NAME" "$*"
+  printf '[%s][%s] %s\n' "$SCRIPT_NAME" "$(timestamp)" "$*"
 }
 
 warn() {
-  printf >&2 '[%s][WARN] %s\n' "$SCRIPT_NAME" "$*"
+  printf >&2 '[%s][%s][WARN] %s\n' "$SCRIPT_NAME" "$(timestamp)" "$*"
 }
 
 err() {
-  printf >&2 '[%s][ERROR] %s\n' "$SCRIPT_NAME" "$*"
+  printf >&2 '[%s][%s][ERROR] %s\n' "$SCRIPT_NAME" "$(timestamp)" "$*"
 }
 
 usage() {
@@ -72,6 +76,41 @@ Examples:
     --wheel-path /tmp/postfix_blocker-0.0.1-py3-none-any.whl \
     --systemd-mode write-only --postfix-mode skip --skip-db2-driver-check
 USAGE_BLOCK
+}
+
+db_url_summary() {
+  if [ -z "$DB_URL" ]; then
+    printf 'not provided'
+    return
+  fi
+  local host
+  host=$(printf '%s' "$DB_URL" | sed -E 's|.*://[^@]*@([^:/?]+).*|\1|')
+  if [ -z "$host" ]; then
+    host="unknown-host"
+  fi
+  printf 'provided (host=%s)' "$host"
+}
+
+log_configuration() {
+  local tarball_source wheel_source
+  if [ -n "$TARBALL_PATH" ]; then
+    tarball_source="$TARBALL_PATH"
+  else
+    tarball_source='download'
+  fi
+  if [ -n "$WHEEL_PATH" ]; then
+    wheel_source="$WHEEL_PATH"
+  else
+    wheel_source='download'
+  fi
+
+  log "Installation prefix: $PREFIX"
+  log "Systemd mode: $SYSTEMD_MODE"
+  log "Postfix mode: $POSTFIX_MODE (dir=$POSTFIX_DIR)"
+  log "API binding: ${API_HOST}:${API_PORT}"
+  log "Installer flags: non_interactive=$NON_INTERACTIVE force=$FORCE skip_db2_check=$SKIP_DB2_CHECK"
+  log "Artifacts: tarball=${tarball_source}, wheel=${wheel_source}"
+  log "Database URL: $(db_url_summary)"
 }
 
 require_root() {
@@ -181,6 +220,7 @@ parse_args() {
 latest_version() {
   require_cmd curl
   local api_response tag
+  log "Querying GitHub for latest release of $APP_REPO"
   api_response=$(curl -fsSL "https://api.github.com/repos/${APP_REPO}/releases/latest") || {
     err "Unable to query GitHub releases; specify --version or check connectivity."
     exit 1
@@ -191,18 +231,27 @@ latest_version() {
     exit 1
   fi
   VERSION="$tag"
+  log "Latest release resolved to version $VERSION"
 }
 
 normalize_paths() {
   if [ -n "$TARBALL_PATH" ]; then
-    TARBALL_PATH=$(readlink -f "$TARBALL_PATH") || {
+    log "Resolving tarball path: $TARBALL_PATH"
+    local resolved_tarball
+    resolved_tarball=$(readlink -f "$TARBALL_PATH") || {
       err "Unable to resolve tarball path: $TARBALL_PATH"; exit 1; }
+    TARBALL_PATH="$resolved_tarball"
     [ -f "$TARBALL_PATH" ] || { err "Tarball not found: $TARBALL_PATH"; exit 1; }
+    log "Using tarball at $TARBALL_PATH"
   fi
   if [ -n "$WHEEL_PATH" ]; then
-    WHEEL_PATH=$(readlink -f "$WHEEL_PATH") || {
+    log "Resolving wheel path: $WHEEL_PATH"
+    local resolved_wheel
+    resolved_wheel=$(readlink -f "$WHEEL_PATH") || {
       err "Unable to resolve wheel path: $WHEEL_PATH"; exit 1; }
+    WHEEL_PATH="$resolved_wheel"
     [ -f "$WHEEL_PATH" ] || { err "Wheel not found: $WHEEL_PATH"; exit 1; }
+    log "Using wheel at $WHEEL_PATH"
   fi
 }
 
@@ -211,11 +260,17 @@ infer_version_from_artifacts() {
     local base
     base=$(basename "$WHEEL_PATH")
     VERSION=$(printf '%s' "$base" | sed -E 's/postfix_blocker-([0-9]+(\.[0-9]+)*)-py3.*/\1/')
+    if [ -n "$VERSION" ]; then
+      log "Inferred version $VERSION from wheel filename"
+    fi
   fi
   if [ -z "$VERSION" ] && [ -n "$TARBALL_PATH" ]; then
     local base
     base=$(basename "$TARBALL_PATH")
     VERSION=$(printf '%s' "$base" | sed -E 's/postfix_blocker-([0-9]+(\.[0-9]+)*).tar.gz/\1/')
+    if [ -n "$VERSION" ]; then
+      log "Inferred version $VERSION from tarball filename"
+    fi
   fi
 }
 
@@ -225,6 +280,7 @@ prompt_for_missing_inputs() {
       err "--db-url is required in non-interactive mode."
       exit 1
     fi
+    log "Prompting operator for Db2 SQLAlchemy URL"
     printf 'Enter Db2 SQLAlchemy URL (e.g. ibm_db_sa://user:pass@host:50000/BLOCKER?currentSchema=CRISOP): '
     read -r DB_URL
     if [ -z "$DB_URL" ]; then
@@ -241,6 +297,7 @@ prompt_for_missing_inputs() {
       *)
         warn "Skipping Postfix configuration per operator response."
         POSTFIX_MODE="skip"
+        log "Postfix configuration disabled by operator"
         ;;
     esac
   fi
@@ -248,6 +305,7 @@ prompt_for_missing_inputs() {
 
 install_packages() {
   require_cmd dnf
+  log "Preparing OS package repositories"
   if command -v subscription-manager >/dev/null 2>&1; then
     log "Ensuring CodeReady Builder repo is enabled"
     subscription-manager repos --enable "codeready-builder-for-rhel-9-$(/usr/bin/arch)-rpms" || true
@@ -259,7 +317,7 @@ install_packages() {
     fi
   fi
 
-  log "Installing required packages via dnf"
+  log "Installing required packages via dnf (curl, tar, gzip, which, gcc, make, openssl-devel, libffi-devel, python3, python3-devel, python3-pip, policycoreutils-python-utils, postfix, postfix-pcre, firewalld, shadow-utils, git)"
   dnf -y install --allowerasing \
     curl \
     tar \
@@ -290,6 +348,7 @@ ensure_python() {
 }
 
 ensure_user_and_dirs() {
+  log "Ensuring system user and directory layout"
   if ! id "$APP_USER" >/dev/null 2>&1; then
     log "Creating system user $APP_USER"
     useradd --system --home "$PREFIX" --shell /sbin/nologin "$APP_USER"
@@ -301,19 +360,24 @@ ensure_user_and_dirs() {
   install -d -m 0755 -o "$APP_USER" -g "$APP_USER" "$PREFIX/run"
   install -d -m 0750 -o "$APP_USER" -g "$APP_USER" "$LOG_DIR"
   install -d -m 0770 -o root -g "$APP_USER" "$PID_DIR"
+  log "Directory preparation complete"
 }
 
 check_db2_driver() {
   if [ "$SKIP_DB2_CHECK" -eq 1 ]; then
+    log "Skipping Db2 driver validation (--skip-db2-driver-check)"
     return
   fi
   if [ ! -d "/opt/ibm/db2/current" ]; then
     warn "IBM Db2 CLI driver not found at /opt/ibm/db2/current. Install the driver or rerun with --skip-db2-driver-check."
     warn "Installer will continue, but ibm_db will fail to load until the driver is present."
+  else
+    log "Db2 CLI driver detected at /opt/ibm/db2/current"
   fi
 }
 
 run_as_app() {
+  log "Running as $APP_USER: $*"
   runuser -u "$APP_USER" -- "$@"
 }
 
@@ -337,12 +401,16 @@ prepare_artifacts() {
     log "Downloading source tarball $tarball_url"
     run_as_app curl -fSL "$tarball_url" -o "$download_dir/postfix_blocker-${VERSION}.tar.gz"
     TARBALL_PATH="$download_dir/postfix_blocker-${VERSION}.tar.gz"
+  else
+    log "Reusing provided tarball $TARBALL_PATH"
   fi
 
   if [ -z "$WHEEL_PATH" ]; then
     log "Downloading wheel $wheel_url"
     run_as_app curl -fSL "$wheel_url" -o "$download_dir/postfix_blocker-${VERSION}-py3-none-any.whl"
     WHEEL_PATH="$download_dir/postfix_blocker-${VERSION}-py3-none-any.whl"
+  else
+    log "Reusing provided wheel $WHEEL_PATH"
   fi
 }
 
@@ -358,6 +426,7 @@ unpack_application() {
       rm -rf "$app_dir"/*
     fi
   fi
+  log "Unpacking tarball $TARBALL_PATH into $app_dir"
   run_as_app tar -xzf "$TARBALL_PATH" --strip-components=1 -C "$app_dir"
 }
 
@@ -370,6 +439,8 @@ create_virtualenv() {
   if [ ! -d "$venv_dir" ]; then
     log "Creating virtual environment at $venv_dir"
     run_as_app "$PYTHON_BIN" -m venv "$venv_dir"
+  else
+    log "Virtual environment already exists at $venv_dir"
   fi
   log "Upgrading pip/setuptools/wheel"
   run_as_app "$venv_dir/bin/pip" install --upgrade pip setuptools wheel >/dev/null
@@ -404,6 +475,7 @@ write_env_file() {
     cp "$env_path" "$env_path.bak.$(date +%Y%m%d%H%M%S)"
   fi
 
+  log "Writing environment file to $env_path"
   cat >"$env_path" <<EOF_ENV
 BLOCKER_DB_URL=$DB_URL
 BLOCKER_INTERVAL=5
@@ -419,6 +491,7 @@ EOF_ENV
 
   chown "$APP_USER":"$APP_USER" "$env_path"
   chmod 0640 "$env_path"
+  log ".env written and permissions adjusted"
 }
 
 write_systemd_units() {
@@ -427,6 +500,7 @@ write_systemd_units() {
     return
   fi
 
+  log "Rendering systemd unit files to /etc/systemd/system"
   cat >/etc/systemd/system/postfixblocker-blocker.service <<SERVICE_BLOCKER
 [Unit]
 Description=postfix-blocker refresh service
@@ -473,6 +547,7 @@ WantedBy=multi-user.target
 SERVICE_API
 
   chmod 0644 /etc/systemd/system/postfixblocker-*.service
+  log "Systemd units available: postfixblocker-blocker.service, postfixblocker-api.service"
 
   if [ "$SYSTEMD_MODE" = "enable" ]; then
     if systemd_available; then
@@ -511,6 +586,7 @@ configure_postfix() {
 
   log "Updating Postfix smtpd_recipient_restrictions"
   postconf -e "smtpd_recipient_restrictions = ${restrictions}"
+  log "Postfix configuration updated"
 
   if command -v postfix >/dev/null 2>&1; then
     log "Reloading Postfix"
@@ -519,6 +595,7 @@ configure_postfix() {
 }
 
 print_summary() {
+  log "Printing installation summary"
   cat <<SUMMARY_BLOCK
 
 postfix-blocker $VERSION installed at $PREFIX.
@@ -534,23 +611,41 @@ SUMMARY_BLOCK
 main() {
   parse_args "$@"
   require_root
+  log "Starting postfix-blocker installer"
+  if [ -n "$VERSION" ]; then
+    log "Version requested via arguments: $VERSION"
+  else
+    log "No version specified; installer will determine latest release"
+  fi
   normalize_paths
   infer_version_from_artifacts
   if [ -z "$VERSION" ]; then
+    log "Determining latest release from remote metadata"
     latest_version
   fi
+  log "Resolved installation version: $VERSION"
+  log_configuration
   prompt_for_missing_inputs
+  log "Installing prerequisite packages"
   install_packages
   ensure_python
+  log "Preparing application user and directories"
   ensure_user_and_dirs
   check_db2_driver
+  log "Ensuring release artifacts are available"
   prepare_artifacts
+  log "Unpacking application payload"
   unpack_application
+  log "Setting up Python virtual environment"
   create_virtualenv
+  log "Writing application environment configuration"
   write_env_file
+  log "Setting up systemd units"
   write_systemd_units
+  log "Applying Postfix integration settings"
   configure_postfix
   print_summary
+  log "Installer completed successfully"
 }
 
 main "$@"

@@ -18,7 +18,6 @@
 ## Testing Guidelines
 - Name Python tests `tests/test_*.py`; keep unit tests deterministic and isolated. Ensure coverage stays within the existing >95% thresholds reported by `make ci`.
 - Do not skip tests—if dependencies such as DB2 or MailHog are unavailable, fix the environment so failures surface.
-- For log-processing features, confirm both `logs/postfix.maillog` and `logs/postfix_db2.maillog` gain entries to satisfy the dual-postfix signal check.
 
 ## Commit & Pull Request Guidelines
 - Use imperative, ≤72-char commit subjects with explanatory bodies when changes are non-trivial. Stage only project-related edits.

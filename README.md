@@ -53,7 +53,7 @@ docker compose up --build -d
 pytest -q
 
 # Tail API logs
-docker compose logs -f postfix_db2
+docker compose logs -f postfix
 ```
 
 ## Contents
@@ -163,11 +163,11 @@ MailHog's UI on [http://localhost:8025](http://localhost:8025).
 
 IBM DB2 listens on port `50000`. One Postfix service is available:
 
-- `postfix_db2` (DB2) – SMTP on host `1026`, API on `5002`
+- `postfix` (DB2) – SMTP on host `1026`, API on `5002`
 
 Note: The Docker image for `postfix` installs only the base Python
 dependencies (no DB2 client). The heavier DB2 client packages are installed
-only in the `postfix_db2` image to keep builds fast and compatible across
+only in the `postfix` image to keep builds fast and compatible across
 architectures (e.g., Apple Silicon). Images are now based on Rocky Linux 9
 to align with RHEL 9.5. The compose file pins services to `linux/amd64` for
 reliable DB2 support.
@@ -193,7 +193,7 @@ Base image choice
 
 Switching the Postfix service to DB2:
 
-- Either use the `postfix_db2` service, or edit `docker-compose.yml` and change
+- Either use the `postfix` service, or edit `docker-compose.yml` and change
   `BLOCKER_DB_URL` in the `postfix` service to the DB2 URL, e.g.:
 
 ```
@@ -220,7 +220,7 @@ Rebuild and restart the Postfix containers after pulling this change so the
 updated `main.cf` is applied:
 
 ```
-docker compose build postfix_db2
+docker compose build postfix
 docker compose up -d
 ```
 
@@ -334,8 +334,8 @@ Configuration via environment variables (optional):
 Running inside the Postfix container (useful on some hosts):
 
 ```bash
-docker compose cp tests/e2e_test.py postfix_db2:/opt/postfix_blocker/e2e_run.py
-docker compose exec postfix_db2 env \
+docker compose cp tests/e2e_test.py postfix:/opt/postfix_blocker/e2e_run.py
+docker compose exec postfix env \
   BLOCKER_DB_URL=ibm_db_sa://db2inst1:blockerpass@db2:50000/BLOCKER \
   SMTP_HOST=127.0.0.1 SMTP_PORT=25 \
   MAILHOG_HOST=mailhog MAILHOG_PORT=8025 \
@@ -349,9 +349,9 @@ Mass traffic demo
 # From host
 python tests/e2e_test.py --mass --total 300
 
-# Inside the postfix_db2 container (recommended if host DB port is blocked)
-docker compose cp tests/e2e_test.py postfix_db2:/opt/postfix_blocker/e2e_run.py
-docker compose exec postfix_db2 env \
+# Inside the postfix container (recommended if host DB port is blocked)
+docker compose cp tests/e2e_test.py postfix:/opt/postfix_blocker/e2e_run.py
+docker compose exec postfix env \
   BLOCKER_DB_URL=ibm_db_sa://db2inst1:blockerpass@db2:50000/BLOCKER \
   SMTP_HOST=127.0.0.1 SMTP_PORT=25 \
   MAILHOG_HOST=mailhog MAILHOG_PORT=8025 \
@@ -361,7 +361,7 @@ docker compose exec postfix_db2 env \
 Troubleshooting Postfix SMTP:
 - Ensure PCRE map support is installed in the image (we install `postfix-pcre`).
 - Disable smtpd chroot in containers: set `smtp/inet/chroot = n` (done in Dockerfile).
-- Verify SMTP is listening: `docker compose exec postfix_db2 nc -vz 127.0.0.1 25`.
+- Verify SMTP is listening: `docker compose exec postfix nc -vz 127.0.0.1 25`.
 - The dev image allows relaying from the host by setting `mynetworks = 0.0.0.0/0` for convenience. Do NOT use this setting in production; restrict `mynetworks` appropriately.
 
 The script populates the database with a couple of blocked addresses, sends
@@ -390,7 +390,7 @@ GitHub Actions workflow is provided at `.github/workflows/ci.yml` with three job
 
 - Unit: Runs `pytest -m unit`.
 - Backend: Starts DB2 via Docker Compose, then runs `pytest -m backend`.
-- E2E: Starts full stack (postfix_db2) and runs `pytest -m e2e`.
+- E2E: Starts full stack (postfix) and runs `pytest -m e2e`.
 
 ## JetBrains IDEs
 

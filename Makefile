@@ -129,14 +129,14 @@ ci-start:
 	$(call log_step,CI start)
 	@mkdir -p logs
 	@$(MAKE) clean-logs
-	@touch logs/postfix_db2.maillog logs/postfix_db2.api.log logs/postfix_db2.blocker.log
+	@touch logs/postfix.maillog logs/postfix.api.log logs/postfix.blocker.log
 
 .PHONY: ci-end
 ci-end:
 	$(call log_step,CI end)
 	@bash -euo pipefail -c '\
 	  mkdir -p logs; \
-	  f="logs/postfix_db2.maillog"; \
+	  f="logs/postfix.maillog"; \
 	  test -f "$$f" || : > "$$f"; \
 	  c=$$(wc -l < "$$f" | tr -d " \t"); \
 	  echo "[ci] DB2 mail log line count: $$c ($$f)"; \
