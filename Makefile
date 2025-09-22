@@ -5,6 +5,13 @@
 ##   make test          # Python unit tests + frontend unit tests
 ##   make e2e           # Backend + E2E tests (brings up docker stack)
 
+ENV_FILE := .env
+ifneq (,$(wildcard $(ENV_FILE)))
+  include $(ENV_FILE)
+  # Export only the keys present in the file so recipes inherit them
+  export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' $(ENV_FILE))
+endif
+
 SHELL := /bin/bash
 
 # Python virtualenv (created on demand)
@@ -246,8 +253,6 @@ compose-up:
 	$(call log_step,Docker compose up --build -d)
 	@$(DOCKER_COMPOSE) up -d --build
 
-
-
 compose-down:
 		$(call log_step,Docker compose stop)
 		@$(DOCKER_COMPOSE) stop || true
@@ -259,6 +264,47 @@ compose-down-hard:
 docker-rebuild:
 	$(call log_step,Docker compose build --no-cache)
 	@$(DOCKER_COMPOSE) build --no-cache
+
+docker-reset-all:
+	$(call log_step,Docker Reset Everything)
+	@$(DOCKER_COMPOSE) down -v --remove-orphans
+	@$(DOCKER_COMPOSE) build --no-cache
+	@$(DOCKER_COMPOSE) up -d --force-recreate --renew-anon-volumes
+
+docker-reset-svc:
+	@echo "Resetting service: $(SERVICE)"
+	@$(DOCKER_COMPOSE) rm -fsv $(SERVICE)
+	@$(DOCKER_COMPOSE) up -d --force-recreate --renew-anon-volumes $(SERVICE)
+
+GIT_REMOTE ?= origin
+GIT_COMMIT_MSG ?= chore(installer): update scripts/install.sh before test-installer
+
+commit-install-script:
+	$(call log_step,Commit scripts/install.sh if changed)
+	@bash -euo pipefail -c '\
+	  [ -f scripts/install.sh ] || { echo "[git] scripts/install.sh not found"; exit 1; }; \
+	  command -v git >/dev/null 2>&1 || { echo "[git] git not installed"; exit 1; }; \
+	  git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "[git] not a git repo"; exit 1; }; \
+	  if git diff --quiet -- scripts/install.sh && git diff --cached --quiet -- scripts/install.sh; then \
+	    echo "[git] No changes in scripts/install.sh; skipping commit"; \
+	  else \
+	    echo "[git] Committing scripts/install.sh…"; \
+	    git add scripts/install.sh; \
+	    git commit -m "$(GIT_COMMIT_MSG)" || true; \
+	    BR=$$(git rev-parse --abbrev-ref HEAD); \
+	    echo "[git] Pushing to $(GIT_REMOTE)/$$BR"; \
+	    git push $(GIT_REMOTE) "$$BR"; \
+	  fi'
+
+test-installer: SERVICE := postfix-blocker-test-install
+test-installer: commit-install-script dist-clean dist docker-reset-svc
+	@: $(if $(SERVICE),,$(error Set SERVICE, e.g. 'make $@ SERVICE=postfix-blocker-test-install'))
+	@echo "Running installer in $(SERVICE)…"
+	@$(DOCKER_COMPOSE) exec -T $(SERVICE) bash -lc '\
+	  curl -fsSL https://raw.githubusercontent.com/danshome/postfixblocker/main/scripts/install.sh \
+	  | bash -s -- --non-interactive --db-url \
+	    ibm_db_sa://${POSTFIXBLOCKER_DB_USER}:${POSTFIXBLOCKER_DB_PASSWD}@${POSTFIXBLOCKER_DB_HOST}:${POSTFIXBLOCKER_DB_PORT}/${POSTFIXBLOCKER_DB_NAME}?currentSchema=${POSTFIXBLOCKER_DB_SCHEMA} \
+	    --postfix-mode configure'
 
 # Update pre-commit hooks to latest versions (pins in .pre-commit-config.yaml)
 hooks-update: venv

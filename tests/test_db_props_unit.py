@@ -4,12 +4,22 @@ import pytest
 
 try:
     from sqlalchemy import create_engine, text
+    from sqlalchemy.engine import Connection
 except Exception:  # pragma: no cover - SQLAlchemy not installed in some envs
     create_engine = None  # type: ignore
     text = None  # type: ignore
+    Connection = None  # type: ignore
 
 from postfix_blocker.db.migrations import init_db
-from postfix_blocker.db.props import LINES_KEYS, LOG_KEYS, REFRESH_KEYS, get_prop, set_prop
+from postfix_blocker.db.props import (
+    DEFAULT_PROP_VALUES,
+    LINES_KEYS,
+    LOG_KEYS,
+    REFRESH_KEYS,
+    get_prop,
+    seed_default_props,
+    set_prop,
+)
 
 
 @pytest.mark.unit
@@ -61,3 +71,34 @@ def test_init_db_seeds_default_props():
     with engine.connect() as conn:
         rows_after = conn.execute(text('SELECT key, value FROM cris_props')).fetchall()
     assert len(rows_after) == len(expected_keys)
+
+
+@pytest.mark.unit
+def test_seed_default_props_handles_select_failures(monkeypatch):
+    if create_engine is None or text is None or Connection is None:
+        pytest.fail('SQLAlchemy not installed; unit DB props tests require it.')
+
+    engine = create_engine('sqlite:///:memory:')  # type: ignore[misc]
+    init_db(engine)
+
+    with engine.begin() as conn:
+        conn.execute(text('DELETE FROM cris_props'))
+
+    calls = {'select': 0}
+    original_execute = Connection.execute
+
+    def patched_execute(self, statement, *args, **kwargs):  # type: ignore[override]
+        if getattr(statement, 'is_select', False):
+            calls['select'] += 1
+            raise RuntimeError('select blew up')
+        return original_execute(self, statement, *args, **kwargs)
+
+    monkeypatch.setattr(Connection, 'execute', patched_execute)
+
+    seed_default_props(engine)
+
+    with engine.connect() as conn:
+        rows = conn.execute(text('SELECT key FROM cris_props')).fetchall()
+
+    assert calls['select'] > 0
+    assert len(rows) == len(DEFAULT_PROP_VALUES)
