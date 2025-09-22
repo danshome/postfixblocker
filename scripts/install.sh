@@ -15,6 +15,7 @@ DEFAULT_POSTFIX_DIR="/etc/postfix"
 VERSION=""
 PREFIX="$DEFAULT_PREFIX"
 DB_URL=""
+DB_URL_FOR_TEST=""
 API_HOST="127.0.0.1"
 API_PORT="5000"
 POSTFIX_DIR="$DEFAULT_POSTFIX_DIR"
@@ -317,7 +318,7 @@ install_packages() {
     fi
   fi
 
-  log "Installing required packages via dnf (curl, tar, gzip, which, gcc, make, openssl-devel, libffi-devel, python3, python3-devel, python3-pip, policycoreutils-python-utils, postfix, postfix-pcre, firewalld, shadow-utils, git)"
+  log "Installing required packages via dnf (curl, tar, gzip, which, gcc, make, openssl-devel, libffi-devel, python3, python3-devel, python3-pip, policycoreutils-python-utils, postfix, postfix-pcre, shadow-utils, git)"
   dnf -y install --allowerasing \
     curl \
     tar \
@@ -333,7 +334,6 @@ install_packages() {
     policycoreutils-python-utils \
     postfix \
     postfix-pcre \
-    firewalld \
     shadow-utils \
     git >/dev/null
 }
@@ -373,6 +373,81 @@ check_db2_driver() {
     warn "Installer will continue, but ibm_db will fail to load until the driver is present."
   else
     log "Db2 CLI driver detected at /opt/ibm/db2/current"
+  fi
+}
+
+resolve_db_url_for_test() {
+  local env_path="$PREFIX/.env"
+  local env_db=""
+  if [ -f "$env_path" ]; then
+    env_db=$(grep -E '^BLOCKER_DB_URL=' "$env_path" | tail -n1 | cut -d '=' -f2-)
+  fi
+
+  if [ -n "$env_db" ] && [ "$FORCE" -eq 0 ]; then
+    DB_URL_FOR_TEST="$env_db"
+    return 0
+  fi
+
+  if [ -n "$DB_URL" ]; then
+    DB_URL_FOR_TEST="$DB_URL"
+    return 0
+  fi
+
+  if [ -n "$env_db" ]; then
+    DB_URL_FOR_TEST="$env_db"
+    return 0
+  fi
+  DB_URL_FOR_TEST=""
+  return 1
+}
+
+test_database_connectivity() {
+  if ! resolve_db_url_for_test; then
+    log "Database URL not available; skipping connectivity test"
+    return
+  fi
+
+  local python_bin="$PREFIX/venv/bin/python"
+  if [ ! -x "$python_bin" ]; then
+    warn "Python virtual environment missing; skipping database connectivity test"
+    return
+  fi
+
+  log "Testing database connectivity"
+  if run_as_app env BLOCKER_DB_URL="$DB_URL_FOR_TEST" "$python_bin" - <<'PYCODE'
+import os
+import sys
+
+try:
+    from sqlalchemy import create_engine
+except Exception as exc:  # pragma: no cover - install script runtime guard
+    print(f"Unable to import SQLAlchemy: {exc}", file=sys.stderr)
+    sys.exit(2)
+
+db_url = os.environ.get("BLOCKER_DB_URL")
+if not db_url:
+    print("BLOCKER_DB_URL not set in environment", file=sys.stderr)
+    sys.exit(1)
+
+try:
+    engine = create_engine(db_url, pool_pre_ping=True)
+except Exception as exc:
+    print(f"Failed to create SQLAlchemy engine: {exc}", file=sys.stderr)
+    sys.exit(3)
+
+try:
+    with engine.connect():
+        pass  # connection established successfully
+except Exception as exc:
+    print(f"Failed to connect to database: {exc}", file=sys.stderr)
+    sys.exit(4)
+
+sys.exit(0)
+PYCODE
+  then
+    log "Database connectivity check succeeded"
+  else
+    warn "Database connectivity check failed; unable to connect using the provided database parameters."
   fi
 }
 
@@ -638,6 +713,7 @@ main() {
   unpack_application
   log "Setting up Python virtual environment"
   create_virtualenv
+  test_database_connectivity
   log "Writing application environment configuration"
   write_env_file
   log "Setting up systemd units"
