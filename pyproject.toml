@@ -38,12 +38,12 @@ name = "postfix-blocker"
 description = "Postfix blocker service and Flask API to manage blocklists and control Postfix maps."
 readme = "README.md"
 requires-python = ">=3.9.21"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Dan McLaughlin" }]
 classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Framework :: Flask",
   "Topic :: Communications :: Email :: Filters",
