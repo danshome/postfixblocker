@@ -45,6 +45,7 @@ services:
     ports:
       - "1025:25"
       - "5001:5000"
+      - "4200:4200"
     privileged: true
     cgroup_parent: docker.slice
     cgroup: host
