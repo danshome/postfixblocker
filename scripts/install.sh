@@ -698,6 +698,8 @@ module.exports = {
         FRONTEND_HOST: process.env.FRONTEND_HOST || '0.0.0.0',
         FRONTEND_PORT: process.env.FRONTEND_PORT || '4200',
       },
+      output: '/var/log/postfixblocker/frontend.out.log',
+      error: '/var/log/postfixblocker/frontend.error.log',
     },
   ],
 };
