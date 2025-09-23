@@ -101,24 +101,49 @@ def seed_default_props(engine: Engine) -> None:
     if not DEFAULT_PROP_VALUES:
         return
     pt = get_props_table()
+    dialect = (engine.dialect.name or '').lower()
+    is_db2 = dialect in ('ibm_db_sa', 'db2')
+    inserted: list[str] = []
     with engine.begin() as conn:
         for key, default in DEFAULT_PROP_VALUES.items():
-            exists = None
+            exists = False
             try:
-                exists = conn.execute(select(pt.c.key).where(pt.c.key == key)).first()
+                exists = bool(
+                    conn.execute(
+                        select(func.count()).select_from(pt).where(pt.c.key == key)
+                    ).scalar()
+                    or 0
+                )
             except AttributeError:
                 try:
-                    exists = conn.exec_driver_sql(  # type: ignore[attr-defined]
-                        'SELECT 1 FROM cris_props WHERE key = ?',
-                        (key,),
-                    ).first()
+                    exists = bool(
+                        conn.exec_driver_sql(  # type: ignore[attr-defined]
+                            'SELECT 1 FROM cris_props WHERE key = ?',
+                            (key,),
+                        ).first()
+                    )
                 except Exception as exc:  # pragma: no cover - diagnostic fallback
-                    _LOGGER.debug('Seed probe fallback failed for %s: %s', key, exc)
+                    _LOGGER.warning('Seed probe fallback failed for %s: %s', key, exc)
             except Exception as exc:  # pragma: no cover - driver/dialect variety
-                _LOGGER.debug('Seed probe failed for %s: %s', key, exc)
+                _LOGGER.warning('Seed probe failed for %s: %s', key, exc)
 
-            if exists is not None:
+            if not exists and is_db2:
+                try:
+                    exists = bool(
+                        conn.exec_driver_sql(  # type: ignore[attr-defined]
+                            'SELECT 1 FROM CRISOP.CRIS_PROPS WHERE KEY = ?',
+                            (key,),
+                        ).first()
+                    )
+                except Exception as exc:  # pragma: no cover - db2 catalog differences
+                    _LOGGER.warning('Seed probe CRISOP fallback failed for %s: %s', key, exc)
+
+            if exists:
                 continue
+
+            msg = f'Seeding default CRIS prop {key}'
+            _LOGGER.info(msg)
+            logging.getLogger().info(msg)
 
             def _make_sqlalchemy_insert(key_val: str, default_val: str | None) -> Callable[[], Any]:
                 def _inner() -> Any:
@@ -151,16 +176,56 @@ def seed_default_props(engine: Engine) -> None:
 
                 return _inner
 
+            def _make_db2_exec(sql: str, params: tuple[Any, ...]) -> Callable[[], Any]:
+                def _inner() -> Any:
+                    return conn.exec_driver_sql(  # type: ignore[attr-defined]
+                        sql,
+                        params,
+                    )
+
+                return _inner
+
             insert_attempts = [
                 ('sqlalchemy', _make_sqlalchemy_insert(key, default)),
                 ('driver ts', _make_driver_ts_insert(key, default)),
                 ('driver', _make_driver_insert(key, default)),
             ]
 
+            if is_db2:
+                insert_attempts.extend(
+                    [
+                        (
+                            'db2 crisop ts',
+                            _make_db2_exec(
+                                'INSERT INTO CRISOP.CRIS_PROPS (KEY, VALUE, UPDATE_TS) '
+                                'VALUES (?, ?, CURRENT_TIMESTAMP)',
+                                (key, default),
+                            ),
+                        ),
+                        (
+                            'db2 crisop',
+                            _make_db2_exec(
+                                'INSERT INTO CRISOP.CRIS_PROPS (KEY, VALUE) VALUES (?, ?)',
+                                (key, default),
+                            ),
+                        ),
+                    ]
+                )
+
             if not _run_insert_attempts(
                 conn, insert_attempts, key
             ):  # pragma: no cover - diagnostic only
-                _LOGGER.debug('Seed insert attempts exhausted for %s', key)
+                _LOGGER.warning('Seed insert attempts exhausted for %s', key)
+                logging.getLogger().warning('Seed insert attempts exhausted for %s', key)
+            else:
+                inserted.append(key)
+
+    if inserted:
+        message = f'Seeded {len(inserted)} CRIS props: {", ".join(sorted(inserted))}'
+        _LOGGER.info(message)
+        logging.getLogger().info(message)
+    else:
+        _LOGGER.info('CRIS props defaults already present; no seeding performed')
 
 
 __all__ = ['LOG_KEYS', 'REFRESH_KEYS', 'LINES_KEYS', 'get_prop', 'set_prop', 'seed_default_props']
