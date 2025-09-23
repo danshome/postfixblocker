@@ -389,24 +389,13 @@ check_db2_driver() {
   fi
 
   log "Validating Db2 Python driver availability"
-  local output
-  if output=$(run_as_app "$python_bin" - <<'PYCODE' 2>&1); then
-import sys
-
-try:
-  import ibm_db  # type: ignore
-  import ibm_db_dbi  # type: ignore
-except Exception as exc:  # pragma: no cover - runtime validation
-  import traceback
-
-  traceback.print_exc()
-  sys.exit(1)
-
-sys.exit(0)
-PYCODE
+  local py_cmd output status
+  py_cmd=$'import sys, traceback\ntry:\n    import ibm_db\n    import ibm_db_dbi\nexcept Exception:\n    traceback.print_exc()\n    sys.exit(1)\n'
+  output=$(run_as_app "$python_bin" -c "$py_cmd" 2>&1)
+  status=$?
+  if [ "$status" -eq 0 ]; then
     log "Db2 Python driver import succeeded"
   else
-    local status=$?
     warn "Db2 Python driver import failed (exit=${status}). Install the IBM CLI driver or rerun with --skip-db2-driver-check."
     printf >&2 '%s\n' "$output"
   fi
