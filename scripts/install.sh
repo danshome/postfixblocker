@@ -350,6 +350,7 @@ install_packages() {
     python3 \
     python3-devel \
     python3-pip \
+    acl \
     nodejs \
     npm \
     policycoreutils-python-utils \
@@ -396,6 +397,14 @@ ensure_user_and_dirs() {
   install -d -m 0755 -o "$APP_USER" -g "$APP_USER" "$PREFIX/run"
   install -d -m 0750 -o "$APP_USER" -g "$APP_USER" "$LOG_DIR"
   install -d -m 0770 -o root -g "$APP_USER" "$PID_DIR"
+  if command -v setfacl >/dev/null 2>&1; then
+    log "Granting $APP_USER read access to /var/log/maillog via ACL"
+    if ! setfacl -m u:$APP_USER:r /var/log/maillog >/dev/null 2>&1; then
+      warn "Could not set ACL on /var/log/maillog; $APP_USER may lack read access"
+    fi
+  else
+    warn "setfacl not available; /var/log/maillog permissions unchanged"
+  fi
   log "Directory preparation complete"
 }
 
@@ -845,10 +854,43 @@ configure_postfix() {
     return
   fi
 
-  local restrictions="check_recipient_access hash:${POSTFIX_DIR}/blocked_recipients, check_recipient_access pcre:${POSTFIX_DIR}/blocked_recipients.pcre, warn_if_reject check_recipient_access hash:${POSTFIX_DIR}/blocked_recipients_test, warn_if_reject check_recipient_access pcre:${POSTFIX_DIR}/blocked_recipients_test.pcre, permit_mynetworks, reject_unauth_destination"
+  local current
+  current=$(postconf -h smtpd_recipient_restrictions 2>/dev/null | tr -d '\n')
+  local new_value
+  new_value=$(
+    CURRENT_VALUE="$current" POSTFIX_DIR="$POSTFIX_DIR" python3 - <<'PY'
+import os
+
+current = os.environ.get('CURRENT_VALUE', '')
+postfix_dir = os.environ.get('POSTFIX_DIR', '/etc/postfix')
+required = [
+    f"check_recipient_access hash:{postfix_dir}/blocked_recipients",
+    f"check_recipient_access pcre:{postfix_dir}/blocked_recipients.pcre",
+    f"warn_if_reject check_recipient_access hash:{postfix_dir}/blocked_recipients_test",
+    f"warn_if_reject check_recipient_access pcre:{postfix_dir}/blocked_recipients_test.pcre",
+    'permit_mynetworks',
+    'reject_unauth_destination',
+]
+
+segments = [segment.strip() for segment in current.split(',') if segment.strip()]
+seen = set()
+ordered = []
+for segment in segments:
+    if segment not in seen:
+        ordered.append(segment)
+        seen.add(segment)
+
+for required_entry in required:
+    if required_entry not in seen:
+        ordered.append(required_entry)
+        seen.add(required_entry)
+
+print(', '.join(ordered))
+PY
+  )
 
   log "Updating Postfix smtpd_recipient_restrictions"
-  postconf -e "smtpd_recipient_restrictions = ${restrictions}"
+  postconf -e "smtpd_recipient_restrictions = ${new_value}"
   log "Postfix configuration updated"
 
   if command -v postfix >/dev/null 2>&1; then
