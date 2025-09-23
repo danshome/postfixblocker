@@ -335,6 +335,7 @@ install_packages() {
 
   log "Installing required packages via dnf (curl, tar, gzip, which, gcc, make, openssl-devel, libffi-devel, python3, python3-devel, python3-pip, nodejs, npm, policycoreutils-python-utils, postfix, postfix-pcre, shadow-utils, git)"
   if command -v dnf >/dev/null 2>&1; then
+    dnf -y module reset nodejs >/dev/null 2>&1 || true
     dnf -y module enable nodejs:20 >/dev/null 2>&1 || true
   fi
   dnf -y install --allowerasing \
