@@ -26,6 +26,8 @@ SKIP_DB2_CHECK=0
 TARBALL_PATH=""
 WHEEL_PATH=""
 FORCE=0
+FRONTEND_HOST="0.0.0.0"
+FRONTEND_PORT="4200"
 
 SCRIPT_NAME="postfixblocker-install"
 
@@ -55,6 +57,8 @@ Options:
   --db-url URL               Db2 SQLAlchemy URL (prompted interactively if omitted)
   --api-host HOST            API bind address (default: 127.0.0.1)
   --api-port PORT            API bind port (default: 5000)
+  --ui-host HOST             Frontend bind address (default: 0.0.0.0)
+  --ui-port PORT             Frontend bind port (default: 4200)
   --postfix-dir DIR          Postfix configuration directory (default: /etc/postfix)
   --postfix-mode MODE        Postfix configuration: configure|skip (default: skip)
   --systemd-mode MODE        Systemd handling: enable|write-only|skip (default: enable)
@@ -109,6 +113,7 @@ log_configuration() {
   log "Systemd mode: $SYSTEMD_MODE"
   log "Postfix mode: $POSTFIX_MODE (dir=$POSTFIX_DIR)"
   log "API binding: ${API_HOST}:${API_PORT}"
+  log "Frontend binding: ${FRONTEND_HOST}:${FRONTEND_PORT}"
   log "Installer flags: non_interactive=$NON_INTERACTIVE force=$FORCE skip_db2_check=$SKIP_DB2_CHECK"
   log "Artifacts: tarball=${tarball_source}, wheel=${wheel_source}"
   log "Database URL: $(db_url_summary)"
@@ -154,6 +159,16 @@ parse_args() {
       --api-port)
         API_PORT="${2:-}"
         [ -n "$API_PORT" ] || { err "--api-port requires a value"; exit 1; }
+        shift 2
+        ;;
+      --ui-host)
+        FRONTEND_HOST="${2:-}"
+        [ -n "$FRONTEND_HOST" ] || { err "--ui-host requires a value"; exit 1; }
+        shift 2
+        ;;
+      --ui-port)
+        FRONTEND_PORT="${2:-}"
+        [ -n "$FRONTEND_PORT" ] || { err "--ui-port requires a value"; exit 1; }
         shift 2
         ;;
       --postfix-dir)
@@ -331,6 +346,8 @@ install_packages() {
     python3 \
     python3-devel \
     python3-pip \
+    nodejs \
+    npm \
     policycoreutils-python-utils \
     postfix \
     postfix-pcre \
@@ -565,6 +582,82 @@ create_virtualenv() {
   fi
 }
 
+setup_frontend() {
+  local frontend_dir="$PREFIX/app/frontend"
+  if [ ! -d "$frontend_dir" ]; then
+    warn "Frontend directory not found at $frontend_dir; skipping frontend setup"
+    return
+  fi
+
+  if ! command -v npm >/dev/null 2>&1; then
+    warn "npm command not available; skipping frontend setup"
+    return
+  fi
+
+  log "Installing frontend dependencies (npm ci)"
+  if ! run_as_app bash -lc "cd '$frontend_dir' && npm ci"; then
+    warn "npm ci failed; frontend service may not start until dependencies are installed"
+  fi
+
+  local proxy_host="$API_HOST"
+  if [ -z "$proxy_host" ] || [ "$proxy_host" = "0.0.0.0" ] || [ "$proxy_host" = "::" ]; then
+    proxy_host="127.0.0.1"
+  fi
+  local proxy_target="http://${proxy_host}:${API_PORT}"
+
+  if [ -f "$frontend_dir/proxy.json" ] && [ ! -f "$frontend_dir/proxy.json.dist" ]; then
+    cp "$frontend_dir/proxy.json" "$frontend_dir/proxy.json.dist"
+  fi
+
+  log "Writing frontend proxy.json (target=${proxy_target})"
+  cat >"$frontend_dir/proxy.json" <<EOF_PROXY
+{
+  "/addresses": {
+    "target": "${proxy_target}",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/logs": {
+    "target": "${proxy_target}",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/test": {
+    "target": "${proxy_target}",
+    "secure": false,
+    "changeOrigin": true
+  }
+}
+EOF_PROXY
+  chown "$APP_USER":"$APP_USER" "$frontend_dir/proxy.json"
+  chmod 0644 "$frontend_dir/proxy.json"
+
+  log "Configuring npm start script for frontend service"
+  run_as_app env FRONTEND_DIR="$frontend_dir" PYTHON_BIN="$PYTHON_BIN" FRONTEND_HOST="$FRONTEND_HOST" FRONTEND_PORT="$FRONTEND_PORT" "$PYTHON_BIN" - <<'PYCODE'
+import json
+import os
+import pathlib
+
+frontend_dir = pathlib.Path(os.environ['FRONTEND_DIR'])
+pkg_path = frontend_dir / 'package.json'
+data = json.loads(pkg_path.read_text())
+scripts = data.setdefault('scripts', {})
+
+scripts['start'] = (
+    'ng serve --host ${FRONTEND_HOST:-0.0.0.0} '
+    '--port ${FRONTEND_PORT:-4200} --proxy-config proxy.json'
+)
+
+scripts.setdefault('start:install', scripts['start'])
+
+pkg_path.write_text(json.dumps(data, indent=2) + "\n")
+PYCODE
+
+  chown "$APP_USER":"$APP_USER" "$frontend_dir/package.json"
+
+  log "Frontend setup complete (host=${FRONTEND_HOST}, port=${FRONTEND_PORT})"
+}
+
 write_env_file() {
   local env_path="$PREFIX/.env"
   if [ -f "$env_path" ] && [ "$FORCE" -eq 0 ]; then
@@ -588,6 +681,8 @@ API_LOG_FILE=$LOG_DIR/api.log
 API_LOG_LEVEL=INFO
 BLOCKER_LOG_FILE=$LOG_DIR/blocker.log
 BLOCKER_LOG_LEVEL=INFO
+FRONTEND_HOST=$FRONTEND_HOST
+FRONTEND_PORT=$FRONTEND_PORT
 EOF_ENV
 
   chown "$APP_USER":"$APP_USER" "$env_path"
@@ -647,8 +742,31 @@ SyslogIdentifier=postfixblocker-api
 WantedBy=multi-user.target
 SERVICE_API
 
+  cat >/etc/systemd/system/postfixblocker-frontend.service <<SERVICE_FRONTEND
+[Unit]
+Description=postfix-blocker Angular frontend dev server
+After=postfixblocker-api.service network-online.target
+Wants=postfixblocker-api.service
+
+[Service]
+Type=simple
+User=$APP_USER
+Group=$APP_USER
+EnvironmentFile=$PREFIX/.env
+WorkingDirectory=$PREFIX/app/frontend
+ExecStart=/usr/bin/npm run start
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=postfixblocker-frontend
+
+[Install]
+WantedBy=multi-user.target
+SERVICE_FRONTEND
+
   chmod 0644 /etc/systemd/system/postfixblocker-*.service
-  log "Systemd units available: postfixblocker-blocker.service, postfixblocker-api.service"
+  log "Systemd units available: postfixblocker-blocker.service, postfixblocker-api.service, postfixblocker-frontend.service"
 
   if [ "$SYSTEMD_MODE" = "enable" ]; then
     if systemd_available; then
@@ -658,6 +776,8 @@ SERVICE_API
         systemctl enable --now postfixblocker-blocker.service || warn "Failed to enable/start postfixblocker-blocker; inspect systemctl status"
         log "Enabling and starting postfixblocker-api"
         systemctl enable --now postfixblocker-api.service || warn "Failed to enable/start postfixblocker-api; inspect systemctl status"
+        log "Enabling and starting postfixblocker-frontend"
+        systemctl enable --now postfixblocker-frontend.service || warn "Failed to enable/start postfixblocker-frontend; inspect systemctl status"
       else
         warn "systemctl daemon-reload failed; wrote systemd units but skipped enable/start"
         warn "Re-run with --systemd-mode write-only to suppress this warning."
@@ -706,6 +826,7 @@ Next steps:
   - Verify Db2 connectivity and run sql/db2_init.sql if this is the first deployment.
   - Confirm Postfix restrictions in $POSTFIX_DIR/main.cf align with your policy.
   - Logs: $LOG_DIR, PID file directory: $PID_DIR
+  - Frontend dev server listening on ${FRONTEND_HOST}:${FRONTEND_PORT} (access via http://<server-host>:${FRONTEND_PORT})
 SUMMARY_BLOCK
 }
 
@@ -738,6 +859,8 @@ main() {
   unpack_application
   log "Setting up Python virtual environment"
   create_virtualenv
+  log "Setting up frontend application"
+  setup_frontend
   check_db2_driver
   test_database_connectivity
   log "Writing application environment configuration"
