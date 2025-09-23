@@ -3,6 +3,38 @@
 All notable changes to this project are documented here.
 This file is auto-generated from Git history. Do not edit by hand.
 
+## v0.0.2 - 2025-09-22
+### Chores
+- update scripts/install.sh before test-installer
+- update scripts/install.sh before test-installer
+- update scripts/install.sh before test-installer
+- update changelog for 0.0.1
+
+### Other
+- - **Enhance seed_default_props to handle select failures and logging** - **Add helper methods for streamlined insert attempts in seed_default_props** - **Include .env support in Makefile and add additional Docker commands** - **Improve coverage accuracy for props.py and related test cases** - **Bump code coverage metrics and update relevant documentation**
+- - **Enhance seed_default_props to handle select failures and logging** - **Add helper methods for streamlined insert attempts in seed_default_props** - **Include .env support in Makefile and add additional Docker commands** - **Improve coverage accuracy for props.py and related test cases** - **Bump code coverage metrics and update relevant documentation**
+- Create dependabot.yml
+- Update README.md
+- Update license format in pyproject.toml to use `license` and `license-files` fields.
+- Update license format in pyproject.toml to use `license` and `license-files` fields.
+- Add detailed logging throughout the `install.sh` script and improve error handling. Update default test paths, adjust e2e test logic for precise SMTP response handling, and modify configuration-based Postfix logging behavior.
+- Removed Docker-based install script E2E tests and related configuration.
+- Enhance `systemd_available` check and improve systemd unit handling.
+- Integrate systemd detection and improve install scripts with DB2 and systemd validation. Extend e2e tests for enhanced systemd coverage.
+- Add installer script for postfix-blocker with end-to-end test and relevant documentation updates
+- Fix coverage badge URL in README.md
+- Update README.md
+- Create codeql.yml
+- Update README badges to include CodeQL, contributors, and license
+- Remove unused badge generation scripts and update badge handling in CI and README
+- Remove unused badge generation scripts and update badge handling in CI and README
+- Add scripts for generating and managing custom Shields badges
+- - Update code coverage timestamps in HTML files - Refactor SQLite test to use `tmp_path` for test file management
+- - Update code coverage timestamps in HTML files - Refactor SQLite test to use `tmp_path` for test file management
+- Add code coverage artifacts and enhance SQLite test cleanup
+- Added LCOV coverage reporter for CI and updated coverage timestamps.
+- Updated timestamps in coverage reports and restructured repository guidelines to prioritize clarity and enforce build/test consistency.
+
 ## v0.0.1 - 2025-09-21
 ### Chores
 - add auto-generated changelog and push in release; generate CHANGELOG.md
