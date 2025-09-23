@@ -920,6 +920,10 @@ SUMMARY_BLOCK
 main() {
   parse_args "$@"
   require_root
+  if [ "$API_HOST" != "127.0.0.1" ]; then
+    warn "API host override ignored; forcing loopback binding"
+    API_HOST="127.0.0.1"
+  fi
   log "Starting postfix-blocker installer"
   if [ -n "$VERSION" ]; then
     log "Version requested via arguments: $VERSION"
