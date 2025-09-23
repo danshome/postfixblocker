@@ -333,7 +333,10 @@ install_packages() {
     fi
   fi
 
-  log "Installing required packages via dnf (curl, tar, gzip, which, gcc, make, openssl-devel, libffi-devel, python3, python3-devel, python3-pip, policycoreutils-python-utils, postfix, postfix-pcre, shadow-utils, git)"
+  log "Installing required packages via dnf (curl, tar, gzip, which, gcc, make, openssl-devel, libffi-devel, python3, python3-devel, python3-pip, nodejs, npm, policycoreutils-python-utils, postfix, postfix-pcre, shadow-utils, git)"
+  if command -v dnf >/dev/null 2>&1; then
+    dnf -y module enable nodejs:20 >/dev/null 2>&1 || true
+  fi
   dnf -y install --allowerasing \
     curl \
     tar \
@@ -362,6 +365,21 @@ ensure_python() {
     exit 1
   fi
   log "Using Python interpreter: $PYTHON_BIN"
+}
+
+install_pm2() {
+  if ! command -v npm >/dev/null 2>&1; then
+    warn "npm not available; skipping PM2 installation"
+    return
+  fi
+  if command -v pm2 >/dev/null 2>&1; then
+    log "PM2 already installed"
+    return
+  fi
+  log "Installing PM2 process manager"
+  if ! npm install -g pm2 >/dev/null; then
+    warn "Failed to install PM2 globally; frontend service may not start"
+  fi
 }
 
 ensure_user_and_dirs() {
@@ -655,6 +673,28 @@ PYCODE
 
   chown "$APP_USER":"$APP_USER" "$frontend_dir/package.json"
 
+  local pm2_config="$frontend_dir/pm2.config.cjs"
+  log "Writing PM2 ecosystem config at $pm2_config"
+  cat >"$pm2_config" <<'EOF_PM2'
+module.exports = {
+  apps: [
+    {
+      name: 'postfixblocker-frontend',
+      cwd: __dirname,
+      script: '/usr/bin/npm',
+      args: 'run start',
+      interpreter: 'none',
+      env: {
+        FRONTEND_HOST: process.env.FRONTEND_HOST || '0.0.0.0',
+        FRONTEND_PORT: process.env.FRONTEND_PORT || '4200',
+      },
+    },
+  ],
+};
+EOF_PM2
+  chown "$APP_USER":"$APP_USER" "$pm2_config"
+  chmod 0644 "$pm2_config"
+
   log "Frontend setup complete (host=${FRONTEND_HOST}, port=${FRONTEND_PORT})"
 }
 
@@ -754,7 +794,8 @@ User=$APP_USER
 Group=$APP_USER
 EnvironmentFile=$PREFIX/.env
 WorkingDirectory=$PREFIX/app/frontend
-ExecStart=/usr/bin/npm run start
+ExecStart=/usr/bin/pm2-runtime start $PREFIX/app/frontend/pm2.config.cjs
+-ExecStop=/usr/bin/pm2 delete postfixblocker-frontend
 Restart=on-failure
 RestartSec=5s
 StandardOutput=journal
@@ -827,6 +868,7 @@ Next steps:
   - Confirm Postfix restrictions in $POSTFIX_DIR/main.cf align with your policy.
   - Logs: $LOG_DIR, PID file directory: $PID_DIR
   - Frontend dev server listening on ${FRONTEND_HOST}:${FRONTEND_PORT} (access via http://<server-host>:${FRONTEND_PORT})
+    (managed by PM2; config at $PREFIX/app/frontend/pm2.config.cjs)
 SUMMARY_BLOCK
 }
 
@@ -851,6 +893,7 @@ main() {
   log "Installing prerequisite packages"
   install_packages
   ensure_python
+  install_pm2
   log "Preparing application user and directories"
   ensure_user_and_dirs
   log "Ensuring release artifacts are available"
