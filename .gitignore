@@ -25,3 +25,20 @@ logs/
 /database/
 /.output.txt
 badges/
+
+# Python coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+
+# JS/TS coverage
+coverage/
+frontend/coverage/
+.nyc_output/
+coverage-final.json
+lcov.info
+
+# Test outputs
+junit*.xml
+test-results/
