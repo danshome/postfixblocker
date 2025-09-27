@@ -42,3 +42,6 @@ lcov.info
 # Test outputs
 junit*.xml
 test-results/
+
+.DS_Store
+
