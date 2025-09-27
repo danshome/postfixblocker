@@ -34,11 +34,11 @@ def dump_state() -> ResponseReturnValue:
     if os.environ.get('TEST_RESET_ENABLE', '0') != '1':
         abort(403)
     ensure_db_ready: Optional[Callable[[], bool]] = cast(
-        Optional[Callable[[], bool]], current_app.config.get('ensure_db_ready')
+        Optional[Callable[[], bool]],
+        current_app.config.get('ensure_db_ready'),
     )
-    if ensure_db_ready is not None:
-        if not ensure_db_ready():
-            return jsonify({'error': 'database not ready'}), 503
+    if ensure_db_ready is not None and not ensure_db_ready():
+        return jsonify({'error': 'database not ready'}), 503
     eng: Engine = cast(Engine, current_app.config.get('db_engine'))
     bt = get_blocked_table()
     pt = get_props_table()
@@ -47,7 +47,7 @@ def dump_state() -> ResponseReturnValue:
     with eng.connect() as conn:
         conn = cast(Connection, conn)
         for row in conn.execute(
-            bt.select().with_only_columns(bt.c.pattern, bt.c.is_regex, bt.c.test_mode)
+            bt.select().with_only_columns(bt.c.pattern, bt.c.is_regex, bt.c.test_mode),
         ):
             row = cast(Row[Any], row)
             blocked.append({'pattern': row[0], 'is_regex': bool(row[1]), 'test_mode': bool(row[2])})
@@ -77,11 +77,11 @@ def reset_state() -> ResponseReturnValue:
         abort(403)
 
     ensure_db_ready: Optional[Callable[[], bool]] = cast(
-        Optional[Callable[[], bool]], current_app.config.get('ensure_db_ready')
+        Optional[Callable[[], bool]],
+        current_app.config.get('ensure_db_ready'),
     )
-    if ensure_db_ready is not None:
-        if not ensure_db_ready():
-            return jsonify({'error': 'database not ready'}), 503
+    if ensure_db_ready is not None and not ensure_db_ready():
+        return jsonify({'error': 'database not ready'}), 503
     eng: Engine = cast(Engine, current_app.config.get('db_engine'))
 
     bt = get_blocked_table()
@@ -120,5 +120,5 @@ def reset_state() -> ResponseReturnValue:
                 'cris_props': deleted_props,
             },
             'seeded': len(seeds),
-        }
+        },
     )

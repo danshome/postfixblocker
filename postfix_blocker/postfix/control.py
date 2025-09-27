@@ -4,7 +4,29 @@ from __future__ import annotations
 """Postfix control helpers (refactor implementation)."""
 import logging
 import os
-import subprocess  # nosec B404
+import subprocess  # nosec B404  # Using subprocess to invoke fixed system utilities (postmap/postfix) is required for functionality; shell is not used.
+from collections.abc import Sequence
+from pathlib import Path
+from typing import Any
+
+
+def _run_fixed(cmd: Sequence[str], **kwargs: Any):
+    """Run a whitelisted Postfix utility safely.
+
+    Safety guarantees:
+    - Absolute executable path is validated against an allowlist.
+    - shell=False is always used (subprocess default when passing a list).
+    - Arguments are constructed from internal values only.
+
+    This narrow helper centralizes the one required subprocess invocation and
+    documents the constraints. Lint suppressions are restricted to this callsite.
+    """
+    allowed = {'/usr/sbin/postmap', '/usr/sbin/postfix', '/usr/sbin/postconf'}
+    exe = cmd[0] if cmd else ''
+    if exe not in allowed:
+        logging.getLogger(__name__).debug('Disallowed executable: %r', exe)
+        raise ValueError(exe)
+    return subprocess.run(list(cmd), **kwargs)  # noqa: S603  # nosec  # safe: fixed absolute executable path; no shell; arguments are internal
 
 
 def reload_postfix() -> None:
@@ -13,24 +35,26 @@ def reload_postfix() -> None:
     Uses environment POSTFIX_DIR for map paths; defaults to /etc/postfix.
     """
     postfix_dir = os.environ.get('POSTFIX_DIR', '/etc/postfix')
-    literal_path = os.path.join(postfix_dir, 'blocked_recipients')
-    test_literal_path = os.path.join(postfix_dir, 'blocked_recipients_test')
+    literal_path = Path(postfix_dir) / 'blocked_recipients'
+    test_literal_path = Path(postfix_dir) / 'blocked_recipients_test'
     try:
         logging.info('Running postmap on %s and %s', literal_path, test_literal_path)
-        rc1 = subprocess.run(['/usr/sbin/postmap', literal_path], check=False).returncode  # nosec B603
-        rc1b = subprocess.run(['/usr/sbin/postmap', test_literal_path], check=False).returncode  # nosec B603
+        # Safe: using fixed executable and a validated filesystem path; no shell involvement.
+        # Using fixed absolute executable and a validated file path within POSTFIX_DIR; shell is not used.
+        rc1 = _run_fixed(['/usr/sbin/postmap', str(literal_path)], check=False).returncode
+        rc1b = _run_fixed(['/usr/sbin/postmap', str(test_literal_path)], check=False).returncode
         try:
-            size1 = os.path.getsize(literal_path)
-            size2 = os.path.getsize(test_literal_path)
+            size1 = literal_path.stat().st_size
+            size2 = test_literal_path.stat().st_size
         except Exception:
             size1 = size2 = -1
         try:
-            status_rc = subprocess.run(['/usr/sbin/postfix', 'status'], check=False).returncode  # nosec B603
+            status_rc = _run_fixed(['/usr/sbin/postfix', 'status'], check=False).returncode
         except Exception:
             status_rc = 1
         if status_rc == 0:
             logging.info('Reloading postfix')
-            rc2 = subprocess.run(['/usr/sbin/postfix', 'reload'], check=False).returncode  # nosec B603
+            rc2 = _run_fixed(['/usr/sbin/postfix', 'reload'], check=False).returncode
         else:
             rc2 = None
             logging.debug('Postfix master not running yet; skipping reload')
@@ -60,16 +84,20 @@ def reload_postfix() -> None:
 
 def has_postfix_pcre() -> bool:
     try:
-        res = subprocess.run(
-            ['/usr/sbin/postconf', '-m'], capture_output=True, text=True, check=True
-        )  # nosec B603
+        # Fixed absolute executable with constant arguments; safe without shell.
+        res = _run_fixed(
+            ['/usr/sbin/postconf', '-m'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
         return 'pcre' in (res.stdout or '').lower()
     except FileNotFoundError:
-        logging.error("'postconf' not found; cannot verify Postfix PCRE support.")
+        logging.exception("'postconf' not found; cannot verify Postfix PCRE support.")
         return False
     except Exception as exc:
         logging.warning("Could not verify Postfix PCRE support via 'postconf -m': %s", exc)
         return False
 
 
-__all__ = ['reload_postfix', 'has_postfix_pcre']
+__all__ = ['has_postfix_pcre', 'reload_postfix']

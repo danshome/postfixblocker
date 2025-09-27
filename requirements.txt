@@ -4,3 +4,4 @@ Flask
 SQLAlchemy
 ibm-db
 ibm-db-sa
+webauthn

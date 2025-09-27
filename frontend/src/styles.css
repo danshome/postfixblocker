@@ -64,3 +64,8 @@ table {
   background: #fdecea; /* red-50 */
   color: #611a15;
 }
+
+/* Utility spacing/layout for auth panel */
+.mb { margin-bottom: 16px; }
+.row { display: flex; gap: 12px; align-items: center; }
+.half { width: 100%; max-width: 360px; }

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 from typing import Any, Callable, cast
 
 from flask import Blueprint, abort, current_app, jsonify, request
@@ -12,6 +13,7 @@ from ..db.props import LINES_KEYS, LOG_KEYS, REFRESH_KEYS, get_prop, set_prop
 from ..logging_setup import set_logger_level
 from ..postfix.log_level import apply_postfix_log_level, resolve_mail_log_path
 from ..services.log_tail import tail_file
+from .auth import login_required
 
 bp = Blueprint('logs', __name__)
 
@@ -22,6 +24,7 @@ STATUS_OK = 'ok'
 
 
 @bp.route('/logs/level/<service>', methods=['GET', 'PUT'])
+@login_required
 def log_level(service: str) -> ResponseReturnValue:
     """Get or set the log level for a service (api|blocker|postfix).
 
@@ -42,9 +45,8 @@ def log_level(service: str) -> ResponseReturnValue:
     ensure_db_ready: Callable[[], bool] | None = (
         cast(Callable[[], bool], _raw) if callable(_raw) else None
     )
-    if ensure_db_ready is not None:
-        if not ensure_db_ready():
-            return jsonify({KEY_ERROR: ERR_DB_NOT_READY}), 503
+    if ensure_db_ready is not None and not ensure_db_ready():
+        return jsonify({KEY_ERROR: ERR_DB_NOT_READY}), 503
     eng: Engine = cast(Engine, current_app.config.get('db_engine'))
     key = LOG_KEYS[service]
     if request.method == 'GET':
@@ -65,6 +67,7 @@ def log_level(service: str) -> ResponseReturnValue:
 
 
 @bp.route('/logs/tail', methods=['GET'])
+@login_required
 def tail_log() -> ResponseReturnValue:
     """Return the last N lines of a known log file.
 
@@ -97,7 +100,7 @@ def tail_log() -> ResponseReturnValue:
     else:
         path = resolve_mail_log_path()
     logging.getLogger('api').debug('Tail request name=%s lines=%s path=%s', name, lines, path)
-    if not os.path.exists(path):
+    if not Path(path).exists():
         return jsonify({'name': name, 'path': path, 'content': '', 'missing': True})
     try:
         content: str = tail_file(path, lines)
@@ -108,6 +111,7 @@ def tail_log() -> ResponseReturnValue:
 
 
 @bp.route('/logs/lines', methods=['GET'])
+@login_required
 def lines_count() -> ResponseReturnValue:
     """Return the line count for a known log name (api|blocker|postfix).
 
@@ -134,11 +138,11 @@ def lines_count() -> ResponseReturnValue:
     else:
         path = resolve_mail_log_path()
     logging.getLogger('api').debug('Lines count request name=%s path=%s', name, path)
-    if not os.path.exists(path):
+    if not Path(path).exists():
         return jsonify({'name': name, 'path': path, 'count': 0, 'missing': True})
     count: int = 0
     try:
-        with open(path, encoding='utf-8', errors='replace') as f:
+        with Path(path).open(encoding='utf-8', errors='replace') as f:
             for _ in f:
                 count += 1
     except Exception as exc:
@@ -148,6 +152,7 @@ def lines_count() -> ResponseReturnValue:
 
 
 @bp.route('/logs/refresh/<name>', methods=['GET', 'PUT'])
+@login_required
 def refresh_interval(name: str) -> ResponseReturnValue:
     """Get or set UI refresh settings for a log view.
 
@@ -167,22 +172,27 @@ def refresh_interval(name: str) -> ResponseReturnValue:
     ensure_db_ready: Callable[[], bool] | None = (
         cast(Callable[[], bool], _raw) if callable(_raw) else None
     )
-    if ensure_db_ready is not None:
-        if not ensure_db_ready():
-            return jsonify({KEY_ERROR: ERR_DB_NOT_READY}), 503
+    if ensure_db_ready is not None and not ensure_db_ready():
+        return jsonify({KEY_ERROR: ERR_DB_NOT_READY}), 503
     eng: Engine = cast(Engine, current_app.config.get('db_engine'))
     if request.method == 'GET':
         ms = int(get_prop(eng, REFRESH_KEYS[name], '5000') or '5000')
         lines = int(get_prop(eng, LINES_KEYS[name], '100') or '100')
         logging.getLogger('api').debug(
-            'Get refresh settings name=%s interval_ms=%s lines=%s', name, ms, lines
+            'Get refresh settings name=%s interval_ms=%s lines=%s',
+            name,
+            ms,
+            lines,
         )
         return jsonify({'name': name, 'interval_ms': ms, 'lines': lines})
     data: dict[str, Any] = cast(dict[str, Any], request.get_json(force=True) or {})
     ms_s: str = str(int(data.get('interval_ms', 0)))
     lines_s: str = str(int(data.get('lines', 200)))
     logging.getLogger('api').debug(
-        'Set refresh settings name=%s interval_ms=%s lines=%s', name, ms_s, lines_s
+        'Set refresh settings name=%s interval_ms=%s lines=%s',
+        name,
+        ms_s,
+        lines_s,
     )
     set_prop(eng, REFRESH_KEYS[name], ms_s)
     set_prop(eng, LINES_KEYS[name], lines_s)

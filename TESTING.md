@@ -17,6 +17,20 @@ Target coverage (enforced by make ci):
 - Frontend unit (Karma): 80% minimum for statements, lines, functions, and branches (configurable via FE_COV_MIN).
 - Frontend e2e (Playwright): code coverage is not collected by default; see README for options to instrument if desired.
 
+Frontend testing stack:
+- Unit tests: Jasmine (testing framework) executed by Karma (test runner) via Angular CLI (ng test).
+- E2E tests: Playwright (@playwright/test).
+- Mutation testing: Stryker Mutator (configured to run the Jasmine/Karma suite).
+
+Frontend mutation testing (Stryker):
+- Normal run (requires green unit tests):
+  - cd frontend && npm run mutation-test
+  - or make mutation-test-frontend
+- Force run for troubleshooting (ignores initial test failures):
+  - cd frontend && npm run mutation-test:force
+  - or make mutation-test-frontend-force
+  - Caveat: This mode swallows the initial unit test failures so Stryker will proceed. The resulting mutation score is NOT authoritative. Use it only to validate the Stryker setup or to investigate configuration/performance; fix the tests and rerun normally for real scores.
+
 ## Running Tests
 
 ```bash

@@ -11,20 +11,50 @@ API_BASE_DB2 = os.environ.get('E2E_API_BASE_DB2', 'http://127.0.0.1:5002')
 SMTP_PORT_DB2 = int(os.environ.get('SMTP_PORT_DB2', '1026'))
 
 
+def _dbg(msg: str) -> None:
+    if os.environ.get('E2E_DEBUG') == '1':
+        print(f'[E2E][log_level] {msg}')
+
+
 def _get(api_base: str, path: str, **kwargs):
-    return requests.get(api_base + path, timeout=30, **kwargs)
+    try:
+        r = requests.get(api_base + path, timeout=30, **kwargs)
+        _dbg(f'GET {path} -> {r.status_code}')
+        return r
+    except Exception as exc:
+        _dbg(f'GET {path} failed: {exc}')
+        raise
 
 
 def _put(api_base: str, path: str, json: dict):
-    return requests.put(api_base + path, json=json, timeout=30)
+    try:
+        r = requests.put(api_base + path, json=json, timeout=30)
+        _dbg(f'PUT {path} -> {r.status_code}')
+        return r
+    except Exception as exc:
+        _dbg(f'PUT {path} failed: {exc}')
+        raise
 
 
 def wait_for_api_ready(api_base: str, timeout: int = 600) -> bool:
     start = time.time()
     while time.time() - start < timeout:
         try:
-            r = _get(api_base, '/addresses')
+            # Prefer /auth/session because it is unprotected and returns 200 when API is up
+            r = _get(api_base, '/auth/session')
             if r.status_code == 200:
+                _dbg('API ready (auth/session=200)')
+                return True
+        except Exception:
+            pass
+        try:
+            r2 = _get(api_base, '/addresses')
+            if r2.status_code == 200:
+                _dbg('API ready (addresses=200)')
+                return True
+            if r2.status_code in (401, 403):
+                # API is up but auth is enforced; do not spin for full timeout
+                _dbg('API up but auth required (addresses returned 401/403)')
                 return True
         except Exception:
             pass
@@ -97,7 +127,7 @@ def test_postfix_log_level_increasing_line_counts():
     scenario = {'name': 'db2', 'api_base': API_BASE_DB2, 'smtp_port': SMTP_PORT_DB2}
     if not wait_for_api_ready(scenario['api_base']):
         pytest.fail(
-            f'API not ready for e2e test ({scenario["name"]}). Backend/E2E tests require the API to be available.'
+            f'API not ready for e2e test ({scenario["name"]}). Backend/E2E tests require the API to be available.',
         )
 
     # Use distinct recipients per level to aid diagnostics
@@ -108,7 +138,10 @@ def test_postfix_log_level_increasing_line_counts():
 
     # WARNING should be least verbose, INFO more, DEBUG most
     dw = _measure_delta_for_level(
-        scenario['api_base'], scenario['smtp_port'], 'WARNING', rec_warning
+        scenario['api_base'],
+        scenario['smtp_port'],
+        'WARNING',
+        rec_warning,
     )
     di = _measure_delta_for_level(scenario['api_base'], scenario['smtp_port'], 'INFO', rec_info)
     dd = _measure_delta_for_level(scenario['api_base'], scenario['smtp_port'], 'DEBUG', rec_debug)

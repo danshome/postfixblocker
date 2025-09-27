@@ -16,7 +16,10 @@ def test_configure_logging_and_set_logger_level_variants(tmp_path):
     os.environ['API_LOG_LEVEL'] = 'INFO'
     try:
         configure_logging(
-            service='api', level_env='API_LOG_LEVEL', file_env='API_LOG_FILE', default='WARNING'
+            service='api',
+            level_env='API_LOG_LEVEL',
+            file_env='API_LOG_FILE',
+            default='WARNING',
         )
         logger = logging.getLogger('api')
         # Default INFO from env should be applied

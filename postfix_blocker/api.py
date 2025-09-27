@@ -45,7 +45,7 @@ def _coerce_level(level: Any) -> int:
     return getattr(logging, s, logging.INFO)
 
 
-__all__ = ['app', '_tail_file', '_coerce_level']
+__all__ = ['_coerce_level', '_tail_file', 'app']
 
 
 if __name__ == '__main__':  # pragma: no cover - dev/supervisor entrypoint

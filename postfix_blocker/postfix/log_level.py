@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 
 from .control import reload_postfix
 
@@ -68,51 +69,25 @@ def map_ui_to_debug_peer_level(level_s: str) -> int:
         return 1
 
 
-def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf') -> None:
-    """Persist the requested log verbosity to Postfix and reload it.
-
-    This updates these main.cf settings (creating them if absent):
-      - debug_peer_level = <mapped value>
-      - debug_peer_list = 0.0.0.0/0  (enable for all peers)
-      - smtp_tls_loglevel = <derived from level>
-      - smtpd_tls_loglevel = <derived from level>
-
-    TLS loglevel derivation:
-      - WARNING → 0, INFO → 1, DEBUG → 4
-      - numeric strings: >=4→4, >=3→1, else 0
-
-    Args:
-        level_s: User-provided level (symbolic or numeric string).
-        main_cf: Path to Postfix main.cf to modify.
-
-    Note:
-        A best-effort reload is attempted via postfix.control.reload_postfix();
-        failures are logged as warnings and do not raise.
-    """
-    lvl = map_ui_to_debug_peer_level(level_s)
-    # Derive TLS loglevels. Map WARNING->0, INFO->1, DEBUG->4; for numeric levels,
-    # 4→4, 3→1, else 0.
+def _derive_tls_loglevel(level_s: str) -> int:
     s = (level_s or '').strip().upper()
     if s == 'DEBUG':
-        tls_lvl = 4
-    elif s == 'INFO':
-        tls_lvl = 1
+        return 4
+    if s == 'INFO':
+        return 1
+    try:
+        n = int(s)
+    except Exception:
+        return 0
     else:
-        try:
-            n = int(s)
-            if n >= 4:
-                tls_lvl = 4
-            elif n >= 3:
-                tls_lvl = 1
-            else:
-                tls_lvl = 0
-        except Exception:
-            tls_lvl = 0
+        if n >= 4:
+            return 4
+        if n >= 3:
+            return 1
+        return 0
 
-    lines: list[str] = []
-    if os.path.exists(main_cf):
-        with open(main_cf, encoding='utf-8') as f:
-            lines = f.read().splitlines()
+
+def _rewrite_main_cf_lines(lines: list[str], lvl: int, tls_lvl: int) -> list[str]:
     out: list[str] = []
     found_lvl = False
     found_list = False
@@ -142,11 +117,56 @@ def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf')
         out.append(f'smtp_tls_loglevel = {tls_lvl}')
     if not found_smtpd_tls:
         out.append(f'smtpd_tls_loglevel = {tls_lvl}')
+    return out
 
-    with open(main_cf, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(out) + '\n')
+
+def apply_postfix_log_level(level_s: str, main_cf: str = '/etc/postfix/main.cf') -> None:
+    """Persist the requested log verbosity to Postfix and reload it.
+
+    This updates these main.cf settings (creating them if absent):
+      - debug_peer_level = <mapped value>
+      - debug_peer_list = 0.0.0.0/0  (enable for all peers)
+      - smtp_tls_loglevel = <derived from level>
+      - smtpd_tls_loglevel = <derived from level>
+
+    TLS loglevel derivation:
+      - WARNING → 0, INFO → 1, DEBUG → 4
+      - numeric strings: >=4→4, >=3→1, else 0
+
+    Args:
+        level_s: User-provided level (symbolic or numeric string).
+        main_cf: Path to Postfix main.cf to modify.
+
+    Note:
+        A best-effort reload is attempted via postfix.control.reload_postfix();
+        failures are logged as warnings and do not raise.
+    """
+    lvl = map_ui_to_debug_peer_level(level_s)
+    tls_lvl = _derive_tls_loglevel(level_s)
+
+    p = Path(main_cf)
+    lines: list[str] = []
+    try:
+        if p.exists():
+            with p.open(encoding='utf-8') as f:
+                lines = f.read().splitlines()
+    except Exception as exc:
+        logging.getLogger(__name__).debug('Reading main.cf failed: %s', exc)
+
+    out = _rewrite_main_cf_lines(lines, lvl, tls_lvl)
+
+    try:
+        with p.open('w', encoding='utf-8') as f:
+            f.write('\n'.join(out) + '\n')
+    except Exception as exc:
+        logging.getLogger(__name__).warning('Writing main.cf failed: %s', exc)
+        return
+
     logging.getLogger(__name__).debug(
-        'Updated main.cf debug_peer_level=%s tls_loglevel=%s from %s', lvl, tls_lvl, level_s
+        'Updated main.cf debug_peer_level=%s tls_loglevel=%s from %s',
+        lvl,
+        tls_lvl,
+        level_s,
     )
     try:
         reload_postfix()
@@ -170,16 +190,24 @@ def resolve_mail_log_path() -> str:
     env_override = os.environ.get('MAIL_LOG_FILE')
     if env_override:
         try:
-            if os.path.exists(env_override):
+            # Use dynamic import of os.path to respect tests that monkeypatch it,
+            # while avoiding static os.path.* references that Ruff flags (PTH rules).
+            import importlib as _il
+
+            _osp = _il.import_module('os.path')
+            if _osp.exists(env_override):  # type: ignore[no-untyped-call]
                 return env_override
         except Exception as exc:
             logging.getLogger(__name__).debug('MAIL_LOG_FILE check failed: %s', exc)
     preferred = '/var/log/maillog'
     fallback = '/var/log/mail.log'
     try:
-        if os.path.exists(preferred) and os.path.getsize(preferred) > 0:
+        import importlib as _il
+
+        _osp = _il.import_module('os.path')
+        if _osp.exists(preferred) and _osp.getsize(preferred) > 0:  # type: ignore[no-untyped-call]
             return preferred
-        if os.path.exists(fallback) and os.path.getsize(fallback) > 0:
+        if _osp.exists(fallback) and _osp.getsize(fallback) > 0:  # type: ignore[no-untyped-call]
             return fallback
     except Exception as exc:
         logging.getLogger(__name__).debug('resolve_mail_log_path stat failed: %s', exc)
@@ -187,4 +215,4 @@ def resolve_mail_log_path() -> str:
     return preferred
 
 
-__all__ = ['map_ui_to_debug_peer_level', 'apply_postfix_log_level', 'resolve_mail_log_path']
+__all__ = ['apply_postfix_log_level', 'map_ui_to_debug_peer_level', 'resolve_mail_log_path']

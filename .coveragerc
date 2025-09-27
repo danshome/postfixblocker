@@ -1,17 +1,13 @@
 [run]
 source = postfix_blocker
-parallel = True
-# Omit container-only integration code that host-side pytest cannot cover.
+# Only omit code that cannot be exercised reliably in unit tests per AGENTS.md
 omit =
-    postfix_blocker/postfix/log_level.py
-    postfix_blocker/postfix/control.py
-    postfix_blocker/web/*.py
+    # DB2-only DDL/maintenance logic; requires a real DB2 backend and is covered in integration/e2e where feasible
+    postfix_blocker/db/migrations.py
+    # Environment-specific service runners (long-lived daemons) not executed under unit test harness
+    postfix_blocker/services/blocker_service.py
     postfix_blocker/blocker.py
-    postfix_blocker/api.py
 
 [report]
-# Common patterns to exclude from coverage metrics
 exclude_lines =
     pragma: no cover
-    if TYPE_CHECKING:
-    if __name__ == '__main__':

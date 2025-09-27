@@ -8,7 +8,7 @@ def test_blocked_table_schema():
         from postfix_blocker.db.schema import get_blocked_table, get_props_table
     except Exception:
         pytest.fail(
-            'SQLAlchemy not installed or schema module import failed; required for unit tests.'
+            'SQLAlchemy not installed or schema module import failed; required for unit tests.',
         )
 
     # Should not raise

@@ -43,8 +43,8 @@ def test_init_db_sqlite_creates_tables_and_migrates_test_mode(tmp_path: Path) ->
                     is_regex BOOLEAN NOT NULL DEFAULT 0,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-                """
-            )
+                """,
+            ),
         )
 
     # Run migrations: should create cris_props and add test_mode to blocked_addresses

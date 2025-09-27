@@ -4,21 +4,36 @@
  ordering/leakage problems that we specifically want to detect.
 */
 
+/**
+ * Wait until an HTTP endpoint responds with a 2xx status.
+ * @param {string} url - Absolute URL to poll for readiness.
+ * @param {number} [timeoutMs] - Maximum time to wait in milliseconds.
+ * @returns {Promise<void>} Resolves when the endpoint responds OK.
+ */
 async function waitForOk(url: string, timeoutMs = 600_000): Promise<void> {
   const start = Date.now();
   for (;;) {
     try {
       const r = await fetch(url, { method: 'GET' });
       if (r.ok) return;
-    } catch {}
+    } catch {
+      // Backend may not be up yet; ignore transient network errors.
+      void 0;
+    }
     if (Date.now() - start > timeoutMs) {
       throw new Error(`Timeout waiting for ${url} to be ready`);
     }
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 }
 
-async function postJson(url: string, body: any): Promise<boolean> {
+/**
+ * POST a JSON payload and return whether the response is OK (2xx).
+ * @param {string} url - Absolute URL to post to.
+ * @param {unknown} body - Serializable JSON body; defaults to empty object.
+ * @returns {Promise<boolean>} True if the response had an OK status.
+ */
+async function postJson(url: string, body: unknown): Promise<boolean> {
   try {
     const r = await fetch(url, {
       method: 'POST',
@@ -31,16 +46,21 @@ async function postJson(url: string, body: any): Promise<boolean> {
   }
 }
 
-export default async function globalSetup() {
+/**
+ * Playwright global setup executed once before the e2e test suite.
+ * Ensures the backend API is ready and attempts an optional baseline reset.
+ * @returns {Promise<void>} Resolves when setup is complete.
+ */
+export default async function globalSetup(): Promise<void> {
   // Directly target API containers (not the dev servers) to avoid any coupling
   // with the webServer startup order.
   const bases = ['http://127.0.0.1:5002'];
 
   // Wait for the API to become responsive
   for (const base of bases) {
-    await waitForOk(`${base}/addresses`).catch((e) => {
+    await waitForOk(`${base}/addresses`).catch((error) => {
       // Let it throw — this will fail the suite early with a clear message
-      throw e;
+      throw error;
     });
   }
 
@@ -52,8 +72,10 @@ export default async function globalSetup() {
       // create and clean up their own data, but we prefer this fast path.
       // Intentionally do not implement a fallback full wipe here to keep the
       // policy of "one reset at the start".
-      // eslint-disable-next-line no-console
-      console.warn(`[global-setup] /test/reset not available or failed for ${base}`);
+
+      console.warn(
+        `[global-setup] /test/reset not available or failed for ${base}`,
+      );
     }
   }
 }

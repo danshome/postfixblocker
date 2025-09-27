@@ -24,7 +24,7 @@ def test_reload_postfix_happy_path(tmp_path, monkeypatch):
 
     calls = []
 
-    def _fake_run(args, **kwargs):  # nosec - test stub
+    def _fake_run(args, **kwargs):
         calls.append(list(args))
         # Simulate 'postfix status' returning 0 to trigger reload
         if args[:2] == ['/usr/sbin/postfix', 'status']:
@@ -45,7 +45,7 @@ def test_reload_postfix_happy_path(tmp_path, monkeypatch):
 
 @pytest.mark.unit
 def test_has_postfix_pcre_true(monkeypatch):
-    def _fake_run(args, **kwargs):  # nosec - test stub
+    def _fake_run(args, **kwargs):
         return SimpleNamespace(stdout='btree hash pcre ')
 
     monkeypatch.setattr('postfix_blocker.postfix.control.subprocess.run', _fake_run)
@@ -54,7 +54,7 @@ def test_has_postfix_pcre_true(monkeypatch):
 
 @pytest.mark.unit
 def test_has_postfix_pcre_file_missing(monkeypatch):
-    def _fake_run(args, **kwargs):  # nosec - test stub
+    def _fake_run(args, **kwargs):
         raise FileNotFoundError('postconf missing')
 
     monkeypatch.setattr('postfix_blocker.postfix.control.subprocess.run', _fake_run)

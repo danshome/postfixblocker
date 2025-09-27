@@ -12,7 +12,8 @@ def _target_db2():
     return {
         'name': 'db2',
         'db_url': os.environ.get(
-            'TEST_DB2_URL', 'ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER'
+            'TEST_DB2_URL',
+            'ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER',
         ),
         'smtp_host': os.environ.get('SMTP_HOST', 'localhost'),
         'smtp_port': int(os.environ.get('SMTP_PORT_DB2', '1026')),
@@ -27,11 +28,11 @@ def test_e2e_db2():
     # Ensure DB and SMTP endpoints are ready; fail if not.
     if not wait_for_db_url(target['db_url']):
         pytest.fail(
-            f'DB not ready for {target["name"]} at {target["db_url"]}. Backend/E2E tests require the database to be available.'
+            f'DB not ready for {target["name"]} at {target["db_url"]}. Backend/E2E tests require the database to be available.',
         )
     if not wait_for_smtp(target['smtp_host'], target['smtp_port'], total_timeout=60):
         pytest.fail(
-            f'SMTP not ready for {target["name"]} at {target["smtp_host"]}:{target["smtp_port"]}. Backend/E2E tests require SMTP to be available.'
+            f'SMTP not ready for {target["name"]} at {target["smtp_host"]}:{target["smtp_port"]}. Backend/E2E tests require SMTP to be available.',
         )
     delivered = run_e2e_scenario(
         target['db_url'],

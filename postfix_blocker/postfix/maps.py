@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import os
 from collections.abc import Iterable
+from pathlib import Path
 
 from ..models.entries import BlockEntry
 
@@ -20,6 +21,7 @@ def write_map_files(entries: Iterable[BlockEntry], postfix_dir: str | None = Non
       - blocked_recipients_test.pcre
     """
     pdir = postfix_dir or os.environ.get('POSTFIX_DIR', '/etc/postfix')
+    base = Path(pdir)
 
     literal_lines: list[str] = []
     regex_lines: list[str] = []
@@ -49,32 +51,32 @@ def write_map_files(entries: Iterable[BlockEntry], postfix_dir: str | None = Non
     )
 
     paths = {
-        'literal': os.path.join(pdir, 'blocked_recipients'),
-        'regex': os.path.join(pdir, 'blocked_recipients.pcre'),
-        'test_literal': os.path.join(pdir, 'blocked_recipients_test'),
-        'test_regex': os.path.join(pdir, 'blocked_recipients_test.pcre'),
+        'literal': base / 'blocked_recipients',
+        'regex': base / 'blocked_recipients.pcre',
+        'test_literal': base / 'blocked_recipients_test',
+        'test_regex': base / 'blocked_recipients_test.pcre',
     }
 
-    with open(paths['literal'], 'w', encoding='utf-8') as f:
+    with paths['literal'].open('w', encoding='utf-8') as f:
         f.write('\n'.join(literal_lines) + ('\n' if literal_lines else ''))
-    with open(paths['regex'], 'w', encoding='utf-8') as f:
+    with paths['regex'].open('w', encoding='utf-8') as f:
         f.write('\n'.join(regex_lines) + ('\n' if regex_lines else ''))
-    with open(paths['test_literal'], 'w', encoding='utf-8') as f:
+    with paths['test_literal'].open('w', encoding='utf-8') as f:
         f.write('\n'.join(test_literal_lines) + ('\n' if test_literal_lines else ''))
-    with open(paths['test_regex'], 'w', encoding='utf-8') as f:
+    with paths['test_regex'].open('w', encoding='utf-8') as f:
         f.write('\n'.join(test_regex_lines) + ('\n' if test_regex_lines else ''))
 
     logging.info(
         'Wrote maps: %s (bytes=%d), %s (bytes=%d), %s (bytes=%d), %s (bytes=%d)',
-        paths['literal'],
-        os.path.getsize(paths['literal']),
-        paths['regex'],
-        os.path.getsize(paths['regex']),
-        paths['test_literal'],
-        os.path.getsize(paths['test_literal']),
-        paths['test_regex'],
-        os.path.getsize(paths['test_regex']),
+        str(paths['literal']),
+        paths['literal'].stat().st_size,
+        str(paths['regex']),
+        paths['regex'].stat().st_size,
+        str(paths['test_literal']),
+        paths['test_literal'].stat().st_size,
+        str(paths['test_regex']),
+        paths['test_regex'].stat().st_size,
     )
 
 
-__all__ = ['write_map_files', 'BlockEntry']
+__all__ = ['BlockEntry', 'write_map_files']

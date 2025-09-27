@@ -3,15 +3,54 @@ from __future__ import annotations
 
 """Database initialization and lightweight migrations (refactor implementation)."""
 import logging as _logging
+import os
 
 from sqlalchemy import inspect
 from sqlalchemy.engine import Engine
 
+from .admins import seed_default_admin
+from .engine import get_user_engine
 from .props import seed_default_props
-from .schema import _ensure_loaded, get_blocked_table, get_props_table  # type: ignore
+from .schema import (
+    _ensure_loaded,
+    get_blocked_table,
+    get_props_table,
+    get_user_table,
+)
 
 
-def init_db(engine: Engine) -> None:
+def _init_user_db_and_seed() -> None:
+    try:
+        ueng = get_user_engine()
+        ut = get_user_table()
+        try:
+            ut.create(ueng, checkfirst=True)
+        except Exception as exc:  # pragma: no cover - dialect specific
+            import logging as _lg
+
+            msg = str(exc).lower()
+            if 'already exists' not in msg:
+                try:
+                    ut.create(ueng, checkfirst=True)
+                except Exception:
+                    _lg.getLogger(__name__).debug('UM_USER create failed: %s', exc)
+        try:
+            admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
+        except Exception:
+            admin_username = 'admin'
+        try:
+            seed_default_admin(ueng, admin_username, 'postfixblocker')
+        except Exception as exc:  # pragma: no cover - optional
+            import logging as _lg
+
+            _lg.getLogger(__name__).debug('Seed default admin skipped/failed: %s', exc)
+    except Exception as exc:  # pragma: no cover - optional
+        import logging as _lg
+
+        _lg.getLogger(__name__).debug('User DB init skipped/failed: %s', exc)
+
+
+def init_db(engine: Engine) -> None:  # noqa: C901 - complex, imperative DB bootstrap kept intact for safety
     """Create tables if needed and perform lightweight migrations.
 
     - Ensure both blocked_addresses and cris_props exist.
@@ -76,12 +115,12 @@ def init_db(engine: Engine) -> None:
 
             # 1) Ensure TS/BP (handle TS first to allow dropping BP if needed)
             ts = _fetchone(
-                "SELECT COUNT(*), COALESCE(MAX(PAGESIZE),0) FROM SYSCAT.TABLESPACES WHERE TBSPACE='TS32K'"
+                "SELECT COUNT(*), COALESCE(MAX(PAGESIZE),0) FROM SYSCAT.TABLESPACES WHERE TBSPACE='TS32K'",
             )
             ts_count = int(ts[0]) if ts else 0
             ts_pg = int(ts[1]) if ts else 0
             bp = _fetchone(
-                "SELECT COUNT(*), COALESCE(MAX(PAGESIZE),0) FROM SYSCAT.BUFFERPOOLS WHERE BPNAME='BP32K'"
+                "SELECT COUNT(*), COALESCE(MAX(PAGESIZE),0) FROM SYSCAT.BUFFERPOOLS WHERE BPNAME='BP32K'",
             )
             bp_count = int(bp[0]) if bp else 0
             bp_pg = int(bp[1]) if bp else 0
@@ -98,7 +137,8 @@ def init_db(engine: Engine) -> None:
                         conn.exec_driver_sql('DROP TABLESPACE TS32K')
                     except Exception as exc:
                         _logging.getLogger(__name__).debug(
-                            'DROP TABLESPACE TS32K failed; continuing: %s', exc
+                            'DROP TABLESPACE TS32K failed; continuing: %s',
+                            exc,
                         )
                     ts_count = 0
                 else:
@@ -111,7 +151,8 @@ def init_db(engine: Engine) -> None:
                     conn.exec_driver_sql('DROP BUFFERPOOL BP32K')
                 except Exception as exc:
                     _logging.getLogger(__name__).debug(
-                        'DROP BUFFERPOOL BP32K failed; continuing: %s', exc
+                        'DROP BUFFERPOOL BP32K failed; continuing: %s',
+                        exc,
                     )
                 bp_count = 0
 
@@ -121,7 +162,8 @@ def init_db(engine: Engine) -> None:
                     conn.exec_driver_sql('CREATE BUFFERPOOL BP32K SIZE 1000 PAGESIZE 32K')
                 except Exception as exc:
                     _logging.getLogger(__name__).debug(
-                        'CREATE BUFFERPOOL BP32K failed; continuing: %s', exc
+                        'CREATE BUFFERPOOL BP32K failed; continuing: %s',
+                        exc,
                     )
 
             # Create TS if missing
@@ -130,11 +172,12 @@ def init_db(engine: Engine) -> None:
             if ts_count == 0:
                 try:
                     conn.exec_driver_sql(
-                        'CREATE TABLESPACE TS32K PAGESIZE 32K MANAGED BY AUTOMATIC STORAGE EXTENTSIZE 32 BUFFERPOOL BP32K'
+                        'CREATE TABLESPACE TS32K PAGESIZE 32K MANAGED BY AUTOMATIC STORAGE EXTENTSIZE 32 BUFFERPOOL BP32K',
                     )
                 except Exception as exc:
                     _logging.getLogger(__name__).debug(
-                        'CREATE TABLESPACE TS32K failed; continuing: %s', exc
+                        'CREATE TABLESPACE TS32K failed; continuing: %s',
+                        exc,
                     )
             else:
                 # Try to point at BP32K
@@ -142,7 +185,8 @@ def init_db(engine: Engine) -> None:
                     conn.exec_driver_sql('ALTER TABLESPACE TS32K BUFFERPOOL BP32K')
                 except Exception as exc:
                     _logging.getLogger(__name__).debug(
-                        'ALTER TABLESPACE TS32K BUFFERPOOL BP32K failed; continuing: %s', exc
+                        'ALTER TABLESPACE TS32K BUFFERPOOL BP32K failed; continuing: %s',
+                        exc,
                     )
 
             # 2) Schema CRISOP
@@ -150,7 +194,8 @@ def init_db(engine: Engine) -> None:
                 conn.exec_driver_sql('CREATE SCHEMA CRISOP')
             except Exception as exc:
                 _logging.getLogger(__name__).debug(
-                    'CREATE SCHEMA CRISOP failed or exists; continuing: %s', exc
+                    'CREATE SCHEMA CRISOP failed or exists; continuing: %s',
+                    exc,
                 )
 
             # 3) Tables in CRISOP (create if missing)
@@ -163,11 +208,12 @@ def init_db(engine: Engine) -> None:
                     '  IS_REGEX SMALLINT NOT NULL DEFAULT 0, '
                     '  TEST_MODE SMALLINT NOT NULL DEFAULT 1, '
                     '  UPDATED_AT TIMESTAMP NOT NULL DEFAULT CURRENT TIMESTAMP '
-                    ') IN TS32K INDEX IN TS32K'
+                    ') IN TS32K INDEX IN TS32K',
                 )
             except Exception as exc:
                 _logging.getLogger(__name__).debug(
-                    'CREATE TABLE CRISOP.BLOCKED_ADDRESSES skipped/failed; continuing: %s', exc
+                    'CREATE TABLE CRISOP.BLOCKED_ADDRESSES skipped/failed; continuing: %s',
+                    exc,
                 )
 
             # CRIS_PROPS
@@ -178,11 +224,12 @@ def init_db(engine: Engine) -> None:
                     '  VALUE     VARCHAR(1024 OCTETS), '
                     '  UPDATE_TS TIMESTAMP(6), '
                     '  CONSTRAINT XPKCRISPROPS PRIMARY KEY (KEY)'
-                    ') IN TS32K INDEX IN TS32K'
+                    ') IN TS32K INDEX IN TS32K',
                 )
             except Exception as exc:
                 _logging.getLogger(__name__).debug(
-                    'CREATE TABLE CRISOP.CRIS_PROPS skipped/failed; continuing: %s', exc
+                    'CREATE TABLE CRISOP.CRIS_PROPS skipped/failed; continuing: %s',
+                    exc,
                 )
 
             # 4) Trigger to keep UPDATED_AT fresh
@@ -192,11 +239,12 @@ def init_db(engine: Engine) -> None:
                     'NO CASCADE BEFORE UPDATE ON CRISOP.BLOCKED_ADDRESSES\n'
                     'REFERENCING NEW AS N\n'
                     'FOR EACH ROW\n'
-                    'SET N.UPDATED_AT = CURRENT TIMESTAMP'
+                    'SET N.UPDATED_AT = CURRENT TIMESTAMP',
                 )
             except Exception as exc:
                 _logging.getLogger(__name__).debug(
-                    'CREATE OR REPLACE TRIGGER skipped/failed; continuing: %s', exc
+                    'CREATE OR REPLACE TRIGGER skipped/failed; continuing: %s',
+                    exc,
                 )
 
             # 5) Aliases in CURRENT SCHEMA for unqualified access
@@ -204,27 +252,32 @@ def init_db(engine: Engine) -> None:
                 conn.exec_driver_sql('DROP ALIAS BLOCKED_ADDRESSES')
             except Exception as exc:
                 _logging.getLogger(__name__).debug(
-                    'DROP ALIAS BLOCKED_ADDRESSES failed; continuing: %s', exc
+                    'DROP ALIAS BLOCKED_ADDRESSES failed; continuing: %s',
+                    exc,
                 )
             try:
                 conn.exec_driver_sql('CREATE ALIAS BLOCKED_ADDRESSES FOR CRISOP.BLOCKED_ADDRESSES')
             except Exception as exc:
                 _logging.getLogger(__name__).debug(
-                    'CREATE ALIAS BLOCKED_ADDRESSES failed; continuing: %s', exc
+                    'CREATE ALIAS BLOCKED_ADDRESSES failed; continuing: %s',
+                    exc,
                 )
             try:
                 conn.exec_driver_sql('DROP ALIAS CRIS_PROPS')
             except Exception as exc:
                 _logging.getLogger(__name__).debug(
-                    'DROP ALIAS CRIS_PROPS failed; continuing: %s', exc
+                    'DROP ALIAS CRIS_PROPS failed; continuing: %s',
+                    exc,
                 )
             try:
                 conn.exec_driver_sql('CREATE ALIAS CRIS_PROPS FOR CRISOP.CRIS_PROPS')
             except Exception as exc:
                 _logging.getLogger(__name__).debug(
-                    'CREATE ALIAS CRIS_PROPS failed; continuing: %s', exc
+                    'CREATE ALIAS CRIS_PROPS failed; continuing: %s',
+                    exc,
                 )
         seed_default_props(engine)
+        _init_user_db_and_seed()
         return
 
     # Generic (non-Db2) fallback: Create or verify tables with a robust, idempotent approach
@@ -245,17 +298,16 @@ def init_db(engine: Engine) -> None:
             ):
                 return
             # As a fallback, try create with checkfirst (may succeed on some dialects)
-            try:
-                table.create(engine, checkfirst=True)
-                return
-            except Exception:
-                raise
+            table.create(engine, checkfirst=True)
+        else:
+            return
 
     # Create tables via SQLAlchemy for other dialects
     _safe_create(bt)
     _safe_create(pt)
 
     seed_default_props(engine)
+    _init_user_db_and_seed()
 
     # Migration: ensure test_mode exists (generic fallback path only)
     try:
@@ -267,27 +319,28 @@ def init_db(engine: Engine) -> None:
         with engine.begin() as conn:
             try:
                 conn.exec_driver_sql(
-                    'ALTER TABLE blocked_addresses ADD COLUMN test_mode BOOLEAN NOT NULL DEFAULT TRUE'
+                    'ALTER TABLE blocked_addresses ADD COLUMN test_mode BOOLEAN NOT NULL DEFAULT TRUE',
                 )
             except Exception:
                 conn.exec_driver_sql(
-                    'ALTER TABLE blocked_addresses ADD COLUMN test_mode SMALLINT NOT NULL DEFAULT 1'
+                    'ALTER TABLE blocked_addresses ADD COLUMN test_mode SMALLINT NOT NULL DEFAULT 1',
                 )
             # Normalize legacy NULLs
             try:
                 conn.exec_driver_sql(
-                    'UPDATE blocked_addresses SET test_mode = 1 WHERE test_mode IS NULL'
+                    'UPDATE blocked_addresses SET test_mode = 1 WHERE test_mode IS NULL',
                 )
             except Exception:
                 try:
                     conn.exec_driver_sql(
-                        'UPDATE blocked_addresses SET test_mode = TRUE WHERE test_mode IS NULL'
+                        'UPDATE blocked_addresses SET test_mode = TRUE WHERE test_mode IS NULL',
                     )
                 except Exception as exc:
                     import logging as _lg
 
                     _lg.getLogger(__name__).debug(
-                        'Could not normalize legacy NULL test_mode values; continuing: %s', exc
+                        'Could not normalize legacy NULL test_mode values; continuing: %s',
+                        exc,
                     )
 
     # No extra trigger work for generic dialects

@@ -52,4 +52,10 @@ npm run e2e
 ## Where to get help?
 See [SUPPORT](SUPPORT.md) and {{DISCUSS_URL}}.
 
+## What is the default admin password the first time?
+- Username: `admin` by default (configurable via `ADMIN_USERNAME`).
+- Initial password: `postfixblocker`.
+
+On first successful login with the default password, the API will return `mustChangePassword: true` and the UI will prompt you to set a new password before you can continue. This applies when authentication is enforced (set `API_AUTH_REQUIRED=1` for the API process).
+
 <!-- END GENERATED: FAQ:MAIN -->

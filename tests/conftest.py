@@ -101,7 +101,7 @@ def compose_stack(pytestconfig: pytest.Config) -> None:
         needs = getattr(pytestconfig, '_compose_needs_stack', False)
         if force or needs:
             pytest.fail(
-                'Docker (compose) is required to run backend/e2e tests but was not found in PATH.'
+                'Docker (compose) is required to run backend/e2e tests but was not found in PATH.',
             )
         return
 
@@ -137,7 +137,7 @@ def compose_stack(pytestconfig: pytest.Config) -> None:
 
             print(f'[compose] Command failed ({exc.returncode}): {" ".join(cmd)}', file=sys.stderr)
             pytest.fail(
-                f'Docker compose command failed (exit {exc.returncode}). Backend/E2E tests require the stack to be available. Command={" ".join(cmd)}'
+                f'Docker compose command failed (exit {exc.returncode}). Backend/E2E tests require the stack to be available. Command={" ".join(cmd)}',
             )
 
     if force:

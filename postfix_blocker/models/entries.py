@@ -44,4 +44,4 @@ def entry_to_dict(obj: Any) -> dict[str, Any]:
     return d
 
 
-__all__ = ['BlockEntry', 'row_to_entry', 'entry_to_dict']
+__all__ = ['BlockEntry', 'entry_to_dict', 'row_to_entry']

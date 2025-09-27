@@ -6,15 +6,16 @@ import signal
 import threading
 import time
 
-from sqlalchemy import select  # type: ignore
+from sqlalchemy import select
 from sqlalchemy.engine import Engine
-from sqlalchemy.exc import OperationalError as SAOperationalError  # type: ignore
+from sqlalchemy.exc import OperationalError as SAOperationalError
 
 from ..config import Config, load_config
 from ..db.engine import get_engine
 from ..db.migrations import init_db
 from ..db.props import LOG_KEYS, get_prop
 from ..db.schema import get_blocked_table
+from ..logging_setup import _set_handler_level_safely
 from ..models.entries import BlockEntry
 from ..postfix.control import has_postfix_pcre, reload_postfix
 from ..postfix.maps import write_map_files
@@ -32,10 +33,12 @@ def setup_signal_ipc() -> None:
 
 def write_pid_file(pid_path: str) -> None:
     try:
-        d = os.path.dirname(pid_path)
-        if d:
-            os.makedirs(d, exist_ok=True)
-        with open(pid_path, 'w', encoding='utf-8') as f:
+        from pathlib import Path
+
+        p = Path(pid_path)
+        if str(p.parent):
+            p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open('w', encoding='utf-8') as f:
             f.write(str(os.getpid()))
         logging.info('Blocker PID file written: %s', pid_path)
     except Exception as exc:  # pragma: no cover - filesystem/permissions
@@ -66,6 +69,64 @@ def _get_change_marker(engine: Engine) -> tuple[str, int] | None:
         return None
 
 
+def _init_engine_and_db(cfg: Config) -> Engine:
+    engine: Engine | None = None
+    while True:
+        try:
+            if engine is None:
+                logging.debug('Creating SQLAlchemy engine in blocker_service.run_forever')
+                engine = get_engine()
+            logging.debug('Initializing DB schema in blocker_service.run_forever')
+            init_db(engine)
+            logging.info('Database schema ready.')
+        except SAOperationalError as exc:
+            logging.warning('DB init not ready: %s; retrying in %ss', exc, cfg.check_interval)
+        except Exception as exc:  # pragma: no cover - depends on external DB readiness
+            logging.warning('DB init failed: %s; retrying in %ss', exc, cfg.check_interval)
+        else:
+            return engine
+        time.sleep(cfg.check_interval)
+
+
+def _apply_dynamic_log_level(engine: Engine, last_level: str | None) -> str | None:
+    try:
+        level_str = get_prop(engine, LOG_KEYS['blocker'], None)  # type: ignore[arg-type]
+        if level_str is not None and level_str != last_level:
+            try:
+                lvl = int(level_str)
+            except Exception:
+                lvl = getattr(logging, str(level_str).upper(), logging.INFO)
+            if isinstance(lvl, int):
+                root = logging.getLogger()
+                root.setLevel(lvl)
+                for h in list(root.handlers):
+                    _set_handler_level_safely(h, lvl)
+                logging.info('Blocker log level changed via props to %s', level_str)
+                return level_str
+    except Exception as exc:
+        logging.debug('Failed to apply dynamic blocker log level: %s', exc)
+    return last_level
+
+
+def _compute_marker_and_hash(
+    engine: Engine,
+) -> tuple[tuple[str, int] | None, int, list[BlockEntry]]:
+    marker = _get_change_marker(engine)
+    logging.debug('Change marker current=%s', marker)
+    entries = _fetch_entries(engine)
+    logging.debug('Fetched %d entries from DB', len(entries))
+    sig = tuple(sorted((e.pattern, bool(e.is_regex), bool(e.test_mode)) for e in entries))
+    current_hash = hash(sig)
+    return marker, current_hash, entries
+
+
+def _wait_for_next_cycle(interval: float) -> None:
+    _refresh_event.wait(interval)
+    if _refresh_event.is_set():
+        logging.debug('SIGUSR1 received or timer elapsed; continuing loop')
+        _refresh_event.clear()
+
+
 def run_forever(config: Config | None = None) -> None:
     cfg = config or load_config()
 
@@ -83,24 +144,10 @@ def run_forever(config: Config | None = None) -> None:
     pcre_available = has_postfix_pcre()
     if not pcre_available:
         logging.error(
-            "Postfix PCRE support not detected (no 'pcre' in 'postconf -m'). Regex rules may not be enforced."
+            "Postfix PCRE support not detected (no 'pcre' in 'postconf -m'). Regex rules may not be enforced.",
         )
 
-    engine: Engine | None = None
-    while True:
-        try:
-            if engine is None:
-                logging.debug('Creating SQLAlchemy engine in blocker_service.run_forever')
-                engine = get_engine()
-            logging.debug('Initializing DB schema in blocker_service.run_forever')
-            init_db(engine)
-            logging.info('Database schema ready.')
-            break
-        except SAOperationalError as exc:
-            logging.warning('DB init not ready: %s; retrying in %ss', exc, cfg.check_interval)
-        except Exception as exc:  # pragma: no cover - depends on external DB readiness
-            logging.warning('DB init failed: %s; retrying in %ss', exc, cfg.check_interval)
-        time.sleep(cfg.check_interval)
+    engine = _init_engine_and_db(cfg)
 
     last_marker: tuple[str, int] | None = None
     last_hash = None
@@ -112,34 +159,8 @@ def run_forever(config: Config | None = None) -> None:
     while True:
         try:
             logging.debug('Blocker loop heartbeat start (last_marker=%s)', last_marker)
-            # Dynamic blocker log level from props
-            try:
-                level_str = get_prop(engine, LOG_KEYS['blocker'], None)  # type: ignore[arg-type]
-                if level_str is not None and level_str != last_blocker_level:
-                    try:
-                        lvl = int(level_str)
-                    except Exception:
-                        lvl = getattr(logging, str(level_str).upper(), logging.INFO)
-                    if isinstance(lvl, int):
-                        logging.getLogger().setLevel(lvl)
-                        for h in list(logging.getLogger().handlers):
-                            try:
-                                h.setLevel(lvl)
-                            except Exception as exc:
-                                logging.debug('Failed to set handler level: %s', exc)
-                        logging.info('Blocker log level changed via props to %s', level_str)
-                        last_blocker_level = level_str
-            except Exception as exc:
-                logging.debug('Failed to apply dynamic blocker log level: %s', exc)
-
-            marker = _get_change_marker(engine)
-            logging.debug('Change marker current=%s last=%s', marker, last_marker)
-            entries = _fetch_entries(engine)
-            logging.debug('Fetched %d entries from DB', len(entries))
-
-            # Content signature includes test_mode to ensure map changes on mode toggle
-            sig = tuple(sorted((e.pattern, bool(e.is_regex), bool(e.test_mode)) for e in entries))
-            current_hash = hash(sig)
+            last_blocker_level = _apply_dynamic_log_level(engine, last_blocker_level)
+            marker, current_hash, entries = _compute_marker_and_hash(engine)
             logging.debug('Computed content hash=%s (last_hash=%s)', current_hash, last_hash)
 
             if (marker is not None and marker != last_marker) or (current_hash != last_hash):
@@ -162,7 +183,4 @@ def run_forever(config: Config | None = None) -> None:
             logging.exception('Database error')
         except Exception:  # pragma: no cover - transient external failures
             logging.exception('Unexpected error')
-        _refresh_event.wait(cfg.check_interval)
-        if _refresh_event.is_set():
-            logging.debug('SIGUSR1 received or timer elapsed; continuing loop')
-            _refresh_event.clear()
+        _wait_for_next_cycle(cfg.check_interval)

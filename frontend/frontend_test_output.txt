@@ -1,0 +1,794 @@
+
+> postfixblocker-ui@0.1.0 test
+> ng test --watch=false --code-coverage --watch=false
+
+- Generating browser application bundles (phase: setup)...
+✔ Browser application bundle generation complete.
+26 09 2025 18:09:26.819:INFO [karma-server]: Karma v6.4.4 server started at http://localhost:9876/
+26 09 2025 18:09:26.820:INFO [launcher]: Launching browsers ChromeHeadlessNoSandbox with concurrency 1
+26 09 2025 18:09:26.823:INFO [launcher]: Starting browser ChromeHeadless
+26 09 2025 18:09:27.413:INFO [Chrome Headless 140.0.0.0 (Mac OS 10.15.7)]: Connected on socket KL4pBjNLug_N-PpCAAAB with id 22621677
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 0 of 177 SUCCESS (0 secs / 0 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 1 of 177 SUCCESS (0 secs / 0.001 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 2 of 177 SUCCESS (0 secs / 0.002 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 3 of 177 SUCCESS (0 secs / 0.002 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 4 of 177 SUCCESS (0 secs / 0.003 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 5 of 177 SUCCESS (0 secs / 0.003 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 6 of 177 SUCCESS (0 secs / 0.003 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 7 of 177 SUCCESS (0 secs / 0.003 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 8 of 177 SUCCESS (0 secs / 0.004 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 9 of 177 SUCCESS (0 secs / 0.077 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 9 of 177 SUCCESS (0 secs / 0.077 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 10 of 177 SUCCESS (0 secs / 0.085 secs)
+[1A[2KLOG: '[AppComponent] refreshSession next ->', Object{authenticated: true, username: undefined, mustChangePassword: undefined, hasWebAuthn: undefined}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 10 of 177 SUCCESS (0 secs / 0.085 secs)
+LOG: '[AppComponent] refreshSession next ->', Object{authenticated: true, username: undefined, mustChangePassword: undefined, hasWebAuthn: undefined}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 10 of 177 SUCCESS (0 secs / 0.085 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 11 of 177 SUCCESS (0 secs / 0.09 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7) AppComponent auth flows and error branches registerPasskey success and 401 override; loginWithPasskey success and 404 override FAILED
+	Error: Cannot flush a cancelled request.
+	    at TestRequest.flush (node_modules/@angular/common/fesm2022/http/testing.mjs:58:19)
+	    at drainInitial (src/app/app.component.auth.spec.ts:21:11)
+	    at UserContext.apply (src/app/app.component.auth.spec.ts:166:5)
+	    at UserContext.apply (node_modules/zone.js/fesm2015/zone-testing.js:1715:26)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:398:28)
+	    at ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2132:39)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:397:34)
+	    at ZoneImpl.run (node_modules/zone.js/fesm2015/zone.js:113:43)
+	    at runInTestZone (node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+	    at UserContext.<anonymous> (node_modules/zone.js/fesm2015/zone-testing.js:234:32)
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 12 of 177 (1 FAILED) (0 secs / 0.095 secs)
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7) AppComponent auth flows and error branches registerPasskey success and 401 override; loginWithPasskey success and 404 override FAILED
+	Error: Cannot flush a cancelled request.
+	    at TestRequest.flush (node_modules/@angular/common/fesm2022/http/testing.mjs:58:19)
+	    at drainInitial (src/app/app.component.auth.spec.ts:21:11)
+	    at UserContext.apply (src/app/app.component.auth.spec.ts:166:5)
+	    at UserContext.apply (node_modules/zone.js/fesm2015/zone-testing.js:1715:26)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:398:28)
+	    at ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2132:39)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:397:34)
+	    at ZoneImpl.run (node_modules/zone.js/fesm2015/zone.js:113:43)
+	    at runInTestZone (node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+	    at UserContext.<anonymous> (node_modules/zone.js/fesm2015/zone-testing.js:234:32)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: true, registerDuringInitAuth: false, suppressOnce: false, source: 'init'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 12 of 177 (1 FAILED) (0 secs / 0.095 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: true, registerDuringInitAuth: false, suppressOnce: false, source: 'init'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 13 of 177 (1 FAILED) (0 secs / 0.1 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 13 of 177 (1 FAILED) (0 secs / 0.1 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 14 of 177 (1 FAILED) (0 secs / 0.137 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 14 of 177 (1 FAILED) (0 secs / 0.137 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 14 of 177 (1 FAILED) (0 secs / 0.137 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 15 of 177 (1 FAILED) (0 secs / 0.153 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 15 of 177 (1 FAILED) (0 secs / 0.153 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 16 of 177 (1 FAILED) (0 secs / 0.166 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 17 of 177 (1 FAILED) (0 secs / 0.17 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 17 of 177 (1 FAILED) (0 secs / 0.17 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 18 of 177 (1 FAILED) (0 secs / 0.173 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 19 of 177 (1 FAILED) (0 secs / 0.176 secs)
+[1A[2KLOG: '[AppComponent] refreshSession next ->', Object{authenticated: true, username: 'admin', mustChangePassword: false, hasWebAuthn: undefined}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 19 of 177 (1 FAILED) (0 secs / 0.176 secs)
+LOG: '[AppComponent] refreshSession next ->', Object{authenticated: true, username: 'admin', mustChangePassword: false, hasWebAuthn: undefined}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 19 of 177 (1 FAILED) (0 secs / 0.176 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 20 of 177 (1 FAILED) (0 secs / 0.179 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 21 of 177 (1 FAILED) (0 secs / 0.182 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 21 of 177 (1 FAILED) (0 secs / 0.182 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 22 of 177 (1 FAILED) (0 secs / 0.184 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: true, registerDuringInitAuth: false, suppressOnce: false, source: 'init'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 22 of 177 (1 FAILED) (0 secs / 0.184 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: true, registerDuringInitAuth: false, suppressOnce: false, source: 'init'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 23 of 177 (1 FAILED) (0 secs / 0.186 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 24 of 177 (1 FAILED) (0 secs / 0.189 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: true, registerDuringInitAuth: false, suppressOnce: false, source: 'init'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 24 of 177 (1 FAILED) (0 secs / 0.189 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: true, registerDuringInitAuth: false, suppressOnce: false, source: 'init'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 25 of 177 (1 FAILED) (0 secs / 0.205 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 26 of 177 (1 FAILED) (0 secs / 0.211 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 27 of 177 (1 FAILED) (0 secs / 0.223 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 28 of 177 (1 FAILED) (0 secs / 0.226 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 29 of 177 (1 FAILED) (0 secs / 0.239 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 29 of 177 (1 FAILED) (0 secs / 0.239 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 30 of 177 (1 FAILED) (0 secs / 0.25 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 30 of 177 (1 FAILED) (0 secs / 0.25 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 31 of 177 (1 FAILED) (0 secs / 0.261 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 31 of 177 (1 FAILED) (0 secs / 0.261 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] addBulk parsed patterns:', []
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 31 of 177 (1 FAILED) (0 secs / 0.261 secs)
+LOG: '[AppComponent] addBulk parsed patterns:', []
+[1A[2KLOG: '[AppComponent] addBulk parsed patterns:', ['a@example.com', 'B@Example.com', 'A@example.com']
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 31 of 177 (1 FAILED) (0 secs / 0.261 secs)
+LOG: '[AppComponent] addBulk parsed patterns:', ['a@example.com', 'B@Example.com', 'A@example.com']
+[1A[2KLOG: '[AppComponent] addBulk posting pattern:', 'a@example.com', 'attempt', 1
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 31 of 177 (1 FAILED) (0 secs / 0.261 secs)
+LOG: '[AppComponent] addBulk posting pattern:', 'a@example.com', 'attempt', 1
+[1A[2KLOG: '[AppComponent] addBulk posting pattern:', 'B@Example.com', 'attempt', 1
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 31 of 177 (1 FAILED) (0 secs / 0.261 secs)
+LOG: '[AppComponent] addBulk posting pattern:', 'B@Example.com', 'attempt', 1
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 31 of 177 (1 FAILED) (0 secs / 0.261 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 32 of 177 (1 FAILED) (0 secs / 0.273 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 32 of 177 (1 FAILED) (0 secs / 0.273 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] setSelectedToTestMode issuing PUT for id', 1
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 32 of 177 (1 FAILED) (0 secs / 0.273 secs)
+LOG: '[AppComponent] setSelectedToTestMode issuing PUT for id', 1
+[1A[2KLOG: '[AppComponent] setSelectedToTestMode issuing PUT for id', 2
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 32 of 177 (1 FAILED) (0 secs / 0.273 secs)
+LOG: '[AppComponent] setSelectedToTestMode issuing PUT for id', 2
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 32 of 177 (1 FAILED) (0 secs / 0.273 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 32 of 177 (1 FAILED) (0 secs / 0.273 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 33 of 177 (1 FAILED) (0 secs / 0.284 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 33 of 177 (1 FAILED) (0 secs / 0.284 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 33 of 177 (1 FAILED) (0 secs / 0.284 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 34 of 177 (1 FAILED) (0 secs / 0.295 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 34 of 177 (1 FAILED) (0 secs / 0.295 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 35 of 177 (1 FAILED) (0 secs / 0.305 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 35 of 177 (1 FAILED) (0 secs / 0.305 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 36 of 177 (1 FAILED) (0 secs / 0.314 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 36 of 177 (1 FAILED) (0 secs / 0.314 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 37 of 177 (1 FAILED) (0 secs / 0.323 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 37 of 177 (1 FAILED) (0 secs / 0.323 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 38 of 177 (1 FAILED) (0 secs / 0.338 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 38 of 177 (1 FAILED) (0 secs / 0.338 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 39 of 177 (1 FAILED) (0 secs / 0.348 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 39 of 177 (1 FAILED) (0 secs / 0.348 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 40 of 177 (1 FAILED) (0 secs / 0.358 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 40 of 177 (1 FAILED) (0 secs / 0.358 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 40 of 177 (1 FAILED) (0 secs / 0.358 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 40 of 177 (1 FAILED) (0 secs / 0.358 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 41 of 177 (1 FAILED) (0 secs / 0.368 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 41 of 177 (1 FAILED) (0 secs / 0.368 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 41 of 177 (1 FAILED) (0 secs / 0.368 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 42 of 177 (1 FAILED) (0 secs / 0.377 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 42 of 177 (1 FAILED) (0 secs / 0.377 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 43 of 177 (1 FAILED) (0 secs / 0.386 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 43 of 177 (1 FAILED) (0 secs / 0.386 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 44 of 177 (1 FAILED) (0 secs / 0.394 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 45 of 177 (1 FAILED) (0 secs / 0.396 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 46 of 177 (1 FAILED) (0 secs / 0.398 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 47 of 177 (1 FAILED) (0 secs / 0.4 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 47 of 177 (1 FAILED) (0 secs / 0.4 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 47 of 177 (1 FAILED) (0 secs / 0.4 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 48 of 177 (1 FAILED) (0 secs / 0.409 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 48 of 177 (1 FAILED) (0 secs / 0.409 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 49 of 177 (1 FAILED) (0 secs / 0.418 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 49 of 177 (1 FAILED) (0 secs / 0.418 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 50 of 177 (1 FAILED) (0 secs / 0.427 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 50 of 177 (1 FAILED) (0 secs / 0.427 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 51 of 177 (1 FAILED) (0 secs / 0.442 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 51 of 177 (1 FAILED) (0 secs / 0.442 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 52 of 177 (1 FAILED) (0 secs / 0.452 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 52 of 177 (1 FAILED) (0 secs / 0.452 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 52 of 177 (1 FAILED) (0 secs / 0.452 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 53 of 177 (1 FAILED) (0 secs / 0.462 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 53 of 177 (1 FAILED) (0 secs / 0.462 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 54 of 177 (1 FAILED) (0 secs / 0.471 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 55 of 177 (1 FAILED) (0 secs / 0.473 secs)
+[1A[2KLOG: '[AppComponent] refreshSession error -> set unauthenticated'
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 55 of 177 (1 FAILED) (0 secs / 0.473 secs)
+LOG: '[AppComponent] refreshSession error -> set unauthenticated'
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 56 of 177 (1 FAILED) (0 secs / 0.476 secs)
+[1A[2KLOG: '[AppComponent] post-error check ->', false
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 56 of 177 (1 FAILED) (0 secs / 0.476 secs)
+LOG: '[AppComponent] post-error check ->', false
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 56 of 177 (1 FAILED) (0 secs / 0.476 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 57 of 177 (1 FAILED) (0 secs / 0.485 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 57 of 177 (1 FAILED) (0 secs / 0.485 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 58 of 177 (1 FAILED) (0 secs / 0.494 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 58 of 177 (1 FAILED) (0 secs / 0.494 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 58 of 177 (1 FAILED) (0 secs / 0.494 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 59 of 177 (1 FAILED) (0 secs / 0.502 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 59 of 177 (1 FAILED) (0 secs / 0.502 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 60 of 177 (1 FAILED) (0 secs / 0.511 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 60 of 177 (1 FAILED) (0 secs / 0.511 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 61 of 177 (1 FAILED) (0 secs / 0.519 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 61 of 177 (1 FAILED) (0 secs / 0.519 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 62 of 177 (1 FAILED) (0 secs / 0.528 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 62 of 177 (1 FAILED) (0 secs / 0.528 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] addBulk parsed patterns:', []
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 62 of 177 (1 FAILED) (0 secs / 0.528 secs)
+LOG: '[AppComponent] addBulk parsed patterns:', []
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 63 of 177 (1 FAILED) (0 secs / 0.538 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 63 of 177 (1 FAILED) (0 secs / 0.538 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 64 of 177 (1 FAILED) (0 secs / 0.552 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 64 of 177 (1 FAILED) (0 secs / 0.552 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 65 of 177 (1 FAILED) (0 secs / 0.561 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 65 of 177 (1 FAILED) (0 secs / 0.561 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 66 of 177 (1 FAILED) (0 secs / 0.57 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 66 of 177 (1 FAILED) (0 secs / 0.57 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 67 of 177 (1 FAILED) (0 secs / 0.578 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 67 of 177 (1 FAILED) (0 secs / 0.578 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 68 of 177 (1 FAILED) (0 secs / 0.586 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 68 of 177 (1 FAILED) (0 secs / 0.586 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 69 of 177 (1 FAILED) (0 secs / 0.594 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 69 of 177 (1 FAILED) (0 secs / 0.594 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 70 of 177 (1 FAILED) (0 secs / 0.602 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 71 of 177 (1 FAILED) (0 secs / 0.604 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 71 of 177 (1 FAILED) (0 secs / 0.604 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 72 of 177 (1 FAILED) (0 secs / 0.613 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 72 of 177 (1 FAILED) (0 secs / 0.613 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 73 of 177 (1 FAILED) (0 secs / 0.621 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 73 of 177 (1 FAILED) (0 secs / 0.621 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 74 of 177 (1 FAILED) (0 secs / 0.63 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 74 of 177 (1 FAILED) (0 secs / 0.63 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 74 of 177 (1 FAILED) (0 secs / 0.63 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 75 of 177 (1 FAILED) (0 secs / 0.638 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 75 of 177 (1 FAILED) (0 secs / 0.638 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 75 of 177 (1 FAILED) (0 secs / 0.638 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 76 of 177 (1 FAILED) (0 secs / 0.651 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 76 of 177 (1 FAILED) (0 secs / 0.651 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 76 of 177 (1 FAILED) (0 secs / 0.651 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 77 of 177 (1 FAILED) (0 secs / 0.66 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 77 of 177 (1 FAILED) (0 secs / 0.66 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 78 of 177 (1 FAILED) (0 secs / 0.668 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 78 of 177 (1 FAILED) (0 secs / 0.668 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 79 of 177 (1 FAILED) (0 secs / 0.677 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 79 of 177 (1 FAILED) (0 secs / 0.677 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 80 of 177 (1 FAILED) (0 secs / 0.685 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 80 of 177 (1 FAILED) (0 secs / 0.685 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 81 of 177 (1 FAILED) (0 secs / 0.694 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 81 of 177 (1 FAILED) (0 secs / 0.694 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 82 of 177 (1 FAILED) (0 secs / 0.702 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 83 of 177 (1 FAILED) (0 secs / 0.704 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 84 of 177 (1 FAILED) (0 secs / 0.706 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 84 of 177 (1 FAILED) (0 secs / 0.706 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 85 of 177 (1 FAILED) (0 secs / 0.715 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 85 of 177 (1 FAILED) (0 secs / 0.715 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 86 of 177 (1 FAILED) (0 secs / 0.724 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 86 of 177 (1 FAILED) (0 secs / 0.724 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 86 of 177 (1 FAILED) (0 secs / 0.724 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 87 of 177 (1 FAILED) (0 secs / 0.733 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 87 of 177 (1 FAILED) (0 secs / 0.733 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 87 of 177 (1 FAILED) (0 secs / 0.733 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 88 of 177 (1 FAILED) (0 secs / 0.743 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 88 of 177 (1 FAILED) (0 secs / 0.743 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 88 of 177 (1 FAILED) (0 secs / 0.743 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 89 of 177 (1 FAILED) (0 secs / 0.756 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 89 of 177 (1 FAILED) (0 secs / 0.756 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 89 of 177 (1 FAILED) (0 secs / 0.756 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 90 of 177 (1 FAILED) (0 secs / 0.765 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 90 of 177 (1 FAILED) (0 secs / 0.765 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 91 of 177 (1 FAILED) (0 secs / 0.775 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 91 of 177 (1 FAILED) (0 secs / 0.775 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 92 of 177 (1 FAILED) (0 secs / 0.784 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 93 of 177 (1 FAILED) (0 secs / 0.787 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 93 of 177 (1 FAILED) (0 secs / 0.787 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 94 of 177 (1 FAILED) (0 secs / 0.796 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 94 of 177 (1 FAILED) (0 secs / 0.796 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] addBulk parsed patterns:', ['new@example.com']
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 94 of 177 (1 FAILED) (0 secs / 0.796 secs)
+LOG: '[AppComponent] addBulk parsed patterns:', ['new@example.com']
+[1A[2KLOG: '[AppComponent] addBulk posting pattern:', 'new@example.com', 'attempt', 1
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 94 of 177 (1 FAILED) (0 secs / 0.796 secs)
+LOG: '[AppComponent] addBulk posting pattern:', 'new@example.com', 'attempt', 1
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 94 of 177 (1 FAILED) (0 secs / 0.796 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 95 of 177 (1 FAILED) (0 secs / 0.806 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 95 of 177 (1 FAILED) (0 secs / 0.806 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 95 of 177 (1 FAILED) (0 secs / 0.806 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 96 of 177 (1 FAILED) (0 secs / 0.815 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 96 of 177 (1 FAILED) (0 secs / 0.815 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] addBulk parsed patterns:', ['a1@example.com', 'a2@example.com']
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 96 of 177 (1 FAILED) (0 secs / 0.815 secs)
+LOG: '[AppComponent] addBulk parsed patterns:', ['a1@example.com', 'a2@example.com']
+[1A[2KLOG: '[AppComponent] addBulk posting pattern:', 'a1@example.com', 'attempt', 1
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 96 of 177 (1 FAILED) (0 secs / 0.815 secs)
+LOG: '[AppComponent] addBulk posting pattern:', 'a1@example.com', 'attempt', 1
+[1A[2KLOG: '[AppComponent] addBulk posting pattern:', 'a2@example.com', 'attempt', 1
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 96 of 177 (1 FAILED) (0 secs / 0.815 secs)
+LOG: '[AppComponent] addBulk posting pattern:', 'a2@example.com', 'attempt', 1
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 96 of 177 (1 FAILED) (0 secs / 0.815 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 97 of 177 (1 FAILED) (0 secs / 0.825 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 97 of 177 (1 FAILED) (0 secs / 0.825 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 97 of 177 (1 FAILED) (0 secs / 0.825 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 98 of 177 (1 FAILED) (0 secs / 0.835 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 98 of 177 (1 FAILED) (0 secs / 0.835 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 99 of 177 (1 FAILED) (0 secs / 0.844 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 99 of 177 (1 FAILED) (0 secs / 0.844 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 100 of 177 (1 FAILED) (0 secs / 0.852 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 100 of 177 (1 FAILED) (0 secs / 0.852 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 101 of 177 (1 FAILED) (0 secs / 0.865 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 101 of 177 (1 FAILED) (0 secs / 0.865 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 102 of 177 (1 FAILED) (0 secs / 0.875 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 102 of 177 (1 FAILED) (0 secs / 0.875 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 103 of 177 (1 FAILED) (0 secs / 0.884 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 103 of 177 (1 FAILED) (0 secs / 0.884 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 104 of 177 (1 FAILED) (0 secs / 0.892 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 104 of 177 (1 FAILED) (0 secs / 0.892 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 104 of 177 (1 FAILED) (0 secs / 0.892 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 105 of 177 (1 FAILED) (0 secs / 0.901 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 105 of 177 (1 FAILED) (0 secs / 0.901 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 105 of 177 (1 FAILED) (0 secs / 0.901 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 106 of 177 (1 FAILED) (0 secs / 0.911 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 106 of 177 (1 FAILED) (0 secs / 0.911 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 106 of 177 (1 FAILED) (0 secs / 0.911 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 107 of 177 (1 FAILED) (0 secs / 0.919 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 107 of 177 (1 FAILED) (0 secs / 0.919 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 107 of 177 (1 FAILED) (0 secs / 0.919 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 108 of 177 (1 FAILED) (0 secs / 0.928 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 108 of 177 (1 FAILED) (0 secs / 0.928 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 108 of 177 (1 FAILED) (0 secs / 0.928 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 109 of 177 (1 FAILED) (0 secs / 0.937 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 109 of 177 (1 FAILED) (0 secs / 0.937 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] setSelectedToTestMode issuing PUT for id', 31
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 109 of 177 (1 FAILED) (0 secs / 0.937 secs)
+LOG: '[AppComponent] setSelectedToTestMode issuing PUT for id', 31
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 109 of 177 (1 FAILED) (0 secs / 0.937 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 110 of 177 (1 FAILED) (0 secs / 0.946 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 110 of 177 (1 FAILED) (0 secs / 0.946 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 110 of 177 (1 FAILED) (0 secs / 0.946 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 111 of 177 (1 FAILED) (0 secs / 0.955 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 111 of 177 (1 FAILED) (0 secs / 0.955 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 111 of 177 (1 FAILED) (0 secs / 0.955 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 111 of 177 (1 FAILED) (0 secs / 0.955 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 112 of 177 (1 FAILED) (0 secs / 0.963 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 112 of 177 (1 FAILED) (0 secs / 0.963 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 113 of 177 (1 FAILED) (0 secs / 0.975 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 113 of 177 (1 FAILED) (0 secs / 0.975 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] addBulk parsed patterns:', []
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 113 of 177 (1 FAILED) (0 secs / 0.975 secs)
+LOG: '[AppComponent] addBulk parsed patterns:', []
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 114 of 177 (1 FAILED) (0 secs / 0.983 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 114 of 177 (1 FAILED) (0 secs / 0.983 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 115 of 177 (1 FAILED) (0 secs / 0.991 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 115 of 177 (1 FAILED) (0 secs / 0.991 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 116 of 177 (1 FAILED) (0 secs / 0.998 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 116 of 177 (1 FAILED) (0 secs / 0.998 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 117 of 177 (1 FAILED) (0 secs / 1.007 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 117 of 177 (1 FAILED) (0 secs / 1.007 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 118 of 177 (1 FAILED) (0 secs / 1.015 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 118 of 177 (1 FAILED) (0 secs / 1.015 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 119 of 177 (1 FAILED) (0 secs / 1.024 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 119 of 177 (1 FAILED) (0 secs / 1.024 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 120 of 177 (1 FAILED) (0 secs / 1.033 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 120 of 177 (1 FAILED) (0 secs / 1.033 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 121 of 177 (1 FAILED) (0 secs / 1.041 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 121 of 177 (1 FAILED) (0 secs / 1.041 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 122 of 177 (1 FAILED) (0 secs / 1.048 secs)
+[1A[2KLOG: '[AppComponent] addBulk parsed patterns:', ['dup@example.com', 'unique@example.com']
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 122 of 177 (1 FAILED) (0 secs / 1.048 secs)
+LOG: '[AppComponent] addBulk parsed patterns:', ['dup@example.com', 'unique@example.com']
+[1A[2KLOG: '[AppComponent] addBulk posting pattern:', 'dup@example.com', 'attempt', 1
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 122 of 177 (1 FAILED) (0 secs / 1.048 secs)
+LOG: '[AppComponent] addBulk posting pattern:', 'dup@example.com', 'attempt', 1
+[1A[2KLOG: '[AppComponent] addBulk posting pattern:', 'unique@example.com', 'attempt', 1
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 122 of 177 (1 FAILED) (0 secs / 1.048 secs)
+LOG: '[AppComponent] addBulk posting pattern:', 'unique@example.com', 'attempt', 1
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 122 of 177 (1 FAILED) (0 secs / 1.048 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 123 of 177 (1 FAILED) (0 secs / 1.049 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 123 of 177 (1 FAILED) (0 secs / 1.049 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 124 of 177 (1 FAILED) (0 secs / 1.057 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 124 of 177 (1 FAILED) (0 secs / 1.057 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 125 of 177 (1 FAILED) (0 secs / 1.065 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 125 of 177 (1 FAILED) (0 secs / 1.065 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 126 of 177 (1 FAILED) (0 secs / 1.078 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 126 of 177 (1 FAILED) (0 secs / 1.078 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 126 of 177 (1 FAILED) (0 secs / 1.078 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 127 of 177 (1 FAILED) (0 secs / 1.087 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 127 of 177 (1 FAILED) (0 secs / 1.087 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 128 of 177 (1 FAILED) (0 secs / 1.095 secs)
+[1A[2KLOG: '[AppComponent] setSelectedToTestMode issuing PUT for id', 1
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 128 of 177 (1 FAILED) (0 secs / 1.095 secs)
+LOG: '[AppComponent] setSelectedToTestMode issuing PUT for id', 1
+[1A[2KLOG: '[AppComponent] setSelectedToTestMode issuing PUT for id', 2
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 128 of 177 (1 FAILED) (0 secs / 1.095 secs)
+LOG: '[AppComponent] setSelectedToTestMode issuing PUT for id', 2
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 128 of 177 (1 FAILED) (0 secs / 1.095 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 129 of 177 (1 FAILED) (0 secs / 1.096 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 129 of 177 (1 FAILED) (0 secs / 1.096 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 129 of 177 (1 FAILED) (0 secs / 1.096 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 130 of 177 (1 FAILED) (0 secs / 1.105 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 130 of 177 (1 FAILED) (0 secs / 1.105 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 131 of 177 (1 FAILED) (0 secs / 1.114 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 132 of 177 (1 FAILED) (0 secs / 1.115 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 132 of 177 (1 FAILED) (0 secs / 1.115 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 133 of 177 (1 FAILED) (0 secs / 1.115 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 133 of 177 (1 FAILED) (0 secs / 1.115 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 134 of 177 (1 FAILED) (0 secs / 1.116 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 134 of 177 (1 FAILED) (0 secs / 1.116 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 135 of 177 (1 FAILED) (0 secs / 1.117 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 136 of 177 (1 FAILED) (0 secs / 1.117 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 137 of 177 (1 FAILED) (0 secs / 1.118 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 137 of 177 (1 FAILED) (0 secs / 1.118 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 138 of 177 (1 FAILED) (0 secs / 1.126 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 138 of 177 (1 FAILED) (0 secs / 1.126 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 139 of 177 (1 FAILED) (0 secs / 1.134 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 139 of 177 (1 FAILED) (0 secs / 1.134 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 140 of 177 (1 FAILED) (0 secs / 1.142 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 141 of 177 (1 FAILED) (0 secs / 1.143 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 141 of 177 (1 FAILED) (0 secs / 1.143 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 141 of 177 (1 FAILED) (0 secs / 1.143 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 142 of 177 (1 FAILED) (0 secs / 1.15 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 142 of 177 (1 FAILED) (0 secs / 1.15 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 143 of 177 (1 FAILED) (0 secs / 1.157 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 143 of 177 (1 FAILED) (0 secs / 1.157 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 144 of 177 (1 FAILED) (0 secs / 1.17 secs)
+[1A[2KLOG: '[AppComponent] addBulk parsed patterns:', []
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 144 of 177 (1 FAILED) (0 secs / 1.17 secs)
+LOG: '[AppComponent] addBulk parsed patterns:', []
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 145 of 177 (1 FAILED) (0 secs / 1.172 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 145 of 177 (1 FAILED) (0 secs / 1.172 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 146 of 177 (1 FAILED) (0 secs / 1.179 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 147 of 177 (1 FAILED) (0 secs / 1.18 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 148 of 177 (1 FAILED) (0 secs / 1.181 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 149 of 177 (1 FAILED) (0 secs / 1.182 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 149 of 177 (1 FAILED) (0 secs / 1.182 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 150 of 177 (1 FAILED) (0 secs / 1.19 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 151 of 177 (1 FAILED) (0 secs / 1.191 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 152 of 177 (1 FAILED) (0 secs / 1.192 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 153 of 177 (1 FAILED) (0 secs / 1.192 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 153 of 177 (1 FAILED) (0 secs / 1.192 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 153 of 177 (1 FAILED) (0 secs / 1.192 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 154 of 177 (1 FAILED) (0 secs / 1.202 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 154 of 177 (1 FAILED) (0 secs / 1.202 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 154 of 177 (1 FAILED) (0 secs / 1.202 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 155 of 177 (1 FAILED) (0 secs / 1.212 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 156 of 177 (1 FAILED) (0 secs / 1.213 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 156 of 177 (1 FAILED) (0 secs / 1.213 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 156 of 177 (1 FAILED) (0 secs / 1.213 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 157 of 177 (1 FAILED) (0 secs / 1.221 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 158 of 177 (1 FAILED) (0 secs / 1.222 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 158 of 177 (1 FAILED) (0 secs / 1.222 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 158 of 177 (1 FAILED) (0 secs / 1.222 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 159 of 177 (1 FAILED) (0 secs / 1.231 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 159 of 177 (1 FAILED) (0 secs / 1.231 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 159 of 177 (1 FAILED) (0 secs / 1.231 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 160 of 177 (1 FAILED) (0 secs / 1.239 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 160 of 177 (1 FAILED) (0 secs / 1.239 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 161 of 177 (1 FAILED) (0 secs / 1.247 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 162 of 177 (1 FAILED) (0 secs / 1.248 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 162 of 177 (1 FAILED) (0 secs / 1.248 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 162 of 177 (1 FAILED) (0 secs / 1.248 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 163 of 177 (1 FAILED) (0 secs / 1.257 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 163 of 177 (1 FAILED) (0 secs / 1.257 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 164 of 177 (1 FAILED) (0 secs / 1.27 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 164 of 177 (1 FAILED) (0 secs / 1.27 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 164 of 177 (1 FAILED) (0 secs / 1.27 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 165 of 177 (1 FAILED) (0 secs / 1.278 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 165 of 177 (1 FAILED) (0 secs / 1.278 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 166 of 177 (1 FAILED) (0 secs / 1.286 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 167 of 177 (1 FAILED) (0 secs / 1.286 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 168 of 177 (1 FAILED) (0 secs / 1.287 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 169 of 177 (1 FAILED) (0 secs / 1.287 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 170 of 177 (1 FAILED) (0 secs / 1.287 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 171 of 177 (1 FAILED) (0 secs / 1.287 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 172 of 177 (1 FAILED) (0 secs / 1.288 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 173 of 177 (1 FAILED) (0 secs / 1.288 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 174 of 177 (1 FAILED) (0 secs / 1.288 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 175 of 177 (1 FAILED) (0 secs / 1.288 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 176 of 177 (1 FAILED) (0 secs / 1.289 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 177 of 177 (1 FAILED) (0 secs / 1.289 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 177 of 177 (1 FAILED) (1.377 secs / 1.289 secs)
+TOTAL: 1 FAILED, 176 SUCCESS
+TOTAL: 1 FAILED, 176 SUCCESS
+✔ Browser application bundle generation complete.
+
+=============================== Coverage summary ===============================
+Statements   : 88.99% ( 566/636 )
+Branches     : 81.55% ( 168/206 )
+Functions    : 91.97% ( 126/137 )
+Lines        : 92.03% ( 497/540 )
+================================================================================
+✔ Browser application bundle generation complete.

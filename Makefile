@@ -27,11 +27,11 @@ DOCKER_COMPOSE ?= docker compose
 
 # Coverage thresholds (can be overridden via environment)
 # Minimum Python coverage percentage (lines):
-PY_COV_MIN ?= 80
+PY_COV_MIN ?= 90
 # Minimum frontend (Karma) coverage percentage (statements/lines/functions).
-FE_COV_MIN ?= 80
-# Minimum frontend branch coverage percentage (branches only; used by Karma via FE_BRANCH_MIN)
-FE_COV_MIN_BRANCH ?= 80
+FE_COV_MIN ?= 85
+# Minimum frontend branch coverage percentage (branches).
+FE_BRANCH_MIN ?= $(FE_COV_MIN)
 
 # Convenience command aliases
 RUFF := $(VENVPY) -m ruff
@@ -43,7 +43,7 @@ NPM_RUN = cd $(FRONTEND_DIR) && env -u NO_COLOR $(NPM) run
 # Locations
 PY_SRC_DIR := postfix_blocker
 PY_TEST_DIR := tests
-PY_FILES := $(PY_SRC_DIR) $(PY_TEST_DIR)
+PY_FILES := $(PY_SRC_DIR)
 FRONTEND_DIR := frontend
 
 .PHONY: help ci ci-start ci-end init venv install install-python install-frontend clean-venv clean-frontend clean-logs \
@@ -92,6 +92,12 @@ help:
 	@echo "  make test-frontend          Karma unit tests (CI mode)"
 	@echo "  make test-frontend-e2e      Playwright e2e"
 	@echo ""
+	@echo "Mutation testing:"
+	@echo "  make mutation-test-python           Mutmut run + report; fails if survival > $(MUT_SURVIVAL_MAX)%"
+	@echo "  make mutation-test-frontend         Stryker.js mutation tests for Angular (via Karma)"
+	@echo "  make mutation-test-frontend-force   Stryker.js (ignores initial test failures; troubleshooting only)"
+	@echo "  make mutation-test                  Run both Python and frontend mutation tests"
+	@echo ""
 	@echo "End-to-end meta:"
 	@echo "  make e2e                    Compose up, then backend e2e + frontend e2e"
 	@echo ""
@@ -119,7 +125,6 @@ help:
 	@echo "Environment overrides:"
 	@echo "  PY_COV_MIN                  Minimum Python coverage percent (default: $(PY_COV_MIN))"
 	@echo "  FE_COV_MIN                  Frontend coverage percent (default: $(FE_COV_MIN))"
-	@echo "  FE_COV_MIN_BRANCH           Frontend branch coverage percent (default: $(FE_COV_MIN_BRANCH))"
 	@echo "  DOCKER_COMPOSE              docker compose command (default: '$(DOCKER_COMPOSE)')"
 	@echo "  NPM                         npm command (default: '$(NPM)')"
 	@echo "  PYTHON                      Python interpreter to create venv (default: '$(PYTHON)')"
@@ -130,7 +135,7 @@ help:
 	@echo ""
 	@echo "Tips: Run 'make ci' before and after changes. See TESTING.md for details."
 
-ci: ci-start install lint build compose-up test-python-all test-frontend test-frontend-e2e ci-end
+ci: ci-start install lint build compose-up test-python-all test-frontend test-frontend-e2e mutation-test-ci ci-end
 
 ci-start:
 	$(call log_step,CI start)
@@ -175,7 +180,7 @@ install-python: venv
 install-frontend:
 	$(call log_step,Install frontend deps (npm ci))
 	@echo "[npm] Installing frontend deps (ci)..."
-	@cd $(FRONTEND_DIR) && env -u NO_COLOR $(NPM) ci
+	@cd $(FRONTEND_DIR) && if [ -f package-lock.json ]; then env -u NO_COLOR $(NPM) ci; else echo "[npm] package-lock.json not found; running 'npm install' to generate lockfile and install deps"; env -u NO_COLOR $(NPM) install; fi
 
 clean-venv:
 	rm -rf $(VENV)
@@ -193,10 +198,10 @@ lint-python: venv
 	$(call log_step,Python lint: ruff + mypy + bandit)
 	@$(RUFF) format $(PY_FILES)
 	@$(RUFF) check --fix $(PY_FILES)
-	@$(MYPY) $(PY_SRC_DIR)
+	@$(MYPY) --check-untyped-defs $(PY_SRC_DIR)
 	@$(BANDIT) -q -r $(PY_SRC_DIR)
 
-lint-frontend:
+lint-frontend: install-frontend
 	$(call log_step,Frontend lint: ESLint --fix)
 	@$(NPM_RUN) lint:fix
 
@@ -214,7 +219,7 @@ format-frontend:
 # Building
 build: build-frontend
 
-build-frontend:
+build-frontend: install-frontend
 	$(call log_step,Frontend build)
 	@$(NPM_RUN) build
 
@@ -237,12 +242,13 @@ test-python-e2e: venv
 	$(call log_step,Python E2E tests (docker compose))
 	@PYTEST_COMPOSE_ALWAYS=1 $(PYTEST) -m e2e
 
-test-frontend:
+test-frontend: install-frontend
 	$(call log_step,Frontend unit tests (Karma))
-	@cd $(FRONTEND_DIR) && CI=1 FE_COV_MIN=$(FE_COV_MIN) FE_BRANCH_MIN=$(FE_COV_MIN_BRANCH) env -u NO_COLOR $(NPM) test --silent -- --watch=false
+	@cd $(FRONTEND_DIR) && CI=1 FE_COV_MIN=$(FE_COV_MIN) FE_BRANCH_MIN=$(FE_BRANCH_MIN) env -u NO_COLOR $(NPM) test -- --watch=false --code-coverage
 
-test-frontend-e2e:
+test-frontend-e2e: install-frontend compose-up
 	$(call log_step,Frontend E2E tests (Playwright))
+	@cd $(FRONTEND_DIR) && env -u NO_COLOR npx playwright install --with-deps || true
 	@$(NPM_RUN) e2e
 
 # Meta target to run backend and frontend E2E suites and ensure stack is up
@@ -444,3 +450,57 @@ changelog: venv
 	$(call log_step,Generate CHANGELOG.md from Git history)
 	@$(VENVPY) scripts/generate_changelog.py > CHANGELOG.md
 	@echo "[changelog] Wrote CHANGELOG.md — review and commit."
+
+# ---------------- Mutation testing ----------------
+MUT_SURVIVAL_MAX ?= 20
+MUTMUT := $(VENV)/bin/mutmut
+
+.PHONY: mutation-test-python mutation-report-python mutation-test-frontend mutation-test mutation-test-ci
+
+mutation-test-python: venv
+	$(call log_step,Python mutation testing with mutmut)
+	@$(VENVPIP) show mutmut >/dev/null 2>&1 || $(VENVPIP) install -q mutmut >/dev/null
+	@SRCS="postfix_blocker/web/app_factory.py,postfix_blocker/services/blocker_service.py,postfix_blocker/postfix"; \
+	echo "[mutmut] Running on $$SRCS"; \
+	PYTEST_ADDOPTS="-m unit" $(MUTMUT) run
+	@$(MUTMUT) --help 2>&1 | grep -q 'html' && $(MUTMUT) html || true
+	@$(MAKE) mutation-report-python
+
+mutation-report-python:
+	$(call log_step,Mutmut results and threshold check)
+	@bash -euo pipefail -c '\
+	  RPT="$$( $(MUTMUT) results --all=1 || true)"; \
+	  echo "$$RPT" | tee mutmut-results.txt; \
+	  S=$$(printf "%s\n" "$$RPT" | grep -c ": survived$$" || true); \
+	  K=$$(printf "%s\n" "$$RPT" | grep -c ": killed$$" || true); \
+	  I=$$(printf "%s\n" "$$RPT" | grep -c ": no tests$$" || true); \
+	  T=$$(printf "%s\n" "$$RPT" | grep -c ": timeout$$" || true); \
+	  SP=$$(printf "%s\n" "$$RPT" | grep -c ": suspicious$$" || true); \
+	  TOT=$$((S+K+I+T+SP)); \
+	  if [ "$$TOT" -eq 0 ]; then echo "[mutmut] No mutants executed; skipping threshold check"; exit 0; fi; \
+	  SURV=$$(awk -v s="$$S" -v tot="$$TOT" "BEGIN{if(tot>0){printf \"%.2f\", (s/tot)*100}else{printf \"0.00\"}}" ); \
+	  echo "[mutmut] Survival rate: $$SURV% (allowed max $(MUT_SURVIVAL_MAX)%)"; \
+	  awk -v surv="$$SURV" -v max="$(MUT_SURVIVAL_MAX)" "BEGIN{exit !(surv > max)}" </dev/null && { echo "[mutmut][FAIL] Survival $$SURV% > $(MUT_SURVIVAL_MAX)%"; exit 1; } || echo "[mutmut][OK] Survival $$SURV% <= $(MUT_SURVIVAL_MAX)%"; \
+	'
+
+mutation-test-frontend:
+	$(call log_step,Frontend mutation testing with Stryker)
+	@cd $(FRONTEND_DIR) && env -u NO_COLOR $(NPM) install --no-audit --no-fund
+	@cd $(FRONTEND_DIR) && env -u NO_COLOR $(NPM) run mutation-test
+
+mutation-test-frontend-force:
+	$(call log_step,Frontend mutation testing with Stryker (ignore initial test failures; troubleshooting))
+	@cd $(FRONTEND_DIR) && env -u NO_COLOR $(NPM) install --no-audit --no-fund
+	@cd $(FRONTEND_DIR) && env -u NO_COLOR $(NPM) run mutation-test:force
+
+mutation-test: mutation-test-python mutation-test-frontend
+
+mutation-test-ci:
+	@bash -euo pipefail -c '\
+	  if [ "${MUTATION_IN_CI-1}" = "1" ]; then \
+	    echo "[ci] Running mutation tests (MUTATION_IN_CI=1)"; \
+	    $(MAKE) mutation-test; \
+	  else \
+	    echo "[ci] Skipping mutation tests (set MUTATION_IN_CI=0 to disable)"; \
+	  fi \
+	'

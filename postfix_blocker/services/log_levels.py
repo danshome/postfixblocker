@@ -7,7 +7,10 @@ for both the API and the blocker. It delegates to logging_setup.set_logger_level
 so any future adjustments (e.g., handler policies) are kept in one place.
 """
 
-from ..logging_setup import set_logger_level as _set_logger_level  # noqa: E402
+# NOTE: Avoid binding set_logger_level at import time so tests can monkeypatch
+# postfix_blocker.logging_setup.set_logger_level reliably, even if this module
+# was imported earlier in the test session (e.g., under mutmut "clean tests").
+# We import the module at call time and dereference the attribute then.
 
 
 def set_level(level: str | int) -> None:
@@ -15,7 +18,9 @@ def set_level(level: str | int) -> None:
 
     Accepts either a logging level name (e.g., "DEBUG") or an int level.
     """
-    _set_logger_level(level)
+    from .. import logging_setup as _logging_setup  # local import for late binding
+
+    _logging_setup.set_logger_level(level)
 
 
 __all__ = ['set_level']

@@ -32,6 +32,7 @@ services:
       API_LOG_LEVEL: DEBUG
       BLOCKER_LOG_LEVEL: DEBUG
       TEST_RESET_ENABLE: "1"
+      API_AUTH_REQUIRED: "${API_AUTH_REQUIRED:-0}"
     privileged: true
     volumes:
       - ./logs/postfix.api.log:/var/log/postfix-blocker/api.log

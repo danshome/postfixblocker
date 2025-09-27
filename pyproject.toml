@@ -3,17 +3,59 @@ target-version = "py39"
 line-length = 100
 
 [tool.ruff.lint]
+# Broaden checks to catch common AI-generated issues (naming, builtins, prints, unused args, etc.)
 select = [
-  "E",   # pycodestyle errors
+ "E",   # pycodestyle errors
   "F",   # pyflakes
   "W",   # pycodestyle warnings
   "I",   # isort
   "UP",  # pyupgrade
   "B",   # flake8-bugbear
+  "N",   # pep8-naming
+  "A",   # flake8-builtins (avoid shadowing builtins)
+  "ARG", # unused function arguments
+  "C90", # mccabe complexity
+  "COM", # flake8-commas
+  "DTZ", # datetime timezone
+  "ERA", # eradicate commented-out code
+  "FBT", # boolean trap (prefer explicit flags/kwargs)
+  "G",   # logging format
+  "ISC", # implicit str concat
+  "PERF",# performance anti-patterns
+  "PGH", # pygrep-hooks patterns
+  "PIE", # misc lints (flake8-pie)
+  "PTH", # prefer pathlib over os.path
+  "Q",   # quote-related consistency
+  "RET", # return statement issues
+  "RSE", # raise statement improvements
+  "RUF", # ruff-specific rules
+  "SIM", # simplify code
+  "SLF", # private member access
+  "S",   # security (bandit-like)
+  "T20", # disallow print statements
+  "TRY", # exception anti-patterns
 ]
 ignore = [
   "E501",  # line length handled by formatter/editor; keep checks softer
+  "COM812",  # Conflicts with formatter's handling of trailing commas
 ]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+multiline-quotes = "double"
+docstring-quotes = "double"
+
+[tool.ruff.lint.isort]
+known-first-party = ["postfix_blocker"]
+combine-as-imports = true
+
+[tool.ruff.lint.mccabe]
+# Keep complexity in check; refactor >10
+max-complexity = 10
+
+[tool.ruff.lint.per-file-ignores]
+# Tests may use assert, prints (debug), and have unused fixture args
+"tests/**/*.py" = ["S101", "T20", "ARG001", "ARG002"]
 
 [tool.ruff.format]
 quote-style = "single"
@@ -98,3 +140,48 @@ test = [
   "pytest>=7.0",
   "pytest-cov>=4.0",
 ]
+
+
+[tool.mutmut]
+debug = false
+# Limit mutation scope to high-signal modules to keep the run fast
+paths_to_mutate = [
+  "postfix_blocker/web/app_factory.py",
+  "postfix_blocker/services/blocker_service.py",
+  "postfix_blocker/postfix",
+]
+# Copy non-mutated modules/packages needed for imports during test execution
+also_copy = [
+  "postfix_blocker/__init__.py",
+  "postfix_blocker/db",
+  "postfix_blocker/logging_setup.py",
+  "postfix_blocker/web/__init__.py",
+  "postfix_blocker/web/routes_addresses.py",
+  "postfix_blocker/web/routes_auth.py",
+  "postfix_blocker/web/routes_logs.py",
+  "postfix_blocker/services/__init__.py",
+  "postfix_blocker/models",
+  "postfix_blocker/config.py",
+  "postfix_blocker/api.py",
+  "postfix_blocker/web/auth.py",
+  "postfix_blocker/web/routes_test_reset.py",
+  "postfix_blocker/services/log_levels.py",
+  "postfix_blocker/services/log_tail.py",
+  "logs",
+]
+
+do_not_mutate = [ "*ignore*" ]
+
+# Newer mutmut versions (as on GitHub main) support these options. They will be
+# used when available and silently ignored by older releases, so we keep our
+# Makefile PYTEST_ADDOPTS fallback for compatibility.
+mutate_only_covered_lines = true
+pytest_add_cli_args_test_selection = ["-m", "unit"]
+
+# Test discovery settings
+tests_dir = ["tests"]
+
+
+[tool.pytest.ini_options]
+xfail_strict = true
+markers = [ "fail: tests that should be ignored with mutmut" ]

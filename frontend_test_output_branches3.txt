@@ -1,0 +1,41 @@
+- Generating browser application bundles (phase: setup)...
+✔ Browser application bundle generation complete.
+26 09 2025 18:09:56.220:INFO [karma-server]: Karma v6.4.4 server started at http://localhost:9876/
+26 09 2025 18:09:56.220:INFO [launcher]: Launching browsers ChromeHeadlessNoSandbox with concurrency 1
+26 09 2025 18:09:56.223:INFO [launcher]: Starting browser ChromeHeadless
+26 09 2025 18:09:56.835:INFO [Chrome Headless 140.0.0.0 (Mac OS 10.15.7)]: Connected on socket ta_MTNIx1HzAtsIjAAAB with id 41893919
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 0 of 7 SUCCESS (0 secs / 0 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 0 of 7 SUCCESS (0 secs / 0 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 1 of 7 SUCCESS (0 secs / 0.106 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 1 of 7 SUCCESS (0 secs / 0.106 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 2 of 7 SUCCESS (0 secs / 0.13 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 3 of 7 SUCCESS (0 secs / 0.136 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 4 of 7 SUCCESS (0 secs / 0.14 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 5 of 7 SUCCESS (0 secs / 0.144 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 5 of 7 SUCCESS (0 secs / 0.144 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 5 of 7 SUCCESS (0 secs / 0.144 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 6 of 7 SUCCESS (0 secs / 0.157 secs)
+[1A[2KLOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+Chrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 6 of 7 SUCCESS (0 secs / 0.157 secs)
+LOG: '[AppComponent] load() called', Object{initAuthPending: false, registerDuringInitAuth: false, suppressOnce: false, source: 'other'}
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 7 of 7 SUCCESS (0 secs / 0.168 secs)
+[1A[2KChrome Headless 140.0.0.0 (Mac OS 10.15.7): Executed 7 of 7 SUCCESS (0.18 secs / 0.168 secs)
+TOTAL: 7 SUCCESS
+TOTAL: 7 SUCCESS
+✔ Browser application bundle generation complete.
+
+=============================== Coverage summary ===============================
+Statements   : 40.09% ( 255/636 )
+Branches     : 30.58% ( 63/206 )
+Functions    : 37.95% ( 52/137 )
+Lines        : 42.59% ( 230/540 )
+================================================================================
+✔ Browser application bundle generation complete.

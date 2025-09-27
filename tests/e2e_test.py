@@ -61,7 +61,8 @@ if __name__ == '__main__':  # pragma: no cover - import shim only for script exe
             from postfix_blocker import blocker  # type: ignore
 
 DB_URL = os.environ.get(
-    'BLOCKER_DB_URL', 'ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER'
+    'BLOCKER_DB_URL',
+    'ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER',
 )
 
 SMTP_HOST = os.environ.get('SMTP_HOST', 'localhost')
@@ -177,7 +178,8 @@ def run_e2e_scenario(db_url: str, smtp_host: str, smtp_port: int, mh_host: str, 
     def _mh_messages_local():
         try:
             with urlopen(
-                f'http://{mh_host}:{mh_port}/api/v2/messages?limit=10000', timeout=TIMEOUT
+                f'http://{mh_host}:{mh_port}/api/v2/messages?limit=10000',
+                timeout=TIMEOUT,
             ) as resp:
                 data = json.load(resp)
         except Exception as exc:
@@ -490,7 +492,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Postfix Blocker e2e demo')
     parser.add_argument('--mass', action='store_true', help='run mass traffic demo')
     parser.add_argument(
-        '--total', type=int, default=200, help='total messages to attempt in mass demo'
+        '--total',
+        type=int,
+        default=200,
+        help='total messages to attempt in mass demo',
     )
     args = parser.parse_args()
     if args.mass:

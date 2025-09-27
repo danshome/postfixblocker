@@ -23,7 +23,8 @@ from tests.utils_wait import wait_for_db_url
 
 def _db2_url() -> str:
     return os.environ.get(
-        'TEST_DB2_URL', 'ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER'
+        'TEST_DB2_URL',
+        'ibm_db_sa://db2inst1:blockerpass@localhost:50000/BLOCKER',
     )
 
 
@@ -104,6 +105,6 @@ def test_db2_smoke():
     # Ensure connectivity; fail if unavailable.
     if not wait_for_db_url(url):
         pytest.fail(
-            f'DB2 backend not available at {url}. Backend tests require the database to be available.'
+            f'DB2 backend not available at {url}. Backend tests require the database to be available.',
         )
     _smoke_db(url)

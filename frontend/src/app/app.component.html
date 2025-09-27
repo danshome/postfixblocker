@@ -2,10 +2,68 @@
 
 <main class="container">
   <!-- Backend status banner -->
-  <div *ngIf="backendNotReady || backendUnreachable" class="notice" [class.warn]="backendNotReady" [class.error]="backendUnreachable">
+  <div *ngIf="(!useAuth || (session.authenticated && !session.mustChangePassword)) && (backendNotReady || backendUnreachable)" class="notice" [class.warn]="backendNotReady" [class.error]="backendUnreachable">
     <ng-container *ngIf="backendNotReady">Backend is starting up (database not ready). Please wait and try again.</ng-container>
     <ng-container *ngIf="backendUnreachable">Cannot reach backend API. Ensure services are running.</ng-container>
   </div>
+
+  <!-- Optional Account/Auth Panel (disabled unless window.__USE_AUTH__ = true) -->
+  <mat-card *ngIf="useAuth" class="mb">
+    <mat-card-title>Account</mat-card-title>
+    <mat-card-content>
+      <!-- Login form -->
+      <div *ngIf="!session.authenticated && !session.mustChangePassword">
+        <div class="row">
+          <mat-form-field appearance="outline" class="half">
+            <mat-label>Username</mat-label>
+            <input matInput [(ngModel)]="loginUsername" autocomplete="username" />
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="half">
+            <mat-label>Password</mat-label>
+            <input matInput [(ngModel)]="loginPassword" type="password" autocomplete="current-password" />
+          </mat-form-field>
+        </div>
+        <div class="actions">
+          <button mat-raised-button color="primary" (click)="loginWithPassword()">Sign in</button>
+          <button mat-stroked-button color="accent" (click)="loginWithPasskey()" [disabled]="passkeyBusy">Sign in with Passkey</button>
+        </div>
+        <div *ngIf="authError" class="notice error">{{authError}}</div>
+      </div>
+
+      <!-- Force password change -->
+      <div *ngIf="session.mustChangePassword">
+        <p>You must change your password before continuing.</p>
+        <div class="row">
+          <mat-form-field appearance="outline" class="half">
+            <mat-label>Old password</mat-label>
+            <input matInput [(ngModel)]="oldPassword" type="password" autocomplete="current-password" />
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="half">
+            <mat-label>New password</mat-label>
+            <input matInput [(ngModel)]="newPassword" type="password" autocomplete="new-password" />
+          </mat-form-field>
+        </div>
+        <div class="actions">
+          <button mat-raised-button color="primary" (click)="changePassword()">Change password</button>
+        </div>
+        <div *ngIf="authError" class="notice error">{{authError}}</div>
+      </div>
+
+      <!-- Post-login actions -->
+      <div *ngIf="session.authenticated && !session.mustChangePassword">
+        <p>Signed in</p>
+        <div class="actions">
+          <button mat-stroked-button color="primary" (click)="registerPasskey()" [disabled]="passkeyBusy || session.hasWebAuthn || !session.username">
+            {{ session.hasWebAuthn ? 'Passkey registered' : 'Register Passkey' }}
+          </button>
+          <span style="flex:1 1 auto"></span>
+          <button mat-button color="warn" (click)="logout()">Logout</button>
+        </div>
+        <div *ngIf="authError" class="notice error">{{authError}}</div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+  <ng-container *ngIf="!useAuth || (session.authenticated && !session.mustChangePassword)">
   <mat-card>
     <mat-card-title>Add Addresses</mat-card-title>
     <mat-card-content>
@@ -164,4 +222,5 @@
       <pre style="white-space: pre-wrap; background: #111; color: #0f0; padding: 8px; height: 300px; overflow: auto;" aria-label="log-content">{{logContent || 'No content'}}</pre>
     </mat-card-content>
   </mat-card>
+  </ng-container>
 </main>

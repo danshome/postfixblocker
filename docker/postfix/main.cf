@@ -8,11 +8,17 @@ smtpd_banner = $myhostname ESMTP Postfix
 compatibility_level = 3.6
 
 mynetworks = 0.0.0.0/0
+# Restrict relay decisions to unauth destination handling only; perform our
+# recipient access checks in smtpd_recipient_restrictions to ensure they apply
+# even to clients in mynetworks.
 smtpd_relay_restrictions = permit_mynetworks, reject_unauth_destination
 
+# Enforce maps must be evaluated before any unconditional permits. Test maps are
+# included with warn_if_reject to log potential blocks without rejecting.
 smtpd_recipient_restrictions =
-    warn_if_reject check_recipient_access hash:/etc/postfix/blocked_recipients_test,
-    warn_if_reject check_recipient_access pcre:/etc/postfix/blocked_recipients_test.pcre,
     check_recipient_access hash:/etc/postfix/blocked_recipients,
     check_recipient_access pcre:/etc/postfix/blocked_recipients.pcre,
+    warn_if_reject check_recipient_access hash:/etc/postfix/blocked_recipients_test,
+    warn_if_reject check_recipient_access pcre:/etc/postfix/blocked_recipients_test.pcre,
+    permit_mynetworks,
     permit
